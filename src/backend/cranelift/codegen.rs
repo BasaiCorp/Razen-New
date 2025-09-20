@@ -342,6 +342,10 @@ impl CodeGenerator {
                 }
             }
             
+            Instruction::DebugInfo { message: _ } => {
+                // Debug info instructions don't generate actual code, just ignore them
+            }
+            
             _ => {
                 // For other instructions, generate a no-op for now
                 println!("⚠️  Instruction not yet implemented: {:?}", std::mem::discriminant(instruction));

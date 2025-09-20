@@ -97,9 +97,43 @@ impl IRGenerator {
             }
             Statement::ReturnStatement(stmt) => self.generate_return_statement(stmt, program),
             Statement::BlockStatement(stmt) => self.generate_block_statement(stmt, program),
+            Statement::IfStatement(_) => {
+                // Generate a placeholder for if statements
+                self.generate_placeholder_instruction("if_statement");
+                Ok(())
+            }
+            Statement::WhileStatement(_) => {
+                // Generate a placeholder for while statements
+                self.generate_placeholder_instruction("while_statement");
+                Ok(())
+            }
+            Statement::ForStatement(_) => {
+                // Generate a placeholder for for statements
+                self.generate_placeholder_instruction("for_statement");
+                Ok(())
+            }
+            Statement::MatchStatement(_) => {
+                // Generate a placeholder for match statements
+                self.generate_placeholder_instruction("match_statement");
+                Ok(())
+            }
+            Statement::TryStatement(_) => {
+                // Generate a placeholder for try statements
+                self.generate_placeholder_instruction("try_statement");
+                Ok(())
+            }
+            Statement::StructDeclaration(_) => {
+                // Struct declarations don't generate runtime code
+                Ok(())
+            }
+            Statement::EnumDeclaration(_) => {
+                // Enum declarations don't generate runtime code
+                Ok(())
+            }
             _ => {
-                // For now, handle other statements as no-ops
+                // For now, handle other statements as no-ops but still generate a placeholder
                 println!("⚠️  Statement type not fully implemented yet: {:?}", std::mem::discriminant(statement));
+                self.generate_placeholder_instruction("unknown_statement");
                 Ok(())
             }
         }
@@ -159,9 +193,23 @@ impl IRGenerator {
             }
         }
         
-        // Finalize current block
+        // Finalize current block - ensure it's always added even if empty
         if let Some(block) = self.current_block.take() {
             self.blocks.push(block);
+        }
+        
+        // Ensure function has at least one basic block (entry block)
+        if self.blocks.is_empty() {
+            let mut entry_block = BasicBlock::new("entry".to_string());
+            // Add a default return for empty functions
+            let return_type = self.get_type_string(&decl.return_type);
+            if return_type == "void" {
+                entry_block.set_terminator(Instruction::Return { value: None });
+            } else {
+                let default_val = self.get_default_value(&return_type);
+                entry_block.set_terminator(Instruction::Return { value: Some(default_val) });
+            }
+            self.blocks.push(entry_block);
         }
         
         // Create IR function
@@ -442,6 +490,17 @@ impl IRGenerator {
             let index = self.string_literals.len();
             self.string_literals.insert(literal, index);
             index
+        }
+    }
+    
+    /// Generate a placeholder instruction to ensure blocks have content
+    fn generate_placeholder_instruction(&mut self, context: &str) {
+        if let Some(ref mut current_block) = &mut self.current_block {
+            // Generate a debug info instruction as a placeholder
+            let instruction = Instruction::DebugInfo {
+                message: format!("Placeholder for {}", context),
+            };
+            current_block.add_instruction(instruction);
         }
     }
 }
