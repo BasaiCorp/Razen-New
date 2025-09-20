@@ -20,7 +20,7 @@ impl Backend {
         Backend {
             semantic_analyzer: semantic::SemanticAnalyzer::new(),
             ir_generator: ir::IRGenerator::new(),
-            code_generator: cranelift::CodeGenerator::new(),
+            code_generator: cranelift::CodeGenerator::new().expect("Failed to create CodeGenerator"),
         }
     }
 

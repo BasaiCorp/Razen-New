@@ -92,7 +92,7 @@ fn main() {
                         println!("⚠️  Unused symbols: {}", unused_symbols.len());
                     }
                     
-                    // Test Part 2: IR Generation
+                    // Test Phase 2: IR Generation
                     println!("\n🔍 Testing Part 2: IR Generation...");
                     match backend.ir_generator.generate(analyzed_program) {
                         Ok(ir_module) => {
@@ -124,6 +124,30 @@ fn main() {
                                     
                                     if let Some(ref terminator) = block.terminator {
                                         println!("     terminator: {}", terminator);
+                                    }
+                                }
+                            }
+                            
+                            // Test Phase 3: Cranelift Code Generation
+                            println!("\n🔍 Testing Phase 3: Cranelift Code Generation...");
+                            match backend.code_generator.generate(ir_module) {
+                                Ok(compiled_program) => {
+                                    println!("✅ Cranelift Code Generation completed successfully!");
+                                    println!("📊 Compiled Program results:");
+                                    println!("   - Native code size: {} bytes", compiled_program.bytecode.len());
+                                    println!("   - Entry point: {}", compiled_program.entry_point);
+                                    println!("   - Symbols: {}", compiled_program.symbols.len());
+                                    
+                                    println!("\n🎉 **COMPLETE COMPILATION PIPELINE WORKING!**");
+                                    println!("✅ Phase 1: Semantic Analysis");
+                                    println!("✅ Phase 2: IR Generation");
+                                    println!("✅ Phase 3: Cranelift Code Generation");
+                                    println!("🚀 Your Razen language can now compile to native code!");
+                                }
+                                Err(cranelift_diagnostics) => {
+                                    println!("❌ Cranelift Code Generation failed with {} error(s):", cranelift_diagnostics.error_count());
+                                    for diagnostic in &cranelift_diagnostics.diagnostics {
+                                        println!("   - {}: {}", diagnostic.severity, diagnostic.kind.title());
                                     }
                                 }
                             }
