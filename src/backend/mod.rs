@@ -2,7 +2,6 @@
 
 pub mod semantic;
 pub mod ir;
-pub mod codegen;
 pub mod builtins;
 pub mod cranelift;
 
@@ -13,7 +12,7 @@ use crate::frontend::diagnostics::Diagnostics;
 pub struct Backend {
     pub semantic_analyzer: semantic::SemanticAnalyzer,
     pub ir_generator: ir::IRGenerator,
-    pub code_generator: codegen::CodeGenerator,
+    pub code_generator: cranelift::CodeGenerator,
 }
 
 impl Backend {
@@ -21,7 +20,7 @@ impl Backend {
         Backend {
             semantic_analyzer: semantic::SemanticAnalyzer::new(),
             ir_generator: ir::IRGenerator::new(),
-            code_generator: codegen::CodeGenerator::new(),
+            code_generator: cranelift::CodeGenerator::new(),
         }
     }
 
