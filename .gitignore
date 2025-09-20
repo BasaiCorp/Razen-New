@@ -1,0 +1,59 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Logs
+/logs/
+*.log
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+.DS_Store
+.vscode/
+.idea/
+
+# Build output
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+
+# Python artifacts (for any remaining Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Test files
+test_output/
+
+# Test files
+./test.rzn 
+./test_bracket_notion.rzn
+./test_script.rzn 
+
+followers.py 
+razen_tests/
+

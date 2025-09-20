@@ -1,0 +1,129 @@
+mod main // optional module declaration
+
+use math // import math module
+use hero from "myhero" // here the .rzn not needed it will detect it self
+use {man, woman} from "people" // import multiple items
+
+use discordRZn as dr // alias import
+
+pub fun man() {
+    println("Man")
+}
+
+fun oprators() {
+    var a: int = 10
+    var b: int = 20
+    println(a + b)
+    println(a - b)
+    println(a * b)
+    println(a / b)
+    println(a % b)
+}
+
+fun add(a: int, b: int) -> int {
+    return a + b
+}
+
+fun assignmenets() {
+    var a: int = 10
+    a += 1
+    println(a)
+}
+
+fun comparisons() {
+    var a: int = 10
+    var b: int = 20
+    println(a == b)
+    println(a != b)
+}
+
+fun logical() {
+    var a: bool = true
+    var b: bool = false
+    println(a && b)
+    println(a || b)
+    println(!a)
+}
+
+fun unary() {
+    var a: int = 10
+    println(++a)
+    println(--a)
+}
+
+fun bitwise() {
+    var a: int = 10
+    var b: int = 20
+    println(a & b)
+    println(a | b)
+    println(a ^ b)
+    println(~a)
+    println(a << b)
+    println(a >> b)
+}
+
+fun main() {
+    println("Hello, Razen!")
+    var name: str = "Razen"
+    var age: int = 20
+    println("Name: " + name + ", Age: " + age)
+    println(f"Name: {name}, Age: {age}")
+    const pi: float = 3.14
+    println(pi)
+
+    struct Person {
+        name: str
+        age: int
+    }
+
+    enum Color {
+        Red,
+        Green,
+        Blue
+    }
+
+    if age > 18 {
+        println("Adult")
+    } elif age == 18 {
+        println("Turning Adult")
+    } else {
+        println("Minor")
+    }
+
+    while age > 0 {
+        age -= 1
+    }
+
+    for i in 0..10 {
+        println(i)
+    }
+
+    fun add(a: int, b: int) -> int {
+        return a + b
+        throw "Error"
+    }
+    println(add(1, 2))
+
+    match age {
+        18 => println("Turning Adult"),
+        _ => println("Adult")
+    }
+
+    try {
+        age += 1
+    } catch e {
+        println(e)
+    }
+
+    print("Hello, Razen!")
+    println("Hello, Razen!")
+    var name = input("Enter your name: ")
+    println("Hello, " + name)
+    println(read("file.txt"))
+    open("file.txt")
+    write("file.txt", "Hello, Razen!")
+    close("file.txt")   
+
+    // this is comment
+    /* this is multiline comment */ 
+}
