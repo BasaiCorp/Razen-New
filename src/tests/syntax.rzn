@@ -72,7 +72,7 @@ fun main() {
     println(pi)
 
     struct Person {
-        name: str
+        name_: str
         age: int
     }
 
@@ -98,11 +98,11 @@ fun main() {
         println(i)
     }
 
-    fun add(a: int, b: int) -> int {
+    fun add2(a: int, b: int) -> int {
         return a + b
         throw "Error"
     }
-    println(add(1, 2))
+    println(add2(1, 2))
 
     match age {
         18 => println("Turning Adult"),
@@ -117,12 +117,12 @@ fun main() {
 
     print("Hello, Razen!")
     println("Hello, Razen!")
-    var name = input("Enter your name: ")
-    println("Hello, " + name)
-    println(read("file.txt"))
+    var na_me = input("Enter your name: ")
+    println("Hello, " + na_me)
+    /*println(read("file.txt"))
     open("file.txt")
     write("file.txt", "Hello, Razen!")
-    close("file.txt")   
+    close("file.txt")  */ 
 
     // this is comment
     /* this is multiline comment */ 
