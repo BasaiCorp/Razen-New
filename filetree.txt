@@ -1,0 +1,36 @@
+razen/
+├── Cargo.toml
+└── src/
+    ├── main.rs                   # CLI entry point
+    ├── lib.rs                    # Library root
+    ├── frontend/                 # Frontend (keeping as is)
+    │   ├── mod.rs
+    │   ├── lexer/
+    │   │   ├── mod.rs
+    │   │   ├── token.rs
+    │   │   └── scanner.rs
+    │   ├── parser/
+    │   │   ├── mod.rs
+    │   │   ├── ast.rs
+    │   │   ├── expression.rs
+    │   │   └── statement.rs
+    │   └── diagnostics/
+    │       ├── mod.rs
+    │       └── error.rs
+    ├── backend/                  # Simplified backend
+    │   ├── mod.rs
+    │   ├── cranelift/            # CraneLift backend only
+    │   │   ├── mod.rs
+    │   │   ├── jit.rs            # JIT compilation
+    │   │   ├── aot.rs            # AOT compilation
+    │   │   └── codegen.rs        # Code generation
+    │   └── builtins.rs           # Built-in functions
+    ├── utils/                    # Essential utils only
+    │   ├── mod.rs
+    │   ├── config.rs
+    │   └── file_io.rs
+    └── commands/                 # CLI commands
+        ├── mod.rs
+        ├── run.rs                # razen run (JIT)
+        ├── build.rs              # razen build (AOT)
+        └── repl.rs               # Interactive REPL
