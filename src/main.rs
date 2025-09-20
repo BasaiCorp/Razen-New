@@ -91,6 +91,50 @@ fn main() {
                     if !unused_symbols.is_empty() {
                         println!("⚠️  Unused symbols: {}", unused_symbols.len());
                     }
+                    
+                    // Test Part 2: IR Generation
+                    println!("\n🔍 Testing Part 2: IR Generation...");
+                    match backend.ir_generator.generate(analyzed_program) {
+                        Ok(ir_module) => {
+                            println!("✅ IR Generation completed successfully!");
+                            println!("📊 IR Module results:");
+                            println!("   - Module name: {}", ir_module.name);
+                            println!("   - Functions: {}", ir_module.functions.len());
+                            println!("   - Globals: {}", ir_module.globals.len());
+                            println!("   - String literals: {}", ir_module.strings.len());
+                            
+                            // Display IR for each function
+                            for function in &ir_module.functions {
+                                println!("\n🔧 Function: {} -> {}", function.name, function.return_type);
+                                println!("   Parameters: {}", function.params.len());
+                                println!("   Basic blocks: {}", function.basic_blocks.len());
+                                
+                                // Show first few instructions of each block
+                                for (i, block) in function.basic_blocks.iter().enumerate() {
+                                    println!("   Block {}: {} ({} instructions)", 
+                                             i, block.label, block.instructions.len());
+                                    
+                                    // Show first 3 instructions
+                                    for (j, instr) in block.instructions.iter().take(3).enumerate() {
+                                        println!("     {}: {}", j, instr);
+                                    }
+                                    if block.instructions.len() > 3 {
+                                        println!("     ... ({} more)", block.instructions.len() - 3);
+                                    }
+                                    
+                                    if let Some(ref terminator) = block.terminator {
+                                        println!("     terminator: {}", terminator);
+                                    }
+                                }
+                            }
+                        }
+                        Err(ir_diagnostics) => {
+                            println!("❌ IR Generation failed with {} error(s):", ir_diagnostics.error_count());
+                            for diagnostic in &ir_diagnostics.diagnostics {
+                                println!("   - {}: {}", diagnostic.severity, diagnostic.kind.title());
+                            }
+                        }
+                    }
                 }
                 Err(semantic_diagnostics) => {
                     println!("❌ Semantic analysis failed with {} error(s) and {} warning(s):", 

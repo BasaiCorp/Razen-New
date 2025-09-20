@@ -1,36 +1,56 @@
-razen/
-├── Cargo.toml
+razen-lang-new/
+├── Cargo.toml                   # Project configuration with cranelift dependencies
+├── filetree.txt                 # This file (project structure)
+├── README.md                    # Project documentation
 └── src/
-    ├── main.rs                   # CLI entry point
-    ├── lib.rs                    # Library root
-    ├── frontend/                 # Frontend (keeping as is)
-    │   ├── mod.rs
-    │   ├── lexer/
-    │   │   ├── mod.rs
-    │   │   ├── token.rs
-    │   │   └── scanner.rs
-    │   ├── parser/
-    │   │   ├── mod.rs
-    │   │   ├── ast.rs
-    │   │   ├── expression.rs
-    │   │   └── statement.rs
-    │   └── diagnostics/
-    │       ├── mod.rs
-    │       └── error.rs
-    ├── backend/                  # Simplified backend
-    │   ├── mod.rs
-    │   ├── cranelift/            # CraneLift backend only
-    │   │   ├── mod.rs
-    │   │   ├── jit.rs            # JIT compilation
-    │   │   ├── aot.rs            # AOT compilation
-    │   │   └── codegen.rs        # Code generation
-    │   └── builtins.rs           # Built-in functions
-    ├── utils/                    # Essential utils only
-    │   ├── mod.rs
-    │   ├── config.rs
-    │   └── file_io.rs
-    └── commands/                 # CLI commands
-        ├── mod.rs
-        ├── run.rs                # razen run (JIT)
-        ├── build.rs              # razen build (AOT)
-        └── repl.rs               # Interactive REPL
+    ├── main.rs                  # CLI entry point with semantic analysis testing
+    ├── lib.rs                   # Library root module exports
+    ├── frontend/                # Frontend - COMPLETE ✅
+    │   ├── mod.rs               # Frontend module exports
+    │   ├── lexer/               # Lexical analysis
+    │   │   ├── mod.rs           # Lexer module
+    │   │   ├── token.rs         # Token definitions
+    │   │   └── scanner.rs       # Source code scanner
+    │   ├── parser/              # Syntax analysis
+    │   │   ├── mod.rs           # Parser module with error handling
+    │   │   ├── ast.rs           # Abstract Syntax Tree definitions
+    │   │   ├── expression.rs    # Expression parsing
+    │   │   └── statement.rs     # Statement parsing
+    │   └── diagnostics/         # Error reporting system
+    │       ├── mod.rs           # Diagnostic utilities and macros
+    │       ├── error.rs         # Diagnostic types and error codes
+    │       └── display.rs       # Rust-style error formatting
+    ├── backend/                 # Backend - PART 1 COMPLETE ✅
+    │   ├── mod.rs               # Backend pipeline coordinator
+    │   ├── semantic/            # Part 1: Semantic Analysis ✅
+    │   │   ├── mod.rs           # Semantic module exports
+    │   │   ├── analyzer.rs      # Main semantic analyzer
+    │   │   ├── symbol_table.rs  # Symbol management and scoping
+    │   │   ├── type_system.rs   # Type checking and inference
+    │   │   └── scope.rs         # Scope management and validation
+    │   ├── ir/                  # Part 2: IR Generation (placeholder)
+    │   │   ├── mod.rs           # IR module exports
+    │   │   ├── generator.rs     # IR generation from AST
+    │   │   ├── instructions.rs  # IR instruction definitions
+    │   │   └── module.rs        # IR module representation
+    │   ├── cranelift/           # Part 3: Code Generation (placeholder)
+    │   │   ├── mod.rs           # Cranelift module exports
+    │   │   ├── codegen.rs       # Main code generation
+    │   │   ├── jit.rs           # JIT compilation
+    │   │   └── aot.rs           # AOT compilation
+    │   └── builtins.rs          # Built-in functions (empty placeholder)
+    ├── utils/                   # Utility modules
+    │   ├── mod.rs               # Utils module exports
+    │   ├── config.rs            # Configuration management
+    │   └── file_io.rs           # File I/O utilities
+    ├── commands/                # CLI commands
+    │   ├── mod.rs               # Commands module exports
+    │   ├── run.rs               # razen run (JIT execution)
+    │   ├── build.rs             # razen build (AOT compilation)
+    │   └── repl.rs              # Interactive REPL
+    ├── properties/              # Language properties
+    │   └── keywords.md          # Reserved keywords documentation
+    └── tests/                   # Test files
+        ├── syntax.rzn           # Comprehensive syntax test
+        ├── error_test.rzn       # Error testing file
+        └── my_test.rzn          # Additional test file

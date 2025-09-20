@@ -212,12 +212,22 @@ impl TypeChecker {
     pub fn infer_binary_op_type(&self, left: &Type, right: &Type, op: &str) -> Option<Type> {
         match op {
             // Arithmetic operations
-            "+" | "-" | "*" | "/" | "%" => {
+            "+" => {
                 match (left, right) {
                     (Type::Int, Type::Int) => Some(Type::Int),
                     (Type::Float, Type::Float) => Some(Type::Float),
                     (Type::Int, Type::Float) | (Type::Float, Type::Int) => Some(Type::Float),
-                    (Type::String, Type::String) if op == "+" => Some(Type::String),
+                    (Type::String, Type::String) => Some(Type::String),
+                    // String concatenation with other types
+                    (Type::String, _) | (_, Type::String) => Some(Type::String),
+                    _ => None,
+                }
+            }
+            "-" | "*" | "/" | "%" => {
+                match (left, right) {
+                    (Type::Int, Type::Int) => Some(Type::Int),
+                    (Type::Float, Type::Float) => Some(Type::Float),
+                    (Type::Int, Type::Float) | (Type::Float, Type::Int) => Some(Type::Float),
                     _ => None,
                 }
             }
@@ -254,7 +264,7 @@ impl TypeChecker {
     /// Infer the result type of a unary operation
     pub fn infer_unary_op_type(&self, operand: &Type, op: &str) -> Option<Type> {
         match op {
-            "-" => {
+            "-" | "+" => {
                 match operand {
                     Type::Int => Some(Type::Int),
                     Type::Float => Some(Type::Float),
@@ -272,6 +282,14 @@ impl TypeChecker {
             "~" => {
                 match operand {
                     Type::Int => Some(Type::Int),
+                    _ => None,
+                }
+            }
+            
+            "++" | "--" => {
+                match operand {
+                    Type::Int => Some(Type::Int),
+                    Type::Float => Some(Type::Float),
                     _ => None,
                 }
             }

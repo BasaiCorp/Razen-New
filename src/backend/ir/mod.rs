@@ -5,7 +5,7 @@ pub mod instructions;
 pub mod module;
 
 pub use generator::IRGenerator;
-pub use instructions::{Instruction, Operand, BasicBlock};
+pub use instructions::{Instruction, Operand, BasicBlock, MatchArm, InstructionBuilder};
 pub use module::IRModule;
 
 use crate::backend::semantic::AnalyzedProgram;
