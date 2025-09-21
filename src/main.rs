@@ -20,7 +20,7 @@ enum ExecutionMode {
 }
 
 fn main() {
-    // Initialize builtin functions registry
+    // Initialize builtin functions registry (silently)
     BuiltinRegistry::initialize();
     
     let args: Vec<String> = env::args().collect();
@@ -182,9 +182,14 @@ fn print_help() {
     println!("    --aot <file> <output>  Compile to object file using AOT");
     println!("    -h, --help             Print this help message");
     println!();
+    println!("ENVIRONMENT VARIABLES:");
+    println!("    RAZEN_DEBUG=1          Show verbose compilation output");
+    println!("    RAZEN_VERBOSE=1        Show verbose compilation output");
+    println!();
     println!("EXAMPLES:");
     println!("    cargo run -- program.rzn                    # Standard compilation pipeline");
-    println!("    cargo run -- --jit program.rzn              # JIT compile and run");
+    println!("    cargo run -- --jit program.rzn              # JIT compile and run (silent)");
+    println!("    RAZEN_DEBUG=1 cargo run -- --jit program.rzn # JIT compile and run (verbose)");
     println!("    cargo run -- --aot program.rzn program.o    # AOT compile to object file");
 }
 
@@ -215,7 +220,7 @@ fn execute_jit(program: razen_lang::frontend::parser::ast::Program) {
         }
     };
     
-    // JIT compile and execute
+    // JIT compile and execute (silently)
     let mut jit_compiler = match JITCompiler::new() {
         Ok(jit) => jit,
         Err(e) => {

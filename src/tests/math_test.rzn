@@ -2,5 +2,5 @@ fun main() -> int {
     var x: int = 10
     var y: int = 5
     var result: int = x + y
-    return result
+    println(result)
 }

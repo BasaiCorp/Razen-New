@@ -270,8 +270,10 @@ impl BuiltinRegistry {
     /// Initialize the global builtin registry
     pub fn initialize() {
         let _registry = BUILTIN_REGISTRY.clone();
-        println!("✅ Builtin functions initialized: {:?}", 
-            _registry.lock().unwrap().get_function_names());
+        if std::env::var("RAZEN_DEBUG").is_ok() || std::env::var("RAZEN_VERBOSE").is_ok() {
+            println!("✅ Builtin functions initialized: {:?}", 
+                _registry.lock().unwrap().get_function_names());
+        }
     }
 }
 

@@ -66,7 +66,9 @@ impl IRGenerator {
         self.module = IRModule::new();
         self.diagnostics = Diagnostics::new();
         
-        println!("🚀 Starting IR Generation for {} statements", program.program.statements.len());
+        if std::env::var("RAZEN_DEBUG").is_ok() || std::env::var("RAZEN_VERBOSE").is_ok() {
+            println!("🚀 Starting IR Generation for {} statements", program.program.statements.len());
+        }
         
         // Generate IR for all statements
         for statement in &program.program.statements {
@@ -81,9 +83,11 @@ impl IRGenerator {
             self.module.add_string(literal.clone());
         }
         
-        println!("✅ IR Generation completed successfully!");
-        println!("Generated {} functions", self.module.functions.len());
-        println!("Generated {} string literals", self.module.strings.len());
+        if std::env::var("RAZEN_DEBUG").is_ok() || std::env::var("RAZEN_VERBOSE").is_ok() {
+            println!("✅ IR Generation completed successfully!");
+            println!("Generated {} functions", self.module.functions.len());
+            println!("Generated {} string literals", self.module.strings.len());
+        }
         
         Ok(std::mem::take(&mut self.module))
     }
@@ -162,7 +166,9 @@ impl IRGenerator {
     /// Generate IR for function declaration
     fn generate_function_declaration(&mut self, decl: &FunctionDeclaration, program: &AnalyzedProgram) -> Result<(), Diagnostics> {
         let func_name = &decl.name.name;
-        println!("🔧 Generating function: {}", func_name);
+        if std::env::var("RAZEN_DEBUG").is_ok() || std::env::var("RAZEN_VERBOSE").is_ok() {
+            println!("🔧 Generating function: {}", func_name);
+        }
         
         // Save current state
         let old_function = self.current_function.clone();
@@ -248,7 +254,9 @@ impl IRGenerator {
         self.variable_map = old_variable_map;
         self.blocks = old_blocks;
         
-        println!("✅ Function {} generated successfully", func_name);
+        if std::env::var("RAZEN_DEBUG").is_ok() || std::env::var("RAZEN_VERBOSE").is_ok() {
+            println!("✅ Function {} generated successfully", func_name);
+        }
         Ok(())
     }
     
