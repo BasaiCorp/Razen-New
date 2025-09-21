@@ -110,6 +110,15 @@ tests/
 $ cargo run -- --jit program.rzn
 [exits with code based on program return value, no output]
 ```
+- example program: 
+```razen
+fun main() {
+    println("Hello, world!")
+}
+```
+- This should print "Hello, world!" in the terminal.
+- When the JIT is used, the compiler should only show the actual Razen program output, errors, warnings, but not the compiler output such as the IR generated, semantic analysis results, optimized IR generated, linked object file generated, and executed.
+- It should work just like `go run main.go`, where it should work professionally and not like rough and bad.
 
 **Files to Enhance:**
 - `src/backend/cranelift/jit.rs` - Complete implementation
