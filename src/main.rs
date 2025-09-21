@@ -2,10 +2,14 @@
 
 use razen_lang::frontend::parser::{parse_source_with_name, format_parse_errors};
 use razen_lang::backend::Backend;
+use razen_lang::backend::builtins::BuiltinRegistry;
 use std::fs;
 use std::env;
 
 fn main() {
+    // Initialize builtin functions registry
+    BuiltinRegistry::initialize();
+    
     let args: Vec<String> = env::args().collect();
     
     // Default to syntax.rzn, but allow specifying a different file

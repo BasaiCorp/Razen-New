@@ -1,0 +1,18 @@
+// Test file for I/O builtin functions
+fun main() {
+    println("Testing Razen I/O functions!")
+    
+    print("Hello, ")
+    println("World!")
+    
+    var name = input("Enter your name: ")
+    println("Nice to meet you, " + name + "!")
+    
+    print("Enter your age: ")
+    var age = input()
+    println("You are " + age + " years old.")
+    
+    // Test the placeholder file functions (these will show error messages)
+    // read("test.txt")  // This would show "read() function not yet implemented"
+    // write("test.txt", "Hello")  // This would show "write() function not yet implemented"
+}

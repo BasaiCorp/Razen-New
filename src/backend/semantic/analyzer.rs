@@ -8,6 +8,7 @@ use crate::backend::semantic::{
     AnalyzedProgram, SymbolTable, Symbol, SymbolKind, Type, TypeChecker, ScopeManager
 };
 use crate::backend::semantic::scope::ScopeType;
+use crate::backend::builtins::BuiltinRegistry;
 
 /// Main semantic analyzer for the Razen language
 pub struct SemanticAnalyzer {
@@ -669,12 +670,36 @@ impl SemanticAnalyzer {
             }
             
             Expression::CallExpression(expr) => {
-                let func_type = self.analyze_expression(&expr.callee);
-                
-                // Analyze arguments
+                // Analyze arguments first
                 let arg_types: Vec<Type> = expr.arguments.iter()
                     .map(|arg| self.analyze_expression(arg))
                     .collect();
+                
+                // Get function name if it's a simple identifier
+                if let Expression::Identifier(ident) = expr.callee.as_ref() {
+                    let func_name = &ident.name;
+                    
+                    // Check if it's a builtin function first
+                    if let Ok(registry) = BuiltinRegistry::global().lock() {
+                        if registry.is_builtin(func_name) {
+                            // Validate builtin function call
+                            match registry.validate_call(func_name, &arg_types) {
+                                Ok(return_type) => {
+                                    // Mark the builtin function as used
+                                    self.symbol_table.mark_used(func_name);
+                                    return return_type;
+                                }
+                                Err(error_msg) => {
+                                    self.error(error_msg, None);
+                                    return Type::Unknown;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Fall back to regular function call analysis
+                let func_type = self.analyze_expression(&expr.callee);
                 
                 // Check function call
                 match func_type {

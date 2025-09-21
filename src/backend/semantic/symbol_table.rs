@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use crate::backend::semantic::type_system::Type;
+use crate::backend::builtins::BuiltinRegistry;
 use crate::frontend::diagnostics::Span;
 
 /// Represents different kinds of symbols
@@ -202,28 +203,38 @@ impl SymbolTable {
     
     /// Add built-in functions to the global scope
     fn add_builtin_functions(&mut self) {
-        let builtins = vec![
-            ("println", vec![("value", Type::Any)], Type::Void),
-            ("print", vec![("value", Type::Any)], Type::Void),
-            ("input", vec![("prompt", Type::String)], Type::String),
-            ("read", vec![("file", Type::String)], Type::String),
-            ("write", vec![("file", Type::String), ("content", Type::String)], Type::Bool),
-            ("open", vec![("file", Type::String), ("mode", Type::String)], Type::Any),
-            ("close", vec![("handle", Type::Any)], Type::Bool),
-            ("len", vec![("value", Type::Any)], Type::Int),
-            ("str", vec![("value", Type::Any)], Type::String),
-            ("int", vec![("value", Type::Any)], Type::Int),
-            ("float", vec![("value", Type::Any)], Type::Float),
-            ("bool", vec![("value", Type::Any)], Type::Bool),
-        ];
-        
-        for (name, params, return_type) in builtins {
-            let params: Vec<(String, Type)> = params.into_iter()
-                .map(|(n, t)| (n.to_string(), t))
-                .collect();
+        // Get builtin functions from the registry
+        if let Ok(registry) = BuiltinRegistry::global().lock() {
+            for function_name in registry.get_function_names() {
+                if let Some(builtin_func) = registry.get_function(&function_name) {
+                    let symbol = Symbol::builtin_function(
+                        builtin_func.name.clone(),
+                        builtin_func.params.clone(),
+                        builtin_func.return_type.clone(),
+                    );
+                    self.add_symbol(symbol);
+                }
+            }
+        } else {
+            // Fallback to hardcoded builtins if registry is not available
+            let builtins = vec![
+                ("println", vec![("value", Type::Any)], Type::Void),
+                ("print", vec![("value", Type::Any)], Type::Void),
+                ("input", vec![("prompt", Type::String)], Type::String),
+                ("read", vec![("file", Type::String)], Type::String),
+                ("write", vec![("file", Type::String), ("content", Type::String)], Type::Bool),
+                ("open", vec![("file", Type::String), ("mode", Type::String)], Type::Any),
+                ("close", vec![("handle", Type::Any)], Type::Bool),
+            ];
             
-            let symbol = Symbol::builtin_function(name.to_string(), params, return_type);
-            self.add_symbol(symbol);
+            for (name, params, return_type) in builtins {
+                let params: Vec<(String, Type)> = params.into_iter()
+                    .map(|(n, t)| (n.to_string(), t))
+                    .collect();
+                
+                let symbol = Symbol::builtin_function(name.to_string(), params, return_type);
+                self.add_symbol(symbol);
+            }
         }
     }
     

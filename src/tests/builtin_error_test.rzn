@@ -1,0 +1,11 @@
+// Test file to verify builtin function validation
+fun main() {
+    // This should work
+    println("Hello!")
+    
+    // This should cause an error - too many arguments for print
+    print("Hello", "World")
+    
+    // This should cause an error - wrong number of arguments for input
+    var name = input("Prompt1", "Prompt2", "Prompt3")
+}
