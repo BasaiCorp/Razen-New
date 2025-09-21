@@ -133,10 +133,27 @@ impl IRGenerator {
                 // Enum declarations don't generate runtime code
                 Ok(())
             }
-            _ => {
-                // For now, handle other statements as no-ops but still generate a placeholder
-                println!("⚠️  Statement type not fully implemented yet: {:?}", std::mem::discriminant(statement));
-                self.generate_placeholder_instruction("unknown_statement");
+            Statement::ModuleDeclaration(_) => {
+                // Module declarations are handled during semantic analysis
+                Ok(())
+            }
+            Statement::UseStatement(_) => {
+                // Use statements are handled during semantic analysis
+                Ok(())
+            }
+            Statement::BreakStatement(_) => {
+                // TODO: Implement break statement generation
+                self.generate_placeholder_instruction("break_statement");
+                Ok(())
+            }
+            Statement::ContinueStatement(_) => {
+                // TODO: Implement continue statement generation
+                self.generate_placeholder_instruction("continue_statement");
+                Ok(())
+            }
+            Statement::ThrowStatement(_) => {
+                // TODO: Implement throw statement generation
+                self.generate_placeholder_instruction("throw_statement");
                 Ok(())
             }
         }

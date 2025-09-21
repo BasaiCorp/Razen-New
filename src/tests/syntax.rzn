@@ -1,10 +1,6 @@
 mod main // optional module declaration
 
-use math // import math module
-use hero from "myhero" // here the .rzn not needed it will detect it self
-use {man, woman} from "people" // import multiple items
 
-use discordRZn as dr // alias import
 
 pub fun man() {
     println("Man")
@@ -71,6 +67,16 @@ fun main() {
     const pi: float = 3.14
     println(pi)
 
+    // Call other test functions
+    oprators()
+    add(1, 2)
+    assignmenets()
+    comparisons()
+    logical()
+    unary()
+    bitwise()
+    man()
+
     struct Person {
         name_: str
         age: int
@@ -81,6 +87,18 @@ fun main() {
         Green,
         Blue
     }
+    
+    // Use the struct and enum to demonstrate they work
+    var person: Person
+    var color: Color
+    
+    // TODO: Add struct instantiation and field access when implemented
+    // person = Person { name_: "John", age: 25 }
+    // println(person.name_)
+    
+    // TODO: Add enum variant creation when implemented  
+    // color = Color.Red
+    // println(color)
 
     if age > 18 {
         println("Adult")

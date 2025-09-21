@@ -844,6 +844,14 @@ impl SemanticAnalyzer {
         // Collect unused symbols first to avoid borrowing issues
         let unused_symbols: Vec<_> = self.symbol_table.get_unused_symbols()
             .into_iter()
+            // Filter out modules, structs, enums, and functions from unused symbol warnings
+            // These are type/function definitions that don't need to be "used" in the traditional sense
+            .filter(|symbol| !matches!(symbol.kind, 
+                SymbolKind::Module | 
+                SymbolKind::Struct { .. } | 
+                SymbolKind::Enum { .. } | 
+                SymbolKind::Function { .. }
+            ))
             .filter(|symbol| matches!(symbol.kind, SymbolKind::Variable { .. } | SymbolKind::Constant))
             .map(|symbol| (
                 match symbol.kind {
