@@ -87,43 +87,62 @@ tests/
 ```
 
 #### **2. JIT/AOT Compiler Enhancement** ⚡
-**Status:** 🚧 **NEEDS ENHANCEMENT**  
+**Status:** 🚧 **PARTIALLY COMPLETE**  
 **Priority:** 🔥 **CRITICAL**  
-**Estimated Time:** 3-4 days
+**Estimated Time:** 2-3 days remaining
+
+**✅ COMPLETED:**
+- JIT compiler works like `go run` (silent execution, clean exit codes)
+- Complete Cranelift JIT integration with proper memory management
+- Professional error handling without stack traces
+- AOT compilation to object files implemented
+- `--jit` and `--aot` command line options added
+- Debug mode with `RAZEN_DEBUG=1` for verbose output
+- String literal resolution working perfectly
 
 **❌ CURRENT ISSUES:**
-- JIT compiler is **NOT WORKING** as expected
-- Does not provide clean, fast execution like `go run main.go`
-- Needs complete rework and enhancement
+- Math operations not working (`[computed value]` instead of actual results)
+- Variable resolution limited (only direct assignments work)
+- Function calls to user-defined functions not working
+- Complex expressions not being evaluated
 
-**🎯 REQUIRED ENHANCEMENTS:**
-- [ ] Make JIT work like `go run` (silent execution, clean exit codes)
-- [ ] Complete Cranelift JIT integration with proper memory management
-- [ ] Professional error handling without stack traces
-- [ ] Implement proper AOT compilation to object files
-- [ ] Add support for dynamic linking
-- [ ] Create `--jit` and `--aot` command line options
+**🎯 REMAINING TASKS:**
+- [ ] Fix math operations (Add, Sub, Mul, Div) in JIT execution
+- [ ] Implement proper variable resolution with Load/Store operations
+- [ ] Add support for user-defined function calls
+- [ ] Enhance expression evaluation for complex operations
 
-**Expected Behavior:**
+**✅ WORKING EXAMPLES:**
 ```bash
-# Should work like this:
+# String literals work perfectly:
 $ cargo run -- --jit program.rzn
-Hello World!
-```
-- example program: 
-```razen
-fun main() {
-    println("Hello, world!")
-}
-```
-- This should print "Hello, world!" in the terminal.
-- When the JIT is used, the compiler should only show the actual Razen program output, errors, warnings, but not the compiler output such as the IR generated, semantic analysis results, optimized IR generated, linked object file generated, and executed.
-- It should work just like `go run main.go`, where it should work professionally and not like rough and bad.
+Hello, world!
 
-**Files to Enhance:**
-- `src/backend/cranelift/jit.rs` - Complete implementation
-- `src/backend/cranelift/aot.rs` - Complete implementation
-- `src/main.rs` - Add JIT/AOT command line options
+# Debug mode available:
+$ RAZEN_DEBUG=1 cargo run -- --jit program.rzn
+✅ Builtin functions initialized: ["print", "println", ...]
+🚀 Starting IR Generation for 1 statements
+🔧 Generating function: main
+✅ Function main generated successfully
+Hello, world!
+```
+
+**❌ NOT WORKING EXAMPLES:**
+```bash
+# Math operations show [computed value]:
+$ cargo run -- --jit math_test.rzn
+[computed value]  # Should show: 15
+
+# Variables show [computed value]:
+$ cargo run -- --jit my_test.rzn
+[computed value]  # Should show: 5
+```
+
+**Files to Fix:**
+- `src/backend/cranelift/jit.rs` - Fix math operations and variable resolution
+- `src/backend/ir/generator.rs` - Ensure proper IR generation for math operations
+- `src/frontend/parser/` - Verify math expression parsing
+- `src/backend/semantic/analyzer.rs` - Verify math operation type checking
 
 #### **3. Razen CLI Tool Development** 🛠️
 **Status:** Not Started  
