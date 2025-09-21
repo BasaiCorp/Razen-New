@@ -32,7 +32,7 @@ impl AOTCompiler {
     }
     
     /// Compile to object file
-    pub fn compile_to_object(&mut self, ir_module: IRModule, output_path: &str) -> Result<(), Diagnostics> {
+    pub fn compile_to_object(&mut self, _ir_module: IRModule, output_path: &str) -> Result<(), String> {
         // TODO: Implement object file generation in Part 3
         println!("Cranelift Object File Generation (Part 3) - Not yet implemented");
         println!("Would generate object file at: {}", output_path);

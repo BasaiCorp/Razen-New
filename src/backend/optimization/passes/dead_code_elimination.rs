@@ -1,7 +1,7 @@
 // src/backend/optimization/passes/dead_code_elimination.rs
 
 use crate::backend::optimization::OptimizationPass;
-use crate::backend::ir::{IRModule, IRFunction, BasicBlock, Instruction};
+use crate::backend::ir::{IRModule, IRFunction, Instruction};
 use crate::frontend::diagnostics::Diagnostics;
 use std::collections::HashSet;
 

@@ -143,7 +143,7 @@ impl CodeGenerator {
         // For functions with parameters, we need to map the parameter registers
         // The IR generator creates specific register names for parameters
         // Let's map them based on the function signature
-        for (i, param) in ir_function.params.iter().enumerate() {
+        for (i, _param) in ir_function.params.iter().enumerate() {
             if i < param_values.len() {
                 // The parameter register name should match what's used in the IR
                 // Let's try to find the actual register names used for parameters
@@ -410,6 +410,7 @@ impl CodeGenerator {
     }
     
     /// Create a new variable
+    #[allow(dead_code)]
     fn create_variable(&mut self, _ty: Type) -> Variable {
         let var = Variable::new(self.next_var_id);
         self.next_var_id += 1;

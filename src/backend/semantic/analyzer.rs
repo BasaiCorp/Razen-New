@@ -890,6 +890,7 @@ impl SemanticAnalyzer {
     }
     
     /// Get next node ID for type annotations
+    #[allow(dead_code)]
     fn next_node_id(&mut self) -> usize {
         let id = self.node_counter;
         self.node_counter += 1;

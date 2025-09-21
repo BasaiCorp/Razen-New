@@ -22,9 +22,10 @@ impl ConstantFolding {
     }
     
     /// Try to evaluate a constant expression
+    #[allow(dead_code)]
     fn evaluate_constant_expression(&self, 
                                   instruction: &Instruction, 
-                                  constants: &HashMap<String, Operand>) -> Option<Operand> {
+                                  _constants: &HashMap<String, Operand>) -> Option<Operand> {
         match instruction {
             Instruction::Add { left, right, .. } => {
                 if let (Operand::Immediate(a), Operand::Immediate(b)) = (left, right) {
@@ -253,7 +254,8 @@ impl ConstantFolding {
     }
     
     /// Helper to get immediate value from a register if it's a constant
-    fn get_immediate_value(&self, register: &str) -> Option<i64> {
+    #[allow(dead_code)]
+    fn get_immediate_value(&self, _register: &str) -> Option<i64> {
         // This is a simplified version - in a real implementation,
         // we'd track constants across the function
         None

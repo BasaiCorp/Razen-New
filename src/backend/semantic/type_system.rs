@@ -167,6 +167,7 @@ pub struct TypeChecker {
     type_definitions: HashMap<String, TypeDefinition>,
     
     /// Current generic type bindings
+    #[allow(dead_code)]
     generic_bindings: HashMap<String, Type>,
 }
 

@@ -11,7 +11,6 @@ pub use type_system::{Type, TypeChecker};
 pub use scope::{Scope, ScopeManager};
 
 use crate::frontend::parser::ast::Program;
-use crate::frontend::diagnostics::Diagnostics;
 
 /// Represents a semantically analyzed program
 #[derive(Debug, Clone)]

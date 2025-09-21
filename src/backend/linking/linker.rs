@@ -123,7 +123,8 @@ impl Linker {
         runtime
     }
     
-    /// Resolve symbols and addresses
+    /// Resolve symbols and update addresses
+    #[allow(dead_code)]
     fn resolve_symbols(&self, symbols: &HashMap<String, usize>) -> Result<HashMap<String, usize>, Diagnostics> {
         let mut resolved = symbols.clone();
         
@@ -134,7 +135,8 @@ impl Linker {
         Ok(resolved)
     }
     
-    /// Perform dead code elimination at link time
+    /// Eliminate dead code from the final binary
+    #[allow(dead_code)]
     fn eliminate_dead_code(&self, _code: &[u8]) -> Vec<u8> {
         // Placeholder for link-time dead code elimination
         // In a real implementation, this would:
@@ -146,7 +148,8 @@ impl Linker {
         _code.to_vec()
     }
     
-    /// Strip debug symbols if requested
+    /// Strip symbols for release builds
+    #[allow(dead_code)]
     fn strip_symbols(&self, mut symbols: HashMap<String, usize>) -> HashMap<String, usize> {
         if self.config.strip_symbols {
             // Keep only essential symbols

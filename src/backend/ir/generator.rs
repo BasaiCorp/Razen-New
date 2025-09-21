@@ -30,6 +30,7 @@ pub struct IRGenerator {
     blocks: Vec<BasicBlock>,
     
     /// Loop context stack for break/continue
+    #[allow(dead_code)]
     loop_stack: Vec<LoopContext>,
     
     /// Diagnostics for error reporting
@@ -38,7 +39,9 @@ pub struct IRGenerator {
 
 #[derive(Debug, Clone)]
 struct LoopContext {
+    #[allow(dead_code)]
     continue_label: String,
+    #[allow(dead_code)]
     break_label: String,
 }
 
