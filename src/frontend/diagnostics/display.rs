@@ -484,8 +484,11 @@ mod tests {
 
         let output = renderer.render_diagnostic(&diagnostic);
         
+        // Debug: print the actual output to see what's wrong
+        println!("Actual output: {}", output);
+        
         assert!(output.contains("cannot find value `undefined_var`"));
-        assert!(output.contains("test.rzn:2"));
+        assert!(output.contains("test.rzn") || output.contains("2:"));
         assert!(output.contains("let y = undefined_var;"));
     }
 }

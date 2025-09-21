@@ -1,0 +1,14 @@
+// tests/fixtures/invalid_programs/function_redefinition.rzn
+// Function redefinition error
+
+fun duplicate_func() -> int {
+    return 1
+}
+
+fun duplicate_func() -> int {  // Redefinition error
+    return 2
+}
+
+fun main() -> int {
+    return duplicate_func()
+}

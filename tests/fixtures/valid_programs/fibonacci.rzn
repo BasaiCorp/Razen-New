@@ -1,0 +1,15 @@
+// tests/fixtures/valid_programs/fibonacci.rzn
+// Fibonacci sequence calculation
+
+fun fibonacci(n: int) -> int {
+    if n <= 1 {
+        return n
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+fun main() -> int {
+    var result: int = fibonacci(7)
+    return result // Should return 13
+}

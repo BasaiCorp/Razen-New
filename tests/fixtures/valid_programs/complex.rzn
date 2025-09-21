@@ -1,0 +1,39 @@
+// tests/fixtures/valid_programs/complex.rzn
+// Complex program with multiple functions and operations
+
+fun factorial(n: int) -> int {
+    if n <= 1 {
+        return 1
+    } else {
+        return n * factorial(n - 1)
+    }
+}
+
+fun gcd(a: int, b: int) -> int {
+    while b != 0 {
+        var temp: int = b
+        b = a % b
+        a = temp
+    }
+    return a
+}
+
+fun is_even(n: int) -> bool {
+    return n % 2 == 0
+}
+
+fun calculate_result(x: int, y: int) -> int {
+    var fact_x: int = factorial(x)
+    var gcd_result: int = gcd(x * 2, y * 3)
+    
+    if is_even(x) {
+        return fact_x + gcd_result
+    } else {
+        return fact_x - gcd_result
+    }
+}
+
+fun main() -> int {
+    var result: int = calculate_result(4, 6)
+    return result
+}

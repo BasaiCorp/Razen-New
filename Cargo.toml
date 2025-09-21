@@ -10,3 +10,10 @@ cranelift-jit = "0.104.1"
 cranelift-native = "0.104.1"
 cranelift-frontend = "0.104.1"
 cranelift-object = "0.104.1"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "performance_tests"
+harness = false

@@ -1,0 +1,6 @@
+// tests/fixtures/valid_programs/hello_world.rzn
+// Simple hello world program
+
+fun main() -> int {
+    return 42
+}
