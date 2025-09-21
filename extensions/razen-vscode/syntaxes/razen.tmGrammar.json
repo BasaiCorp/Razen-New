@@ -1,0 +1,368 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Razen",
+  "scopeName": "source.razen",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#types"
+    },
+    {
+      "include": "#functions"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#punctuation"
+    },
+    {
+      "include": "#identifiers"
+    },
+    {
+      "include": "#attributes"
+    },
+    {
+      "include": "#macros"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.razen",
+          "begin": "//",
+          "end": "$",
+          "patterns": [
+            {
+              "name": "markup.bold.comment.razen",
+              "match": "\\b(TODO|FIXME|NOTE|HACK|BUG)\\b"
+            }
+          ]
+        },
+        {
+          "name": "comment.block.razen",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "patterns": [
+            {
+              "name": "markup.bold.comment.razen",
+              "match": "\\b(TODO|FIXME|NOTE|HACK|BUG)\\b"
+            }
+          ]
+        },
+        {
+          "name": "comment.line.documentation.razen",
+          "begin": "///",
+          "end": "$",
+          "patterns": [
+            {
+              "name": "markup.bold.comment.razen",
+              "match": "\\b(TODO|FIXME|NOTE|HACK|BUG)\\b"
+            }
+          ]
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.razen",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.razen",
+              "match": "\\\\."
+            },
+            {
+              "name": "constant.other.placeholder.razen",
+              "begin": "\\{",
+              "end": "\\}",
+              "patterns": [
+                {
+                  "include": "#expressions"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.razen",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.razen",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.triple.razen",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.razen",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.raw.razen",
+          "begin": "r\"",
+          "end": "\"",
+          "patterns": []
+        },
+        {
+          "name": "string.interpolated.razen",
+          "begin": "f\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.razen",
+              "match": "\\\\."
+            },
+            {
+              "name": "constant.other.placeholder.razen",
+              "begin": "\\{",
+              "end": "\\}",
+              "patterns": [
+                {
+                  "include": "#expressions"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.hex.razen",
+          "match": "\\b0x[0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.binary.razen",
+          "match": "\\b0b[01]+\\b"
+        },
+        {
+          "name": "constant.numeric.octal.razen",
+          "match": "\\b0o[0-7]+\\b"
+        },
+        {
+          "name": "constant.numeric.float.razen",
+          "match": "\\b\\d+\\.\\d+([eE][+-]?\\d+)?f?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.razen",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.razen",
+          "match": "\\b(if|else|elif|while|for|in|return|break|continue|match|try|catch|throw)\\b"
+        },
+        {
+          "name": "keyword.declaration.razen",
+          "match": "\\b(const|var|fun|struct|enum|mod|use|pub|from|as)\\b"
+        },
+        {
+          "name": "keyword.operator.razen",
+          "match": "\\b(sizeof|typeof)\\b"
+        },
+        {
+          "name": "constant.language.boolean.razen",
+          "match": "\\b(true|false)\\b"
+        },
+        {
+          "name": "constant.language.null.razen",
+          "match": "\\bnull\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.primitive.razen",
+          "match": "\\b(int|str|bool|char|array|map|any|float)\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.razen",
+          "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        },
+        {
+          "name": "support.function.builtin.razen",
+          "match": "\\b(print|println|input|read|write|open|close)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.arithmetic.razen",
+          "match": "(\\+\\+|--|\\*\\*|\\+|\\-|\\*|/|%)"
+        },
+        {
+          "name": "keyword.operator.assignment.razen",
+          "match": "(\\+=|\\-=|\\*=|/=|%=|=)"
+        },
+        {
+          "name": "keyword.operator.comparison.razen",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.razen",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.bitwise.razen",
+          "match": "(&|\\||\\^|~|<<|>>)"
+        },
+        {
+          "name": "keyword.operator.special.razen",
+          "match": "(\\?\\?|\\?|\\.\\.\\.|\\.\\.|=>)"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.definition.block.razen",
+          "match": "[{}]"
+        },
+        {
+          "name": "punctuation.definition.parameters.razen",
+          "match": "[()]"
+        },
+        {
+          "name": "punctuation.definition.array.razen",
+          "match": "[\\[\\]]"
+        },
+        {
+          "name": "punctuation.terminator.statement.razen",
+          "match": ";"
+        },
+        {
+          "name": "punctuation.separator.comma.razen",
+          "match": ","
+        },
+        {
+          "name": "punctuation.accessor.razen",
+          "match": "\\."
+        },
+        {
+          "name": "punctuation.separator.namespace.razen",
+          "match": "::"
+        },
+        {
+          "name": "punctuation.separator.type.razen",
+          "match": ":"
+        },
+        {
+          "name": "punctuation.definition.arrow.razen",
+          "match": "->"
+        },
+        {
+          "name": "punctuation.definition.pipe.razen",
+          "match": "\\|"
+        },
+        {
+          "name": "punctuation.definition.hash.razen",
+          "match": "#"
+        },
+        {
+          "name": "punctuation.definition.at.razen",
+          "match": "@"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.razen",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    },
+    "expressions": {
+      "patterns": [
+        {
+          "include": "#numbers"
+        },
+        {
+          "include": "#strings"
+        },
+        {
+          "include": "#keywords"
+        },
+        {
+          "include": "#operators"
+        },
+        {
+          "include": "#identifiers"
+        }
+      ]
+    },
+    "attributes": {
+      "patterns": [
+        {
+          "name": "meta.attribute.razen",
+          "begin": "@",
+          "end": "(?=\\s|$|\\()",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.attribute.razen"
+            }
+          },
+          "patterns": [
+            {
+              "name": "entity.name.attribute.razen",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+            }
+          ]
+        }
+      ]
+    },
+    "macros": {
+      "patterns": [
+        {
+          "name": "meta.macro.razen",
+          "begin": "#",
+          "end": "$",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.macro.razen"
+            }
+          },
+          "patterns": [
+            {
+              "name": "entity.name.macro.razen",
+              "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

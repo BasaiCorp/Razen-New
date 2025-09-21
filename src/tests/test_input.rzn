@@ -1,0 +1,11 @@
+fun main() {
+    println("Testing input function:")
+    var name = input("Enter your name: ")
+    println("Hello, " + name + "!")
+    
+    println("Testing input without prompt:")
+    var age = input()
+    println("You are " + age + " years old.")
+}
+
+

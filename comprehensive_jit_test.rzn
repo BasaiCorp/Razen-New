@@ -1,0 +1,9 @@
+fun main() {
+    println("=== Razen JIT Comprehensive Test ===")
+    println("1. Basic println working!")
+    print("2. Print without newline: ")
+    println("Success!")
+    println("3. Multiple string literals test")
+    println("4. JIT compilation complete!")
+    println("=== All tests passed! ===")
+}

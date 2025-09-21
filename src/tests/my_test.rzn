@@ -1,4 +1,5 @@
-fun main() {
-    var x: int = 5
-    println(x)
+fun test(name) -> void {
+    var name: str
+    input(f"Enter your name: {name}")
+    println("name")
 }

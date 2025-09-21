@@ -3,7 +3,7 @@
 use razen_lang::frontend::parser::{parse_source_with_name, format_parse_errors};
 use razen_lang::backend::Backend;
 use razen_lang::backend::builtins::BuiltinRegistry;
-use razen_lang::backend::cranelift::{JITCompiler, AOTCompiler};
+use razen_lang::backend::cranelift::{RazenJIT, AOTCompiler};
 use std::fs;
 use std::env;
 use std::process;
@@ -221,7 +221,7 @@ fn execute_jit(program: razen_lang::frontend::parser::ast::Program) {
     };
     
     // JIT compile and execute (silently)
-    let mut jit_compiler = match JITCompiler::new() {
+    let mut jit = match RazenJIT::new() {
         Ok(jit) => jit,
         Err(e) => {
             eprintln!("❌ Failed to create JIT compiler: {}", e);
@@ -229,15 +229,12 @@ fn execute_jit(program: razen_lang::frontend::parser::ast::Program) {
         }
     };
     
-    match jit_compiler.compile_and_run(ir_module) {
+    match jit.run(ir_module) {
         Ok(exit_code) => {
             process::exit(exit_code);
         }
-        Err(diagnostics) => {
-            eprintln!("❌ JIT execution failed:");
-            for diagnostic in &diagnostics.diagnostics {
-                eprintln!("   - {}: {}", diagnostic.severity, diagnostic.kind.title());
-            }
+        Err(e) => {
+            eprintln!("❌ JIT execution failed: {}", e);
             process::exit(1);
         }
     }

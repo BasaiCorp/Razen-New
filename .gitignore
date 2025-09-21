@@ -2,6 +2,7 @@
 /target/
 **/*.rs.bk
 Cargo.lock
+extensions/razen-vscode/node_modules
 
 # Logs
 /logs/

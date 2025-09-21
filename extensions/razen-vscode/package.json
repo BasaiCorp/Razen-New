@@ -1,0 +1,143 @@
+{
+  "name": "razen-language-support",
+  "displayName": "Razen Language Support",
+  "description": "Comprehensive language support for the Razen programming language with syntax highlighting, snippets, and IntelliSense",
+  "version": "1.0.0",
+  "publisher": "razen-lang",
+  "author": {
+    "name": "Razen Language Team"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "razen",
+    "programming",
+    "language",
+    "syntax",
+    "highlighting",
+    "compiler"
+  ],
+  "icon": "images/razen-icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/razen-lang/razen-vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/razen-lang/razen-vscode/issues"
+  },
+  "homepage": "https://github.com/razen-lang/razen-vscode#readme",
+  "activationEvents": [
+    "onLanguage:razen"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "razen",
+        "aliases": [
+          "Razen",
+          "razen"
+        ],
+        "extensions": [
+          ".rzn",
+          ".razen"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./images/razen-icon.png",
+          "dark": "./images/razen-icon.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "razen",
+        "scopeName": "source.razen",
+        "path": "./syntaxes/razen.tmGrammar.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "razen",
+        "path": "./snippets/razen.json"
+      }
+    ],
+    "themes": [
+      {
+        "label": "Razen Dark",
+        "uiTheme": "vs-dark",
+        "path": "./themes/razen-dark.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "razen.compile",
+        "title": "Compile",
+        "category": "Razen"
+      },
+      {
+        "command": "razen.run",
+        "title": "Run",
+        "category": "Razen"
+      },
+      {
+        "command": "razen.createSample",
+        "title": "Create Sample File",
+        "category": "Razen"
+      },
+      {
+        "command": "razen.showDocumentation",
+        "title": "Show Documentation",
+        "category": "Razen"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "when": "resourceExtname == .rzn",
+          "command": "razen.run",
+          "group": "navigation"
+        },
+        {
+          "when": "resourceExtname == .rzn",
+          "command": "razen.compile",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceExtname == .rzn",
+          "command": "razen.run",
+          "group": "razen"
+        },
+        {
+          "when": "resourceExtname == .rzn",
+          "command": "razen.compile",
+          "group": "razen"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "typescript": "^4.9.4",
+    "vsce": "^2.15.0"
+  }
+}
