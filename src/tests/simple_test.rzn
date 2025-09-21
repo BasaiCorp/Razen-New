@@ -1,11 +1,4 @@
-// Simple test file for IR generation
-fun add(a: int, b: int) -> int {
-    return a + b
-}
-
 fun main() {
-    var x: int = 10
-    var y: int = 20
-    var result: int = add(x, y)
-    println(result)
+    println("Welcome to Razen JIT!")
+    println("This is working like 'go run'")
 }

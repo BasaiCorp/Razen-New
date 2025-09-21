@@ -106,9 +106,9 @@ tests/
 
 **Expected Behavior:**
 ```bash
-# Should work like this (silent success):
+# Should work like this:
 $ cargo run -- --jit program.rzn
-[exits with code based on program return value, no output]
+Hello World!
 ```
 - example program: 
 ```razen
