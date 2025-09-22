@@ -6,13 +6,13 @@ A modern, efficient programming language with clean syntax and powerful features
 
 ### One-Line Installation (Recommended)
 ```bash
-curl -sSf https://raw.githubusercontent.com/YOUR_USERNAME/razen-lang-new/main/install.sh | bash
+curl -sSf https://raw.githubusercontent.com/BasaiCorp/Razen-New/main/install.sh | bash
 ```
 
 ### Manual Installation
 ```bash
 # Download the installer
-curl -O https://raw.githubusercontent.com/YOUR_USERNAME/razen-lang-new/main/install.sh
+curl -O https://raw.githubusercontent.com/BasaiCorp/Razen-New/main/install.sh
 
 # Make it executable
 chmod +x install.sh
@@ -20,6 +20,26 @@ chmod +x install.sh
 # Run the installer
 ./install.sh
 ```
+
+## 🔄 Updating Razen
+
+### Automatic Update Check
+The installer automatically checks for updates when you run it again:
+
+```bash
+# This will check for updates and prompt if a new version is available
+./install.sh
+```
+
+**What happens during update:**
+- ✅ Checks your current version against the latest version
+- ✅ If versions match: Shows "Razen is already up to date"
+- ✅ If new version available: Prompts you to update
+- ✅ If you decline: Exits gracefully with usage examples
+- ✅ If you accept: Updates to the latest version
+
+### Windows Users
+⚠️ **Important**: Windows users should use **Git Bash** to run the installation commands above. Git Bash provides the necessary Unix-like environment for the installation script to work properly.
 
 ## 📋 What the installer does:
 1. Downloads the latest Razen compiler from GitHub
@@ -57,6 +77,7 @@ razen --version
 ├── bin/
 │   ├── razen-lang    # Main binary
 │   └── razen         # Symlink for easy access
+├── version           # Version file for update checking
 └── scripts/          # Additional scripts
 ```
 
@@ -89,8 +110,9 @@ razen run hello.rzn
 - **Clean Syntax**: Modern, readable code
 - **Fast Compilation**: Quick build times
 - **Professional CLI**: Industry-standard command interface
-- **Cross-Platform**: Works on Linux, macOS, Windows
+- **Cross-Platform**: Works on Linux, macOS, Windows (with Git Bash)
 - **Zero Dependencies**: Self-contained installation
+- **Smart Updates**: Automatic version checking and update prompts
 
 ## 🤝 Contributing
 
