@@ -33,14 +33,24 @@ impl Runtime {
     /// Execute IR instructions
     pub fn execute(&mut self, ir: &[IR]) -> Result<(), String> {
         if !self.clean_output {
-            println!("Executing program...");
+            println!("Starting Razen execution engine...");
+            println!("Generated {} IR instructions", ir.len());
         }
 
         // Pre-pass: register function addresses
+        let mut function_count = 0;
         for (i, instruction) in ir.iter().enumerate() {
             if let IR::DefineFunction(name, _) = instruction {
                 self.variables.insert(name.clone(), i.to_string());
+                function_count += 1;
+                if !self.clean_output {
+                    println!("Registered function '{}' at address {}", name, i);
+                }
             }
+        }
+        
+        if !self.clean_output && function_count > 0 {
+            println!("Registered {} functions", function_count);
         }
 
         let mut pc = 0;
@@ -329,7 +339,9 @@ impl Runtime {
         }
 
         if !self.clean_output {
-            println!("Execution complete.");
+            println!("Execution completed successfully");
+            println!("Final stack size: {}", self.stack.len());
+            println!("Variables in scope: {}", self.variables.len());
         }
         Ok(())
     }

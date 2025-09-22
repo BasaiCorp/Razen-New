@@ -9,8 +9,10 @@ use std::process;
 /// Execution mode for the Razen compiler
 #[derive(Debug, Clone, PartialEq)]
 enum ExecutionMode {
-    /// Standard compilation and execution
+    /// Clean execution (like go run)
     Run,
+    /// Development mode with compiler messages
+    Dev,
     /// Compile to machine code
     Compile(String), // Output path
     /// Test mode
@@ -22,9 +24,6 @@ fn main() {
     
     // Parse command line arguments
     let (execution_mode, filename) = parse_args(&args);
-    
-    // Check for clean output flag
-    let clean_output = args.iter().any(|arg| arg == "--clean-output");
 
     let source = match fs::read_to_string(&filename) {
         Ok(content) => content,
@@ -46,7 +45,10 @@ fn main() {
     if let Some(program) = program {
         match execution_mode {
             ExecutionMode::Run => {
-                execute_program(program, clean_output);
+                execute_program(program, true); // Clean output by default
+            }
+            ExecutionMode::Dev => {
+                execute_program(program, false); // Show compiler messages
             }
             ExecutionMode::Compile(output_path) => {
                 compile_program(program, &output_path);
@@ -72,6 +74,13 @@ fn parse_args(args: &[String]) -> (ExecutionMode, String) {
                 process::exit(1);
             }
             (ExecutionMode::Run, args[2].clone())
+        }
+        "dev" => {
+            if args.len() < 3 {
+                eprintln!("Error: Missing source file path");
+                process::exit(1);
+            }
+            (ExecutionMode::Dev, args[2].clone())
         }
         "compile" => {
             if args.len() < 4 {
@@ -99,37 +108,37 @@ fn parse_args(args: &[String]) -> (ExecutionMode, String) {
 }
 
 fn print_usage() {
-    println!("Usage: razen <command> [args]\n");
+    println!("Usage: razen <command> [args]\\n");
     println!("Commands:");
-    println!("  run <file>             Compile and execute a Razen source file");
+    println!("  run <file>             Compile and execute a Razen source file (clean output)");
+    println!("  dev <file>             Development mode with compiler messages and debugging");
     println!("  compile <file> <out>   Compile a Razen source file to machine code");
     println!("  test <file>            Run a test file");
     println!("  help                   Display this help message");
-    println!("\nOptions:");
-    println!("  --clean-output         Only show program output (no compiler messages)");
 }
 
 /// Execute a Razen program
 fn execute_program(program: razen_lang::frontend::parser::ast::Program, clean_output: bool) {
-    match Compiler::from_program(program) {
-        Ok(compiler) => {
-            let mut exec_compiler = compiler;
-            exec_compiler.set_clean_output(clean_output);
-            
-            match exec_compiler.execute() {
-                Ok(_) => {
-                    if !clean_output {
-                        // Silent success like go run
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Execution error: {}", e);
-                    process::exit(1);
-                }
+    // Create compiler with proper clean_output setting from the start
+    let mut compiler = Compiler::new();
+    compiler.set_clean_output(clean_output);
+    compiler.compile_program(program);
+    
+    if !compiler.errors.is_empty() {
+        eprintln!("Compilation error: {}", compiler.errors.join("; "));
+        process::exit(1);
+    }
+    
+    match compiler.execute() {
+        Ok(_) => {
+            // For dev mode, show completion message
+            if !clean_output {
+                println!("Execution completed successfully!");
             }
+            // For run mode, silent success (like go run)
         }
         Err(e) => {
-            eprintln!("Compilation error: {}", e);
+            eprintln!("Execution error: {}", e);
             process::exit(1);
         }
     }

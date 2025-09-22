@@ -87,7 +87,7 @@ pub struct Compiler {
     continue_stack: Vec<Vec<usize>>,
     label_counter: usize,
     clean_output: bool,
-    errors: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 impl Compiler {
@@ -108,6 +108,7 @@ impl Compiler {
 
     pub fn from_program(program: Program) -> Result<Self, String> {
         let mut compiler = Compiler::new();
+        compiler.set_clean_output(true); // Default to clean output
         compiler.compile_program(program);
         
         if !compiler.errors.is_empty() {
@@ -167,25 +168,52 @@ impl Compiler {
     }
 
     pub fn compile_program(&mut self, program: Program) {
+        if !self.clean_output {
+            println!("Starting compilation...");
+            println!("Processing {} statements", program.statements.len());
+        }
+        
         // Define built-in functions
         self.define_builtins();
+        if !self.clean_output {
+            println!("Defined built-in functions");
+        }
 
         // First pass: register all functions
+        let mut function_count = 0;
         for stmt in &program.statements {
             if let Statement::FunctionDeclaration(func_decl) = stmt {
                 self.symbol_table.define(&func_decl.name.name);
+                function_count += 1;
+                if !self.clean_output {
+                    println!("Found function: {}", func_decl.name.name);
+                }
             }
+        }
+        
+        if !self.clean_output && function_count > 0 {
+            println!("Registered {} user functions", function_count);
         }
 
         // Second pass: compile all statements
+        if !self.clean_output {
+            println!("Compiling statements...");
+        }
         for stmt in program.statements {
             self.compile_statement(stmt);
         }
         
         // Automatically call main function if it exists (like your old implementation)
         if self.function_table.resolve("main").is_some() {
+            if !self.clean_output {
+                println!("Auto-calling main function");
+            }
             self.emit(IR::Call("main".to_string(), 0));
             self.emit(IR::Pop); // Discard return value
+        }
+        
+        if !self.clean_output {
+            println!("Compilation completed - generated {} IR instructions", self.ir.len());
         }
     }
 
