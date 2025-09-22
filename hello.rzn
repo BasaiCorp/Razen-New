@@ -1,0 +1,4 @@
+fun main() {
+    println("Hello from the new Razen CLI!")
+    println("This is a test of the professional CLI system.")
+}

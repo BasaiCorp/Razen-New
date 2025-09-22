@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Clean, minimal dependencies for our from-scratch implementation
+# Professional CLI with minimal, well-maintained dependencies
+clap = { version = "4.4", features = ["derive", "color"] }
 
 [dev-dependencies]
 # No dev dependencies needed for now

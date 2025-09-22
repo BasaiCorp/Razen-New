@@ -54,6 +54,7 @@
 **Commands to Implement:**
 ```bash
 razen run program.rzn          # JIT compile and run
+razen dev program.rzn          # Development mode
 razen compile program.rzn      # AOT compile to executable
 razen test program.rzn         # Run test file
 razen help                     # Show help
