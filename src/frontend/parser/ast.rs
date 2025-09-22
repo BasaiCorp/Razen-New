@@ -281,6 +281,7 @@ pub struct NullLiteral;
 #[derive(Debug, Clone, PartialEq)]
 pub struct Identifier {
     pub name: String,
+    pub span: Option<crate::frontend::diagnostics::Span>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -401,7 +402,11 @@ impl Program {
 
 impl Identifier {
     pub fn new(name: String) -> Self {
-        Identifier { name }
+        Identifier { name, span: None }
+    }
+    
+    pub fn with_span(name: String, span: crate::frontend::diagnostics::Span) -> Self {
+        Identifier { name, span: Some(span) }
     }
 }
 

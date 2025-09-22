@@ -11,6 +11,10 @@ pub struct DisplayConfig {
     pub context_lines: usize,
     pub tab_width: usize,
     pub max_line_length: usize,
+    pub show_source_path: bool,
+    pub compact_mode: bool,
+    pub show_suggestions: bool,
+    pub unicode_symbols: bool,
 }
 
 impl Default for DisplayConfig {
@@ -21,6 +25,42 @@ impl Default for DisplayConfig {
             context_lines: 2,
             tab_width: 4,
             max_line_length: 120,
+            show_source_path: true,
+            compact_mode: false,
+            show_suggestions: true,
+            unicode_symbols: true,
+        }
+    }
+}
+
+impl DisplayConfig {
+    /// Create a minimal configuration for CI/automated environments
+    pub fn minimal() -> Self {
+        DisplayConfig {
+            use_colors: false,
+            show_line_numbers: true,
+            context_lines: 1,
+            tab_width: 4,
+            max_line_length: 80,
+            show_source_path: true,
+            compact_mode: true,
+            show_suggestions: false,
+            unicode_symbols: false,
+        }
+    }
+
+    /// Create a rich configuration for interactive development
+    pub fn rich() -> Self {
+        DisplayConfig {
+            use_colors: true,
+            show_line_numbers: true,
+            context_lines: 3,
+            tab_width: 4,
+            max_line_length: 120,
+            show_source_path: true,
+            compact_mode: false,
+            show_suggestions: true,
+            unicode_symbols: true,
         }
     }
 }
@@ -399,8 +439,13 @@ impl DiagnosticRenderer {
 
         let red = if self.config.use_colors { "\x1b[31m" } else { "" };
         let yellow = if self.config.use_colors { "\x1b[33m" } else { "" };
+        let green = if self.config.use_colors { "\x1b[32m" } else { "" };
         let reset = if self.config.use_colors { "\x1b[0m" } else { "" };
         let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
+
+        if !self.config.compact_mode {
+            output.push('\n');
+        }
 
         let mut parts = Vec::new();
 
@@ -415,7 +460,57 @@ impl DiagnosticRenderer {
         }
 
         if !parts.is_empty() {
-            output.push_str(&format!("aborting due to {}\n", parts.join(", ")));
+            if error_count > 0 {
+                output.push_str(&format!("{}{}compilation failed{} due to {}\n", 
+                                       red, bold, reset, parts.join(", ")));
+            } else {
+                output.push_str(&format!("{}{}compilation completed{} with {}\n", 
+                                       yellow, bold, reset, parts.join(", ")));
+            }
+        } else {
+            output.push_str(&format!("{}{}compilation successful{}\n", green, bold, reset));
+        }
+
+        // Add helpful tips for common issues
+        if self.config.show_suggestions && error_count > 0 {
+            output.push('\n');
+            self.write_compilation_tips(output, diagnostics);
+        }
+    }
+
+    fn write_compilation_tips(&self, output: &mut String, diagnostics: &Diagnostics) {
+        let cyan = if self.config.use_colors { "\x1b[36m" } else { "" };
+        let reset = if self.config.use_colors { "\x1b[0m" } else { "" };
+        let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
+
+        // Analyze common error patterns and provide tips
+        let has_undefined_vars = diagnostics.diagnostics.iter()
+            .any(|d| matches!(d.kind, super::error::DiagnosticKind::UndefinedVariable { .. }));
+        
+        let has_type_mismatches = diagnostics.diagnostics.iter()
+            .any(|d| matches!(d.kind, super::error::DiagnosticKind::TypeMismatch { .. }));
+
+        let has_syntax_errors = diagnostics.diagnostics.iter()
+            .any(|d| matches!(d.kind, super::error::DiagnosticKind::UnexpectedToken { .. } | 
+                                     super::error::DiagnosticKind::MissingToken { .. }));
+
+        if has_undefined_vars || has_type_mismatches || has_syntax_errors {
+            output.push_str(&format!("{}{}tips{}: ", cyan, bold, reset));
+            
+            let mut tips = Vec::new();
+            
+            if has_syntax_errors {
+                tips.push("check your syntax - Razen uses `fun` for functions and `var` for variables");
+            }
+            if has_undefined_vars {
+                tips.push("make sure all variables are declared before use");
+            }
+            if has_type_mismatches {
+                tips.push("check that your types match - use explicit conversions if needed");
+            }
+
+            output.push_str(&tips.join(", "));
+            output.push('\n');
         }
     }
 }

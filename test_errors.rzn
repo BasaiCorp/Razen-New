@@ -1,0 +1,9 @@
+// Test file with intentional errors to showcase enhanced diagnostics
+
+fun main() {
+    // Undefined variable error
+    println(undefined_variable)
+    
+    // Wrong function name (should suggest println)
+    print_line("Hello")
+}

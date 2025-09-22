@@ -1,41 +1,9 @@
-// Welcome to Razen Programming Language
-// This is a sample file to get you started
-
-mod main
-
-/// Main function - entry point of the program
 fun main() {
     println("Hello, Razen World!")
-    
-    // Variable declarations
-    var name: str = "Developer"
-    const version: float = 1.0
-    
-    // String interpolation
-    println(f"Welcome {name} to Razen v{version}")
-    
-    // Function call
-    var result = add(10, 20)
-    println(f"10 + 20 = {result}")
-    
-    // Control flow
-    if result > 25 {
-        println("Result is greater than 25!")
-    }
-    
-    // Loop example
-    for i in 1..5 {
-        println(f"Count: {i}")
-    }
+    print("Enter your name: ")
+    var name: str = input()
+    println("Hello, " + name)
+    print("Enter your age: ")
+    var age: int = input()
+    println("You are " + age + " years old")
 }
-
-/// Add two numbers together
-fun add(a: int, b: int) -> int {
-    return a + b
-}
-
-// Try these features:
-// 1. Type 'main' + Tab for main function snippet
-// 2. Type 'fun' + Tab for function snippet  
-// 3. Use Ctrl+Shift+P and search for "Razen" commands
-// 4. Hover over keywords for documentation

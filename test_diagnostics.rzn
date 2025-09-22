@@ -1,0 +1,24 @@
+// Test file to demonstrate enhanced diagnostics
+
+fun main() {
+    // This should trigger an undefined variable error
+    var result = undefined_var + 5
+    
+    // This should trigger a type mismatch
+    var text = "hello"
+    var number = text + 42
+    
+    // This should trigger a function not found error
+    print_line("This function doesn't exist")
+    
+    // This should trigger wrong argument count
+    println("hello", "world", "extra")
+    
+    // This should work fine
+    println("This line is correct!")
+}
+
+// This should trigger a duplicate definition error
+fun main() {
+    println("Duplicate function")
+}

@@ -2,6 +2,8 @@
 
 use razen_lang::frontend::parser::{parse_source_with_name, format_parse_errors};
 use razen_lang::backend::execution::Compiler;
+use razen_lang::backend::SemanticAnalyzer;
+use razen_lang::frontend::diagnostics::display::render_diagnostics;
 use std::fs;
 use std::env;
 use std::process;
@@ -43,6 +45,20 @@ fn main() {
     }
 
     if let Some(program) = program {
+        // Run semantic analysis first
+        let mut semantic_analyzer = SemanticAnalyzer::new();
+        let semantic_diagnostics = semantic_analyzer.analyze_with_source(&program, &source);
+        
+        if !semantic_diagnostics.is_empty() {
+            let sources = vec![("source".to_string(), source.clone())];
+            let rendered = render_diagnostics(&semantic_diagnostics, &sources);
+            eprintln!("{}", rendered);
+            
+            if semantic_diagnostics.has_errors() {
+                process::exit(1);
+            }
+        }
+        
         match execution_mode {
             ExecutionMode::Run => {
                 execute_program(program, true); // Clean output by default

@@ -106,22 +106,58 @@ pub enum DiagnosticKind {
     UnterminatedString,
     InvalidNumber,
     UnknownCharacter,
+    InvalidEscapeSequence { sequence: String },
     
     // Syntax errors
     UnexpectedToken { expected: Vec<String>, found: String },
     MissingToken { expected: String },
     InvalidExpression,
     InvalidStatement,
+    MissingSemicolon,
+    UnexpectedEof,
+    InvalidFunctionSignature,
+    InvalidVariableDeclaration,
     
     // Semantic errors
     UndefinedVariable { name: String },
     UndefinedFunction { name: String },
     TypeMismatch { expected: String, found: String },
     DuplicateDefinition { name: String },
+    InvalidAssignment { reason: String },
+    UnreachableCode,
+    DeadCode { name: String },
+    
+    // Function-related errors
+    WrongArgumentCount { expected: usize, found: usize },
+    InvalidReturnType { expected: String, found: String },
+    MissingReturn { function_name: String },
+    InvalidFunctionCall { reason: String },
+    
+    // Variable-related errors
+    UninitializedVariable { name: String },
+    ImmutableAssignment { name: String },
+    UnusedVariable { name: String },
+    ShadowedVariable { name: String, previous_line: usize },
+    
+    // Control flow errors
+    BreakOutsideLoop,
+    ContinueOutsideLoop,
+    InvalidCondition { found: String },
     
     // Module system errors
     ModuleNotFound { name: String },
     CircularImport { path: Vec<String> },
+    InvalidImport { reason: String },
+    
+    // Performance warnings
+    InefficientCode { suggestion: String },
+    LargeFunction { lines: usize },
+    DeepNesting { depth: usize },
+    
+    // Style warnings
+    NamingConvention { name: String, expected_style: String },
+    MissingDocumentation { item: String },
+    LongLine { length: usize, max: usize },
     
     // Custom error with message
     Custom { message: String },
@@ -130,10 +166,15 @@ pub enum DiagnosticKind {
 impl DiagnosticKind {
     pub fn title(&self) -> String {
         match self {
+            // Lexical errors
             DiagnosticKind::UnterminatedString => "unterminated string literal".to_string(),
             DiagnosticKind::InvalidNumber => "invalid number literal".to_string(),
             DiagnosticKind::UnknownCharacter => "unknown character".to_string(),
+            DiagnosticKind::InvalidEscapeSequence { sequence } => {
+                format!("invalid escape sequence `{}`", sequence)
+            },
             
+            // Syntax errors
             DiagnosticKind::UnexpectedToken { expected, found } => {
                 if expected.len() == 1 {
                     format!("expected `{}`, found `{}`", expected[0], found)
@@ -148,7 +189,12 @@ impl DiagnosticKind {
             },
             DiagnosticKind::InvalidExpression => "invalid expression".to_string(),
             DiagnosticKind::InvalidStatement => "invalid statement".to_string(),
+            DiagnosticKind::MissingSemicolon => "missing semicolon".to_string(),
+            DiagnosticKind::UnexpectedEof => "unexpected end of file".to_string(),
+            DiagnosticKind::InvalidFunctionSignature => "invalid function signature".to_string(),
+            DiagnosticKind::InvalidVariableDeclaration => "invalid variable declaration".to_string(),
             
+            // Semantic errors
             DiagnosticKind::UndefinedVariable { name } => {
                 format!("cannot find value `{}` in this scope", name)
             },
@@ -161,12 +207,82 @@ impl DiagnosticKind {
             DiagnosticKind::DuplicateDefinition { name } => {
                 format!("the name `{}` is defined multiple times", name)
             },
+            DiagnosticKind::InvalidAssignment { reason } => {
+                format!("invalid assignment: {}", reason)
+            },
+            DiagnosticKind::UnreachableCode => "unreachable code".to_string(),
+            DiagnosticKind::DeadCode { name } => {
+                format!("unused {}", name)
+            },
             
+            // Function-related errors
+            DiagnosticKind::WrongArgumentCount { expected, found } => {
+                format!("this function takes {} argument{} but {} {} supplied",
+                       expected, if *expected == 1 { "" } else { "s" },
+                       found, if *found == 1 { "was" } else { "were" })
+            },
+            DiagnosticKind::InvalidReturnType { expected, found } => {
+                format!("mismatched return type: expected `{}`, found `{}`", expected, found)
+            },
+            DiagnosticKind::MissingReturn { function_name } => {
+                format!("function `{}` is missing a return statement", function_name)
+            },
+            DiagnosticKind::InvalidFunctionCall { reason } => {
+                format!("invalid function call: {}", reason)
+            },
+            
+            // Variable-related errors
+            DiagnosticKind::UninitializedVariable { name } => {
+                format!("use of possibly-uninitialized variable `{}`", name)
+            },
+            DiagnosticKind::ImmutableAssignment { name } => {
+                format!("cannot assign to immutable variable `{}`", name)
+            },
+            DiagnosticKind::UnusedVariable { name } => {
+                format!("unused variable: `{}`", name)
+            },
+            DiagnosticKind::ShadowedVariable { name, previous_line } => {
+                format!("variable `{}` shadows a previous declaration on line {}", name, previous_line)
+            },
+            
+            // Control flow errors
+            DiagnosticKind::BreakOutsideLoop => "`break` outside of loop".to_string(),
+            DiagnosticKind::ContinueOutsideLoop => "`continue` outside of loop".to_string(),
+            DiagnosticKind::InvalidCondition { found } => {
+                format!("expected boolean condition, found `{}`", found)
+            },
+            
+            // Module system errors
             DiagnosticKind::ModuleNotFound { name } => {
                 format!("module `{}` not found", name)
             },
             DiagnosticKind::CircularImport { path } => {
                 format!("circular import detected: {}", path.join(" -> "))
+            },
+            DiagnosticKind::InvalidImport { reason } => {
+                format!("invalid import: {}", reason)
+            },
+            
+            // Performance warnings
+            DiagnosticKind::InefficientCode { suggestion } => {
+                format!("inefficient code: {}", suggestion)
+            },
+            DiagnosticKind::LargeFunction { lines } => {
+                format!("function is too large ({} lines), consider breaking it into smaller functions", lines)
+            },
+            DiagnosticKind::DeepNesting { depth } => {
+                format!("deeply nested code ({} levels), consider refactoring", depth)
+            },
+            
+            // Style warnings
+            DiagnosticKind::NamingConvention { name, expected_style } => {
+                format!("name `{}` should follow {} naming convention", name, expected_style)
+            },
+            DiagnosticKind::MissingDocumentation { item } => {
+                format!("missing documentation for {}", item)
+            },
+            DiagnosticKind::LongLine { length, max } => {
+                format!("line too long ({} characters, maximum is {})", length, max)
             },
             
             DiagnosticKind::Custom { message } => message.clone(),
@@ -175,23 +291,118 @@ impl DiagnosticKind {
 
     pub fn default_severity(&self) -> Severity {
         match self {
+            // Critical errors that prevent compilation
             DiagnosticKind::UnterminatedString
             | DiagnosticKind::InvalidNumber
             | DiagnosticKind::UnknownCharacter
+            | DiagnosticKind::InvalidEscapeSequence { .. }
             | DiagnosticKind::UnexpectedToken { .. }
             | DiagnosticKind::MissingToken { .. }
             | DiagnosticKind::InvalidExpression
             | DiagnosticKind::InvalidStatement
+            | DiagnosticKind::UnexpectedEof
+            | DiagnosticKind::InvalidFunctionSignature
+            | DiagnosticKind::InvalidVariableDeclaration
             | DiagnosticKind::UndefinedVariable { .. }
             | DiagnosticKind::UndefinedFunction { .. }
             | DiagnosticKind::TypeMismatch { .. }
+            | DiagnosticKind::DuplicateDefinition { .. }
+            | DiagnosticKind::InvalidAssignment { .. }
+            | DiagnosticKind::WrongArgumentCount { .. }
+            | DiagnosticKind::InvalidReturnType { .. }
+            | DiagnosticKind::MissingReturn { .. }
+            | DiagnosticKind::InvalidFunctionCall { .. }
+            | DiagnosticKind::UninitializedVariable { .. }
+            | DiagnosticKind::ImmutableAssignment { .. }
+            | DiagnosticKind::BreakOutsideLoop
+            | DiagnosticKind::ContinueOutsideLoop
+            | DiagnosticKind::InvalidCondition { .. }
             | DiagnosticKind::ModuleNotFound { .. }
-            | DiagnosticKind::CircularImport { .. } => Severity::Error,
+            | DiagnosticKind::CircularImport { .. }
+            | DiagnosticKind::InvalidImport { .. } => Severity::Error,
             
-            DiagnosticKind::DuplicateDefinition { .. } => Severity::Error,
+            // Warnings for code quality and potential issues
+            DiagnosticKind::UnreachableCode
+            | DiagnosticKind::DeadCode { .. }
+            | DiagnosticKind::UnusedVariable { .. }
+            | DiagnosticKind::ShadowedVariable { .. }
+            | DiagnosticKind::InefficientCode { .. }
+            | DiagnosticKind::LargeFunction { .. }
+            | DiagnosticKind::DeepNesting { .. }
+            | DiagnosticKind::NamingConvention { .. }
+            | DiagnosticKind::MissingDocumentation { .. }
+            | DiagnosticKind::LongLine { .. } => Severity::Warning,
+            
+            // Style suggestions (optional semicolon in Razen)
+            DiagnosticKind::MissingSemicolon => Severity::Note,
             
             DiagnosticKind::Custom { .. } => Severity::Error,
         }
+    }
+
+    // Convenience constructors for common error types
+    pub fn custom<S: Into<String>>(message: S) -> Self {
+        DiagnosticKind::Custom { message: message.into() }
+    }
+
+    pub fn unexpected_token<S: Into<String>>(expected: Vec<S>, found: S) -> Self {
+        DiagnosticKind::UnexpectedToken {
+            expected: expected.into_iter().map(|s| s.into()).collect(),
+            found: found.into(),
+        }
+    }
+
+    pub fn missing_token<S: Into<String>>(expected: S) -> Self {
+        DiagnosticKind::MissingToken { expected: expected.into() }
+    }
+
+    pub fn undefined_variable<S: Into<String>>(name: S) -> Self {
+        DiagnosticKind::UndefinedVariable { name: name.into() }
+    }
+
+    pub fn undefined_function<S: Into<String>>(name: S) -> Self {
+        DiagnosticKind::UndefinedFunction { name: name.into() }
+    }
+
+    pub fn type_mismatch<S: Into<String>>(expected: S, found: S) -> Self {
+        DiagnosticKind::TypeMismatch {
+            expected: expected.into(),
+            found: found.into(),
+        }
+    }
+
+    pub fn duplicate_definition<S: Into<String>>(name: S) -> Self {
+        DiagnosticKind::DuplicateDefinition { name: name.into() }
+    }
+
+    pub fn wrong_argument_count(expected: usize, found: usize) -> Self {
+        DiagnosticKind::WrongArgumentCount { expected, found }
+    }
+
+    pub fn unused_variable<S: Into<String>>(name: S) -> Self {
+        DiagnosticKind::UnusedVariable { name: name.into() }
+    }
+
+    pub fn shadowed_variable<S: Into<String>>(name: S, previous_line: usize) -> Self {
+        DiagnosticKind::ShadowedVariable {
+            name: name.into(),
+            previous_line,
+        }
+    }
+
+    pub fn naming_convention<S: Into<String>>(name: S, expected_style: S) -> Self {
+        DiagnosticKind::NamingConvention {
+            name: name.into(),
+            expected_style: expected_style.into(),
+        }
+    }
+
+    pub fn large_function(lines: usize) -> Self {
+        DiagnosticKind::LargeFunction { lines }
+    }
+
+    pub fn deep_nesting(depth: usize) -> Self {
+        DiagnosticKind::DeepNesting { depth }
     }
 }
 
@@ -420,49 +631,4 @@ impl<'a> IntoIterator for &'a Diagnostics {
     }
 }
 
-// Convenience functions for creating common diagnostics
-impl DiagnosticKind {
-    pub fn unexpected_token<S: Into<String>>(expected: Vec<S>, found: S) -> Self {
-        DiagnosticKind::UnexpectedToken {
-            expected: expected.into_iter().map(|s| s.into()).collect(),
-            found: found.into(),
-        }
-    }
-
-    pub fn missing_token<S: Into<String>>(expected: S) -> Self {
-        DiagnosticKind::MissingToken {
-            expected: expected.into(),
-        }
-    }
-
-    pub fn undefined_variable<S: Into<String>>(name: S) -> Self {
-        DiagnosticKind::UndefinedVariable {
-            name: name.into(),
-        }
-    }
-
-    pub fn undefined_function<S: Into<String>>(name: S) -> Self {
-        DiagnosticKind::UndefinedFunction {
-            name: name.into(),
-        }
-    }
-
-    pub fn type_mismatch<S: Into<String>>(expected: S, found: S) -> Self {
-        DiagnosticKind::TypeMismatch {
-            expected: expected.into(),
-            found: found.into(),
-        }
-    }
-
-    pub fn duplicate_definition<S: Into<String>>(name: S) -> Self {
-        DiagnosticKind::DuplicateDefinition {
-            name: name.into(),
-        }
-    }
-
-    pub fn custom<S: Into<String>>(message: S) -> Self {
-        DiagnosticKind::Custom {
-            message: message.into(),
-        }
-    }
-}
+// Additional convenience functions for diagnostics
