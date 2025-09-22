@@ -1,0 +1,370 @@
+#!/usr/bin/env bash
+
+# razen-create - Create a new Razen project
+# Part of the Razen Language Toolchain
+
+# Get the directory where this script is located
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+
+# Colors for terminal output
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+NC="\033[0m" # No Color
+
+# Function to display usage information
+show_usage() {
+    echo "Usage: razen create [OPTIONS] <project-name>"
+    echo "Create a new Razen project."
+    echo ""
+    echo "Options:"
+    echo "  -h, --help     Show this help message and exit"
+    echo "  -f, --force    Overwrite existing directory if it exists"
+    echo "  -d, --dir DIR  Create project in specified directory (default: ./<project-name>)"
+    echo ""
+    echo "Examples:"
+    echo "  razen create myapp"
+    echo "  razen create --dir ~/projects myapp"
+    echo "  razen create --force myapp"
+}
+
+# Parse command line arguments
+FORCE=0
+TARGET_DIR=""
+PROJECT_NAME=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        -f|--force)
+            FORCE=1
+            shift
+            ;;
+        -d|--dir)
+            if [ -z "$2" ] || [[ "$2" == -* ]]; then
+                echo -e "${RED}Error: No directory specified after $1${NC}"
+                show_usage
+                exit 1
+            fi
+            TARGET_DIR="$2"
+            shift 2
+            ;;
+        -*)
+            echo -e "${RED}Error: Unknown option: $1${NC}"
+            show_usage
+            exit 1
+            ;;
+        *)
+            if [ -z "$PROJECT_NAME" ]; then
+                PROJECT_NAME="$1"
+            else
+                echo -e "${RED}Error: Multiple project names specified${NC}"
+                show_usage
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Validate project name
+if [ -z "$PROJECT_NAME" ]; then
+    echo -e "${RED}Error: No project name specified${NC}"
+    show_usage
+    exit 1
+fi
+
+# Ensure project name is valid (alphanumeric + _-)
+if [[ ! "$PROJECT_NAME" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
+    echo -e "${RED}Error: Invalid project name '$PROJECT_NAME'${NC}"
+    echo "Project name must start with a letter and contain only letters, numbers, underscores, or hyphens."
+    exit 1
+fi
+
+# Set default target directory if not specified
+if [ -z "$TARGET_DIR" ]; then
+    TARGET_DIR="./$PROJECT_NAME"
+else
+    # If directory is specified, append project name if it doesn't end with it
+    if [[ "$TARGET_DIR" != */"$PROJECT_NAME" ]]; then
+        TARGET_DIR="${TARGET_DIR%/}/$PROJECT_NAME"
+    fi
+fi
+
+# Check if target directory exists
+if [ -d "$TARGET_DIR" ]; then
+    if [ "$FORCE" -eq 1 ]; then
+        echo -e "${YELLOW}Warning: Directory '$TARGET_DIR' already exists. Overwriting due to --force.${NC}"
+        rm -rf "$TARGET_DIR"
+    else
+        echo -e "${RED}Error: Directory '$TARGET_DIR' already exists. Use --force to overwrite.${NC}"
+        exit 1
+    fi
+fi
+
+# Create project directory
+mkdir -p "$TARGET_DIR"
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Error: Failed to create directory '$TARGET_DIR'${NC}"
+    exit 1
+fi
+
+# Create project structure
+echo -e "${GREEN}Creating new Razen project: $PROJECT_NAME${NC}"
+echo -e "  Directory: $(realpath "$TARGET_DIR")"
+
+# Create src directory
+mkdir -p "$TARGET_DIR/src"
+
+# Get current date
+CURRENT_DATE=$(date +"%Y-%m-%d")
+
+# Create main.rzn
+cat > "$TARGET_DIR/src/main.rzn" << 'EOF'
+type freestyle;
+
+# Razen Project: {{PROJECT_NAME}}
+# Main entry point
+# Created: {{CURRENT_DATE}}
+
+show(green) "Welcome to your new Razen project: {{PROJECT_NAME}}!";
+
+# Project metadata
+const version = "0.1.0";
+show(cyan) "Project Version: " + version;
+
+# Example: Get user name and greet
+show "What's your name?";
+read user_name;
+show "Hello, " + user_name + "! Glad to have you in {{PROJECT_NAME}}";
+
+# Example: Simple calculation
+num a = 7;
+num b = 3;
+num sums = a + b;
+show(yellow) "Sum of " + a + " and " + b + " is " + sums;
+
+# Example: Conditional logic
+if (sums > 5) {
+    show(magenta) "The sum is greater than 5!";
+} else {
+    show(red) "The sum is 5 or less.";
+}
+
+# Your application code starts here!
+
+show(blue) "{{PROJECT_NAME}} initialized. Happy coding!";
+EOF
+
+# Create .gitignore
+cat > "$TARGET_DIR/.gitignore" << 'EOF'
+# Razen build artifacts
+/target/
+*.rzn.out
+*.rzn.bc
+*.rzn.ll
+*.rzn.o
+
+# Compiled binaries
+*.exe
+*.app
+*.out
+
+# Dependencies
+/deps/
+
+# Environment variables
+.env
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# IDE-specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Log files
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# Local development
+.razen/
+*.swp
+*~
+*.bak
+*.backup
+EOF
+
+# Create razen.toml
+cat > "$TARGET_DIR/razen.toml" << 'EOF'
+[package]
+name = "{{PROJECT_NAME}}"
+version = "0.1.0"
+description = "A starter Razen project"
+authors = ["Your Name <your.email@example.com>"]
+license = "MIT"
+edition = "2024"
+
+[dependencies]
+# Add your project dependencies here
+# Example:
+# my_dependency = "1.0.0"
+
+[razen]
+type = "freestyle"  # Options: script, cli, lib
+main = "main.rzn"    # Main entry point for the application
+
+[build]
+# Build configuration
+# out_dir = "dist"  # Uncomment to specify output directory
+EOF
+
+# Create README.md
+cat > "$TARGET_DIR/README.md" << 'EOF'
+# {{PROJECT_NAME}}
+
+This project was created using the `razen create` command.
+
+## Overview
+
+Describe your project here. What does it do? What problem does it solve? Who is it for?
+
+## Getting Started
+
+### Prerequisites
+
+- [Razen Language](https://razen-lang.org) installed  
+  Check installation:  
+  ```bash
+  razen version
+  ```
+
+### Running the Project
+
+To run the main program:
+
+```bash
+razen run src/main.rzn
+```
+
+### Running Tests
+
+Example test command:
+
+```bash
+razen test tests/tests.rzn
+```
+
+## Project Structure
+
+```
+.
+├── src/
+│   └── main.rzn      # Main entry point
+├── tests/
+│   └── tests.rzn     # Test suite
+├── .gitignore
+├── razen.toml        # Project configuration
+└── README.md
+```
+
+## Contributing
+
+- Fork this repository
+- Create a new branch for your feature or bugfix
+- Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For help, please open an issue in the [Razen repository](https://github.com/razen-lang/razen/issues).
+EOF
+
+# Create tests directory and test file
+mkdir -p "$TARGET_DIR/tests"
+cat > "$TARGET_DIR/tests/tests.rzn" << 'EOF'
+type freestyle;
+
+# Razen Project: {{PROJECT_NAME}} - Test Suite
+# Main entry point
+# Created: {{CURRENT_DATE}}
+
+show(green) "Running Razen Project Tests...";
+
+# Project metadata
+const version = "0.1.0";
+show(cyan) "Test Suite Version: " + version;
+
+# User input test
+show "Please enter your name for testing:";
+
+read test_user;
+
+if (test_user == null) {
+    show(red) "No input detected. Test failed!";
+} else {
+    show(green) "Hello, " + test_user + "! User input test passed.";
+}
+
+# Calculation test
+num x = 12;
+num y = 8;
+num sums = x + y;
+
+show(yellow) "Sum of " + x + " and " + y + " is " + sums;
+
+if (sums == 20) {
+    show(green) "Calculation test passed.";
+} else {
+    show(red) "Calculation test failed: Expected 20, got " + sums;
+}
+
+# Conditional logic test
+if (sums > 15) {
+    show(magenta) "Conditional test passed: sum > 15.";
+} else {
+    show(red) "Conditional test failed: sum <= 15.";
+}
+
+# End of test suite
+show(blue) "All tests executed. Review output for pass/fail status.";
+EOF
+
+# Replace placeholders in files
+sed -i "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" "$TARGET_DIR/src/main.rzn" "$TARGET_DIR/README.md" "$TARGET_DIR/tests/tests.rzn" "$TARGET_DIR/razen.toml"
+sed -i "s/{{CURRENT_DATE}}/$CURRENT_DATE/g" "$TARGET_DIR/src/main.rzn" "$TARGET_DIR/tests/tests.rzn"
+
+# Initialize git repository
+if command -v git &> /dev/null; then
+    cd "$TARGET_DIR" || exit 1
+    git init -q
+    git add .
+    git commit -q -m "Initial commit"
+    cd - > /dev/null || exit 1
+    echo -e "${GREEN}✓${NC} Initialized Git repository"
+fi
+
+# Print success message
+echo -e "${GREEN}✓${NC} Project created successfully!"
+echo -e "\nNext steps:"
+echo -e "  ${BLUE}cd${NC} $(realpath "$TARGET_DIR")"
+echo -e "  ${BLUE}razen src/main.rzn${NC}  # Run the project"
+echo -e "\nHappy coding with Razen! 🚀"
+
+exit 0

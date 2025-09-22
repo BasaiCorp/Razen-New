@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# Razen Language Update Utility
+# Copyright 2025 Prathmesh Barot, Basai Corporation
+# Version: beta v0.1.76 - Performance Boost & Enhanced Tooling
+
+# Colors for terminal output
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+PURPLE="\033[0;35m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Repository URLs
+RAZEN_REPO="https://raw.githubusercontent.com/BasaiCorp/razen-lang/main"
+RAZEN_GIT_REPO="https://github.com/BasaiCorp/razen-lang.git"
+
+# Print banner
+echo -e "${BLUE}"
+echo "██████╗  █████╗ ███████╗███████╗███╗   ██╗"
+echo "██╔══██╗██╔══██╗╚══███╔╝██╔════╝████╗  ██║"
+echo "██████╔╝███████║  ███╔╝ █████╗  ██╔██╗ ██║"
+echo "██╔══██╗██╔══██║ ███╔╝  ██╔══╝  ██║╚██╗██║"
+echo "██║  ██║██║  ██║███████╗███████╗██║ ╚████║"
+echo "╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝"
+echo -e "${NC}"
+echo -e "${YELLOW}Razen Update Utility${NC}"
+echo -e "${CYAN}By Prathmesh Barot, Basai Corporation${NC}"
+echo -e "${YELLOW}Copyright 2025 Prathmesh Barot${NC}\n"
+
+# Function to detect OS
+detect_os() {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        echo "windows"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect OS
+OS=$(detect_os)
+
+# Function to find installation path
+find_install_path() {
+    if [ "$OS" == "linux" ]; then
+        if [ -d "/usr/local/lib/razen" ]; then
+            echo "/usr/local/lib/razen"
+        elif [ -d "$HOME/.local/lib/razen" ]; then
+            echo "$HOME/.local/lib/razen"
+        else
+            echo ""
+        fi
+    elif [ "$OS" == "macos" ]; then
+        if [ -d "/usr/local/lib/razen" ]; then
+            echo "/usr/local/lib/razen"
+        elif [ -d "$HOME/.local/lib/razen" ]; then
+            echo "$HOME/.local/lib/razen"
+        elif [ -d "$HOME/Library/razen" ]; then
+            echo "$HOME/Library/razen"
+        else
+            echo ""
+        fi
+    elif [ "$OS" == "windows" ]; then
+        # Check for Windows installation paths when running in WSL or similar
+        if [ -d "/mnt/c/Program Files/Razen" ]; then
+            echo "/mnt/c/Program Files/Razen"
+        elif [ -d "$HOME/AppData/Local/Razen" ]; then
+            echo "$HOME/AppData/Local/Razen"
+        elif [ -d "/c/Program Files/Razen" ]; then
+            echo "/c/Program Files/Razen"
+        else
+            echo ""
+        fi
+    else
+        echo ""
+    fi
+}
+
+# Function to check internet connectivity
+check_internet() {
+    echo -e "${YELLOW}Checking internet connectivity...${NC}"
+    if ! ping -c 1 github.com &>/dev/null && ! ping -c 1 google.com &>/dev/null; then
+        echo -e "${RED}Error: No internet connection detected.${NC}"
+        echo -e "${YELLOW}Please check your network connection and try again.${NC}"
+        return 1
+    fi
+    echo -e "  ${GREEN}✓${NC} Internet connection detected"
+    return 0
+}
+
+# Find installation path
+INSTALL_PATH=$(find_install_path)
+
+if [ -z "$INSTALL_PATH" ]; then
+    echo -e "${RED}Error: Razen installation not found.${NC}"
+    echo -e "${YELLOW}Please install Razen first.${NC}"
+    exit 1
+fi
+
+# Check internet connectivity
+check_internet || exit 1
+
+echo -e "${YELLOW}Found Razen installation at: ${CYAN}$INSTALL_PATH${NC}"
+echo -e "${YELLOW}Starting update process using the universal installer...${NC}"
+
+# Create temporary directory
+TMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TMP_DIR"' EXIT
+
+# Download the universal installer
+echo -e "${YELLOW}Downloading universal installer...${NC}"
+if curl -s -o "$TMP_DIR/installer.sh" "$RAZEN_REPO/installer.sh" && chmod +x "$TMP_DIR/installer.sh"; then
+    echo -e "  ${GREEN}✓${NC} Downloaded universal installer"
+
+    # Run the installer with current directory as working directory
+    cd "$TMP_DIR"
+
+    # Add force flag if specified
+    if [ "$1" == "--force" ]; then
+        echo -e "${YELLOW}Force update requested.${NC}"
+        ./installer.sh force
+    else
+        echo -e "${YELLOW}Running installer to check for updates...${NC}"
+        ./installer.sh
+    fi
+
+    # Check if update was successful
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}✅ Razen has been successfully updated!${NC}"
+        echo -e "\n${YELLOW}Available commands:${NC}"
+        echo -e "  ${GREEN}razen${NC} - Run Razen programs"
+        echo -e "  ${GREEN}razen-debug${NC} - Run Razen programs in debug mode"
+        echo -e "  ${GREEN}razen-test${NC} - Run Razen tests"
+        echo -e "  ${GREEN}razen-run${NC} - Run Razen programs with additional options"
+        echo -e "  ${GREEN}razen-update${NC} - Update Razen to the latest version"
+        echo -e "  ${GREEN}razen-help${NC} - Show help information"
+        echo -e "  ${GREEN}razen new myprogram${NC} - Create a new Razen program"
+        echo -e "  ${GREEN}razen version${NC} - Show Razen version"
+        exit 0
+    else
+        echo -e "${RED}Update failed. Please try again or report this issue.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}Failed to download the universal installer.${NC}"
+    echo -e "${YELLOW}Please check your internet connection or try again later.${NC}"
+    exit 1
+fi

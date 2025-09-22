@@ -1,0 +1,401 @@
+// src/backend/execution/runtime.rs
+//! Clean runtime execution engine based on the proven old implementation
+
+use std::collections::HashMap;
+use std::io::{self, Write, BufRead};
+use std::{thread, time::Duration};
+use super::ir::IR;
+
+/// Runtime execution engine with stack machine
+pub struct Runtime {
+    stack: Vec<String>,
+    variables: HashMap<String, String>,
+    call_stack: Vec<(usize, HashMap<String, String>)>,
+    exception_handlers: Vec<(String, usize)>,
+    clean_output: bool,
+}
+
+impl Runtime {
+    pub fn new() -> Self {
+        Runtime {
+            stack: Vec::new(),
+            variables: HashMap::new(),
+            call_stack: Vec::new(),
+            exception_handlers: Vec::new(),
+            clean_output: false,
+        }
+    }
+
+    pub fn set_clean_output(&mut self, clean: bool) {
+        self.clean_output = clean;
+    }
+
+    /// Execute IR instructions
+    pub fn execute(&mut self, ir: &[IR]) -> Result<(), String> {
+        if !self.clean_output {
+            println!("Executing program...");
+        }
+
+        // Pre-pass: register function addresses
+        for (i, instruction) in ir.iter().enumerate() {
+            if let IR::DefineFunction(name, _) = instruction {
+                self.variables.insert(name.clone(), i.to_string());
+            }
+        }
+
+        let mut pc = 0;
+        while pc < ir.len() {
+            let instruction = &ir[pc];
+            
+            match instruction {
+                IR::PushNumber(n) => {
+                    self.stack.push(n.to_string());
+                },
+                IR::PushString(s) => {
+                    self.stack.push(s.clone());
+                },
+                IR::PushBoolean(b) => {
+                    self.stack.push(b.to_string());
+                },
+                IR::PushNull => {
+                    self.stack.push("null".to_string());
+                },
+                IR::Pop => {
+                    self.stack.pop();
+                },
+                IR::Dup => {
+                    if let Some(value) = self.stack.last().cloned() {
+                        self.stack.push(value);
+                    }
+                },
+                IR::Swap => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push(b);
+                        self.stack.push(a);
+                    }
+                },
+                IR::StoreVar(name) => {
+                    if let Some(value) = self.stack.pop() {
+                        if let Some((_, func_vars)) = self.call_stack.last_mut() {
+                            func_vars.insert(name.clone(), value);
+                        } else {
+                            self.variables.insert(name.clone(), value);
+                        }
+                    }
+                },
+                IR::LoadVar(name) => {
+                    let value = if let Some((_, func_vars)) = self.call_stack.last() {
+                        func_vars.get(name)
+                    } else { None };
+
+                    if let Some(val) = value {
+                        self.stack.push(val.clone());
+                    } else if let Some(val) = self.variables.get(name) {
+                        self.stack.push(val.clone());
+                    } else {
+                        self.stack.push("undefined".to_string());
+                    }
+                },
+                IR::SetGlobal(name) => {
+                    if let Some(value) = self.stack.pop() {
+                        self.variables.insert(name.clone(), value);
+                    }
+                },
+                IR::Add => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num + b_num).to_string());
+                        } else {
+                            // String concatenation
+                            self.stack.push(format!("{}{}", a, b));
+                        }
+                    }
+                },
+                IR::Subtract => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num - b_num).to_string());
+                        }
+                    }
+                },
+                IR::Multiply => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num * b_num).to_string());
+                        }
+                    }
+                },
+                IR::Divide => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            if b_num != 0.0 {
+                                self.stack.push((a_num / b_num).to_string());
+                            } else {
+                                return Err("Division by zero".to_string());
+                            }
+                        }
+                    }
+                },
+                IR::Modulo => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            if b_num != 0.0 {
+                                self.stack.push((a_num % b_num).to_string());
+                            } else {
+                                return Err("Modulo by zero".to_string());
+                            }
+                        }
+                    }
+                },
+                IR::Power => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push(a_num.powf(b_num).to_string());
+                        }
+                    }
+                },
+                IR::Negate => {
+                    if let Some(a) = self.stack.pop() {
+                        if let Ok(a_num) = a.parse::<f64>() {
+                            self.stack.push((-a_num).to_string());
+                        }
+                    }
+                },
+                IR::Equal => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num == b_num).to_string());
+                        } else {
+                            self.stack.push((a == b).to_string());
+                        }
+                    }
+                },
+                IR::NotEqual => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num != b_num).to_string());
+                        } else {
+                            self.stack.push((a != b).to_string());
+                        }
+                    }
+                },
+                IR::GreaterThan => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num > b_num).to_string());
+                        } else {
+                            self.stack.push((a > b).to_string());
+                        }
+                    }
+                },
+                IR::GreaterEqual => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num >= b_num).to_string());
+                        } else {
+                            self.stack.push((a >= b).to_string());
+                        }
+                    }
+                },
+                IR::LessThan => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num < b_num).to_string());
+                        } else {
+                            self.stack.push((a < b).to_string());
+                        }
+                    }
+                },
+                IR::LessEqual => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            self.stack.push((a_num <= b_num).to_string());
+                        } else {
+                            self.stack.push((a <= b).to_string());
+                        }
+                    }
+                },
+                IR::And => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push((is_truthy(&a) && is_truthy(&b)).to_string());
+                    }
+                },
+                IR::Or => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        self.stack.push((is_truthy(&a) || is_truthy(&b)).to_string());
+                    }
+                },
+                IR::Not => {
+                    if let Some(a) = self.stack.pop() {
+                        self.stack.push((!is_truthy(&a)).to_string());
+                    }
+                },
+                IR::Jump(target) => {
+                    pc = *target;
+                    continue;
+                },
+                IR::JumpIfFalse(target) => {
+                    if let Some(value) = self.stack.pop() {
+                        if !is_truthy(&value) {
+                            pc = *target;
+                            continue;
+                        }
+                    }
+                },
+                IR::JumpIfTrue(target) => {
+                    if let Some(value) = self.stack.pop() {
+                        if is_truthy(&value) {
+                            pc = *target;
+                            continue;
+                        }
+                    }
+                },
+                IR::Call(name, arg_count) => {
+                    // Handle builtin functions
+                    if self.is_builtin(name) {
+                        self.execute_builtin(name, *arg_count)?;
+                    } else {
+                        // User-defined function call
+                        let mut args = Vec::new();
+                        for _ in 0..*arg_count {
+                            if let Some(arg) = self.stack.pop() {
+                                args.push(arg);
+                            }
+                        }
+                        args.reverse();
+
+                        if let Some(func_addr_str) = self.variables.get(name) {
+                            if let Ok(func_addr) = func_addr_str.parse::<usize>() {
+                                let func_variables = self.variables.clone();
+                                self.call_stack.push((pc + 1, self.variables.clone()));
+                                self.variables = func_variables;
+                                pc = func_addr;
+                                continue;
+                            }
+                        } else {
+                            self.stack.push("undefined".to_string());
+                        }
+                    }
+                },
+                IR::Return => {
+                    let return_value = self.stack.pop().unwrap_or_else(|| "null".to_string());
+                    if let Some((return_addr, caller_variables)) = self.call_stack.pop() {
+                        self.variables = caller_variables;
+                        self.stack.push(return_value);
+                        pc = return_addr;
+                        continue;
+                    } else {
+                        self.stack.push(return_value);
+                    }
+                },
+                IR::Print => {
+                    if let Some(value) = self.stack.pop() {
+                        print!("{}", value);
+                        io::stdout().flush().unwrap();
+                    }
+                },
+                IR::ReadInput => {
+                    let stdin = io::stdin();
+                    let mut line = String::new();
+                    stdin.lock().read_line(&mut line).expect("Failed to read line");
+                    if line.ends_with('\n') {
+                        line.pop();
+                        if line.ends_with('\r') {
+                            line.pop();
+                        }
+                    }
+                    self.stack.push(line);
+                },
+                IR::Exit => {
+                    return Ok(());
+                },
+                IR::Sleep => {
+                    if let Some(duration_str) = self.stack.pop() {
+                        if let Ok(duration) = duration_str.parse::<f64>() {
+                            thread::sleep(Duration::from_secs_f64(duration));
+                        }
+                    }
+                },
+                IR::DefineFunction(_, _) | IR::Label(_) => {
+                    // Ignored at runtime
+                },
+                _ => {
+                    if !self.clean_output {
+                        println!("Unimplemented instruction: {:?}", instruction);
+                    }
+                }
+            }
+            pc += 1;
+        }
+
+        if !self.clean_output {
+            println!("Execution complete.");
+        }
+        Ok(())
+    }
+
+    fn is_builtin(&self, name: &str) -> bool {
+        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove")
+    }
+
+    fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
+        match name {
+            "print" => {
+                if let Some(value) = self.stack.pop() {
+                    print!("{}", value);
+                    io::stdout().flush().unwrap();
+                }
+                // Push null as return value
+                self.stack.push("null".to_string());
+            },
+            "println" => {
+                if let Some(value) = self.stack.pop() {
+                    println!("{}", value);
+                } else {
+                    println!();
+                }
+                // Push null as return value
+                self.stack.push("null".to_string());
+            },
+            "input" => {
+                if arg_count > 0 {
+                    if let Some(prompt) = self.stack.pop() {
+                        print!("{}", prompt);
+                        io::stdout().flush().unwrap();
+                    }
+                }
+                
+                let stdin = io::stdin();
+                let mut line = String::new();
+                stdin.lock().read_line(&mut line).expect("Failed to read line");
+                if line.ends_with('\n') {
+                    line.pop();
+                    if line.ends_with('\r') {
+                        line.pop();
+                    }
+                }
+                self.stack.push(line);
+            },
+            "len" => {
+                if let Some(value) = self.stack.pop() {
+                    self.stack.push(value.len().to_string());
+                } else {
+                    self.stack.push("0".to_string());
+                }
+            },
+            _ => {
+                // Pop arguments for unimplemented builtins
+                for _ in 0..arg_count {
+                    self.stack.pop();
+                }
+                self.stack.push("null".to_string());
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Helper function for boolean logic
+fn is_truthy(s: &str) -> bool {
+    !matches!(s, "false" | "0" | "" | "null" | "undefined" | "False")
+}

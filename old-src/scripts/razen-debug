@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+# Get the directory where this script is located
+SCRIPT_DIR=$(dirname "$0")
+
+# First try the development directory structure (script is in scripts/)
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+RAZEN_BIN="$PROJECT_ROOT/target/debug/razen_compiler"
+
+# If the binary doesn't exist in debug, try release
+if [ ! -f "$RAZEN_BIN" ]; then
+  RAZEN_BIN="$PROJECT_ROOT/target/release/razen_compiler"
+fi
+
+# If binary doesn't exist there, check installation directories
+if [ ! -f "$RAZEN_BIN" ]; then
+  # Check installation in /usr/local/bin
+  if [ -f "/usr/local/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/local/bin/razen_compiler"
+  # Check installation in /usr/bin
+  elif [ -f "/usr/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/bin/razen_compiler"
+  # Check Windows paths if running in WSL
+  elif [ -f "/mnt/c/Program Files/Razen/razen_compiler.exe" ]; then
+    RAZEN_BIN="/mnt/c/Program Files/Razen/razen_compiler.exe"
+  fi
+fi
+
+# Check if filename argument is provided
+if [ -z "$1" ]; then
+  echo "Usage: razen-debug <filename.rzn>"
+  exit 1
+fi
+
+FILENAME="$1"
+shift # Remove filename from args, allowing potential future flags
+
+# Get absolute path of the file
+if [[ "$FILENAME" == /* ]]; then
+    # File already has an absolute path
+    ABSOLUTE_PATH="$FILENAME"
+else
+    # Convert to absolute path
+    ABSOLUTE_PATH="$(cd "$(dirname "$FILENAME")" 2>/dev/null && pwd)/$(basename "$FILENAME")"
+    
+    # If the directory doesn't exist, try current directory
+    if [ $? -ne 0 ]; then
+        ABSOLUTE_PATH="$(pwd)/$(basename "$FILENAME")"
+    fi
+fi
+
+# Check if Razen binary exists
+if [ ! -f "$RAZEN_BIN" ]; then
+  echo "Error: Razen compiler not found at $RAZEN_BIN"
+  echo "Please ensure Razen is properly installed or build it with 'cargo build'."
+  exit 1
+fi
+
+# Check if the file exists
+if [ ! -f "$ABSOLUTE_PATH" ]; then
+    echo "Error: File '$FILENAME' not found"
+    exit 1
+fi
+
+# Run the Rust compiler with debug flag
+"$RAZEN_BIN" run --debug "$ABSOLUTE_PATH" "$@"
+
+exit $?

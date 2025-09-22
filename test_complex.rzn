@@ -1,0 +1,12 @@
+fun main() {
+    println("=== Razen Complex Test ===")
+    var x = 10
+    var y = 20
+    var result = x + y
+    println("10 + 20 = " + result)
+    
+    var name = "Razen"
+    println("Hello, " + name + "!")
+    
+    println("Test completed successfully!")
+}

@@ -1,0 +1,303 @@
+#!/usr/bin/env bash
+
+# Get the directory where this script is located
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+
+# First try the development directory structure (script is in scripts/)
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+RAZEN_BIN="$PROJECT_ROOT/target/debug/razen_compiler"
+
+# If the binary doesn't exist in debug, try release
+if [ ! -f "$RAZEN_BIN" ]; then
+  RAZEN_BIN="$PROJECT_ROOT/target/release/razen_compiler"
+fi
+
+# If binary doesn't exist there, check installation directories
+if [ ! -f "$RAZEN_BIN" ]; then
+  # Check installation in /usr/local/bin
+  if [ -f "/usr/local/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/local/bin/razen_compiler"
+    INSTALL_DIR="/usr/local/lib/razen"
+  # Check installation in /usr/bin
+  elif [ -f "/usr/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/bin/razen_compiler"
+    INSTALL_DIR="/usr/local/lib/razen"
+  # Check user's local bin directory
+  elif [ -f "$HOME/.local/bin/razen_compiler" ]; then
+    RAZEN_BIN="$HOME/.local/bin/razen_compiler"
+    INSTALL_DIR="$HOME/.local/lib/razen"
+  # Check Windows paths if running in WSL
+  elif [ -f "/mnt/c/Program Files/Razen/razen_compiler.exe" ]; then
+    RAZEN_BIN="/mnt/c/Program Files/Razen/razen_compiler.exe"
+    INSTALL_DIR="/mnt/c/Program Files/Razen"
+  fi
+fi
+
+# Check if Razen binary exists
+if [ ! -f "$RAZEN_BIN" ]; then
+  echo "Error: Razen compiler not found at $RAZEN_BIN"
+  echo "Please ensure Razen is properly installed or build it with 'cargo build'."
+  exit 1
+fi
+
+# Colors for terminal output
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+PURPLE="\033[0;35m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Function to get the current version
+get_version() {
+  # First check for version file in the installation directory
+  if [ -n "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/version" ]; then
+    cat "$INSTALL_DIR/version"
+  elif [ -f "$PROJECT_ROOT/version" ]; then
+    cat "$PROJECT_ROOT/version"
+  else
+    echo "beta v0.1.76 - Performance Boost & Enhanced Tooling" # Fallback version
+  fi
+}
+
+# Function to get current date in YYYY-MM-DD format
+get_current_date() {
+  date +"%Y-%m-%d"
+}
+
+# Handle commands
+if [ "$1" == "new" ]; then
+    if [ -z "$2" ]; then
+        echo -e "${RED}Error: Missing filename${NC}"
+        echo "Usage: razen new <filename>"
+        exit 1
+    fi
+
+    # Create a new Razen file
+    FILENAME="$2"
+    if [[ "$FILENAME" != *.rzn ]]; then
+        FILENAME="${FILENAME}.rzn"
+    fi
+
+    echo -e "${YELLOW}Creating new Razen program: ${FILENAME}${NC}"
+
+    # Get current date
+    CURRENT_DATE=$(get_current_date)
+
+    cat > "$FILENAME" << EOF
+type freestyle;
+
+# Razen Freestyle Program
+# Created: $CURRENT_DATE
+
+# This is a freestyle Razen program where you can mix different paradigms
+
+# Variables
+take name = "Razen";
+let age = 1;
+hold isAwesome = true;
+
+# Display a welcome message
+show "Welcome to " + name + "!";
+show name + " is " + age + " year old.";
+
+if (isAwesome) {
+    show name + " is awesome!";
+}
+
+# Get user input
+show "What is your name?";
+read userName;
+show "Hello, " + userName + "!";
+
+# Create a simple loop
+let counter = 0;
+while (counter < 5) {
+    show "Counter: " + counter;
+    counter = counter + 1;
+}
+
+show "Program completed!";
+EOF
+
+    echo -e "${GREEN}✓${NC} Created $FILENAME"
+    exit 0
+
+elif [ "$1" == "create" ]; then
+    if [ -z "$2" ]; then
+        echo -e "${RED}Error: Missing project name${NC}"
+        echo "Usage: razen create <project-name>"
+        echo "       razen create --help"
+        exit 1
+    fi
+    
+    # Check if the razen-create script exists
+    if [ -f "$SCRIPT_DIR/razen-create" ]; then
+        # Pass all arguments except the first one (create) to razen-create
+        shift
+        "$SCRIPT_DIR/razen-create" "$@"
+        exit $?
+    else
+        echo -e "${RED}Error: razen-create script not found in $SCRIPT_DIR${NC}"
+        echo "Please ensure the razen-create script is installed correctly."
+        exit 1
+    fi
+
+elif [ "$1" == "version" ] || [ "$1" == "--version" ] || [ "$1" == "-v" ]; then
+    VERSION=$(get_version)
+    echo "Razen Language $VERSION"
+    echo "Copyright 2025 Prathmesh Barot, Basai Corporation"
+    exit 0
+
+elif [ "$1" == "help" ] || [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
+    # Call the help script if available, otherwise show basic help
+    if command -v razen-help &>/dev/null; then
+        razen-help
+    else
+        echo "Razen Language - Usage:"
+        echo "  razen <filename.rzn>     Run a Razen script"
+        echo "  razen new <filename>     Create a new Razen program (single file)"
+        echo "  razen create <project>   Create a new Razen project (directory structure)"
+        echo "  razen version            Display version information"
+        echo "  razen help               Display this help message"
+        echo "  razen uninstall          Uninstall Razen"
+        echo "  razen update             Update Razen to the latest version"
+        echo ""
+        echo "Run 'razen create --help' for more options on creating projects."
+    fi
+    exit 0
+
+elif [ "$1" == "uninstall" ]; then
+    echo -e "${YELLOW}Uninstalling Razen...${NC}"
+    echo -e "${RED}This will remove all Razen files and scripts.${NC}"
+    read -p "Are you sure you want to uninstall Razen? (y/n): " -n 1 -r
+    echo
+
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        # Find the installer.sh script
+        INSTALLER_SCRIPT=""
+        
+        # First check if we can find it relative to the project root
+        if [ -f "$PROJECT_ROOT/installer.sh" ]; then
+            INSTALLER_SCRIPT="$PROJECT_ROOT/installer.sh"
+        # Then check in the installation directory
+        elif [ -n "$INSTALL_DIR" ] && [ -f "$INSTALL_DIR/installer.sh" ]; then
+            INSTALLER_SCRIPT="$INSTALL_DIR/installer.sh"
+        # Check common installation paths
+        elif [ -f "/usr/local/lib/razen/installer.sh" ]; then
+            INSTALLER_SCRIPT="/usr/local/lib/razen/installer.sh"
+        elif [ -f "/usr/lib/razen/installer.sh" ]; then
+            INSTALLER_SCRIPT="/usr/lib/razen/installer.sh"
+        elif [ -f "$HOME/.local/lib/razen/installer.sh" ]; then
+            INSTALLER_SCRIPT="$HOME/.local/lib/razen/installer.sh"
+        # For Windows
+        elif [ -f "/mnt/c/Program Files/Razen/installer.sh" ]; then
+            INSTALLER_SCRIPT="/mnt/c/Program Files/Razen/installer.sh"
+        fi
+        
+        if [ -n "$INSTALLER_SCRIPT" ]; then
+            echo -e "${YELLOW}Found installer script at: $INSTALLER_SCRIPT${NC}"
+            # Use sudo for system directories on Linux/macOS
+            if [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "darwin"* ]]; then
+                if [[ "$INSTALLER_SCRIPT" == "/usr"* ]]; then
+                    sudo bash "$INSTALLER_SCRIPT" uninstall
+                else
+                    bash "$INSTALLER_SCRIPT" uninstall
+                fi
+            # For Windows
+            elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+                bash "$INSTALLER_SCRIPT" uninstall
+            else
+                bash "$INSTALLER_SCRIPT" uninstall
+            fi
+        else
+            echo -e "${RED}Error: Could not find the installer script.${NC}"
+            echo -e "${YELLOW}Please run the uninstall command directly:${NC}"
+            echo -e "${CYAN}bash <path-to-installer.sh> uninstall${NC}"
+            exit 1
+        fi
+    else
+        echo -e "${BLUE}Uninstallation cancelled.${NC}"
+    fi
+    exit 0
+
+elif [ "$1" == "update" ]; then
+    # Check if razen-update is available
+    if command -v razen-update &>/dev/null; then
+        razen-update
+    else
+        echo -e "${RED}Error: razen-update script not found.${NC}"
+        echo -e "${YELLOW}Please reinstall Razen to fix this issue.${NC}"
+        exit 1
+    fi
+    exit 0
+
+elif [ "$1" == "run" ] && [ -n "$2" ]; then
+    # Run mode with filename
+    FILENAME="$2"
+    shift 2  # Remove 'run' and filename from args
+
+    # Get absolute path of the file
+    if [[ "$FILENAME" == /* ]]; then
+        # File already has an absolute path
+        ABSOLUTE_PATH="$FILENAME"
+    else
+        # Convert to absolute path
+        ABSOLUTE_PATH="$(cd "$(dirname "$FILENAME")" && pwd)/$(basename "$FILENAME")"
+    fi
+
+    # Check if the file exists
+    if [ ! -f "$ABSOLUTE_PATH" ]; then
+        echo -e "${RED}Error: File '$FILENAME' not found${NC}"
+        exit 1
+    fi
+
+    # Execute the Razen compiler in 'run' mode
+    echo -e "${YELLOW}Running $FILENAME...${NC}"
+    "$RAZEN_BIN" run "$ABSOLUTE_PATH" "$@"
+    exit $?
+
+elif [ -z "$1" ]; then
+    # No arguments provided, show usage
+    echo -e "${YELLOW}Razen Language Interpreter${NC}"
+    echo "Usage: razen <filename.rzn>"
+    echo "       razen run <filename.rzn>"
+    echo "       razen new <filename>"
+    echo "       razen help"
+    echo "       razen version"
+    echo "       razen update"
+    echo "       razen uninstall"
+    exit 1
+fi
+
+# If we get here, assume first argument is the filename to run
+FILENAME="$1"
+shift # Remove filename from args, allowing potential future flags
+
+# Get absolute path of the file
+if [[ "$FILENAME" == /* ]]; then
+    # File already has an absolute path
+    ABSOLUTE_PATH="$FILENAME"
+else
+    # Convert to absolute path
+    ABSOLUTE_PATH="$(cd "$(dirname "$FILENAME")" 2>/dev/null && pwd)/$(basename "$FILENAME")"
+
+    # If the directory doesn't exist, try current directory
+    if [ $? -ne 0 ]; then
+        ABSOLUTE_PATH="$(pwd)/$(basename "$FILENAME")"
+    fi
+fi
+
+# Check if the file exists
+if [ ! -f "$ABSOLUTE_PATH" ]; then
+    echo -e "${RED}Error: File '$FILENAME' not found${NC}"
+    exit 1
+fi
+
+# Execute the Razen compiler in 'run' mode
+echo -e "${YELLOW}Running $FILENAME...${NC}"
+"$RAZEN_BIN" run "$ABSOLUTE_PATH" "$@"
+
+# Capture the exit code from the compiler
+exit $?

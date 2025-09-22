@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+# Get the directory where this script is located
+SCRIPT_DIR=$(dirname "$0")
+
+# First try the development directory structure (script is in scripts/)
+PROJECT_ROOT=$(cd "$SCRIPT_DIR/.." && pwd)
+RAZEN_BIN="$PROJECT_ROOT/target/debug/razen_compiler"
+
+# If the binary doesn't exist in debug, try release
+if [ ! -f "$RAZEN_BIN" ]; then
+  RAZEN_BIN="$PROJECT_ROOT/target/release/razen_compiler"
+fi
+
+# If binary doesn't exist there, check installation directories
+if [ ! -f "$RAZEN_BIN" ]; then
+  # Check installation in /usr/local/bin
+  if [ -f "/usr/local/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/local/bin/razen_compiler"
+  # Check installation in /usr/bin
+  elif [ -f "/usr/bin/razen_compiler" ]; then
+    RAZEN_BIN="/usr/bin/razen_compiler"
+  # Check Windows paths if running in WSL
+  elif [ -f "/mnt/c/Program Files/Razen/razen_compiler.exe" ]; then
+    RAZEN_BIN="/mnt/c/Program Files/Razen/razen_compiler.exe"
+  fi
+fi
+
+# Check if Razen binary exists
+if [ ! -f "$RAZEN_BIN" ]; then
+  echo "Error: Razen compiler not found at $RAZEN_BIN"
+  echo "Please ensure Razen is properly installed or build it with 'cargo build'."
+  exit 1
+fi
+
+# Process arguments to get absolute path if it's a directory
+if [ -n "$1" ] && [ -d "$1" ]; then
+    # If a directory is provided, convert to absolute path
+    if [[ "$1" == /* ]]; then
+        # Directory already has an absolute path
+        TEST_PATH="$1"
+    else
+        # Convert to absolute path
+        TEST_PATH="$(cd "$1" 2>/dev/null && pwd)"
+    fi
+    shift
+    "$RAZEN_BIN" test "$TEST_PATH" "$@"
+else
+    # Run the Rust compiler in test mode with all arguments passed
+    "$RAZEN_BIN" test "$@"
+fi
+
+exit $?

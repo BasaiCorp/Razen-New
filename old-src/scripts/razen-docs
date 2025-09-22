@@ -1,0 +1,341 @@
+#!/usr/bin/env bash
+
+# Razen Documentation Browser
+# Author: Prathmesh Barot
+# Copyright © 2025 Prathmesh Barot, Basai Corporation
+
+# Colors for terminal output
+GREEN="\033[0;32m"
+RED="\033[0;31m"
+YELLOW="\033[0;33m"
+BLUE="\033[0;34m"
+PURPLE="\033[0;35m"
+CYAN="\033[0;36m"
+BOLD="\033[1m"
+NC="\033[0m" # No Color
+
+# Find the Razen installation directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RAZEN_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Check if we're running from the repository or installed location
+if [ -d "/usr/local/lib/razen/docs" ]; then
+    RAZEN_DIR="/usr/local/lib/razen"
+elif [ -d "/usr/lib/razen/docs" ]; then
+    RAZEN_DIR="/usr/lib/razen"
+elif [ ! -d "$RAZEN_DIR/docs" ] && [ -d "$RAZEN_DIR/razen-lang/docs" ]; then
+    RAZEN_DIR="$RAZEN_DIR/razen-lang"
+fi
+
+# Documentation directory
+DOCS_DIR="$RAZEN_DIR/docs"
+
+# Check if documentation exists
+if [ ! -d "$DOCS_DIR" ]; then
+    echo -e "${RED}Error: Documentation not found at $DOCS_DIR${NC}"
+    echo -e "${YELLOW}Please make sure Razen is installed correctly.${NC}"
+    exit 1
+fi
+
+# Function to display documentation in the terminal
+display_markdown() {
+    local file="$1"
+    
+    if [ ! -f "$file" ]; then
+        echo -e "${RED}Error: File not found: $file${NC}"
+        return 1
+    fi
+    
+    # Check if mdcat is installed for better markdown rendering
+    if command -v mdcat &> /dev/null; then
+        mdcat "$file"
+    # Check if bat is installed for syntax highlighting
+    elif command -v bat &> /dev/null; then
+        bat --style=plain --paging=never "$file"
+    # Fallback to less with color codes
+    elif command -v less &> /dev/null; then
+        less -R "$file"
+    # Ultimate fallback to cat
+    else
+        cat "$file"
+    fi
+}
+
+# Function to display code examples
+display_code() {
+    local file="$1"
+    
+    if [ ! -f "$file" ]; then
+        echo -e "${RED}Error: File not found: $file${NC}"
+        return 1
+    fi
+    
+    # Check if bat is installed for syntax highlighting
+    if command -v bat &> /dev/null; then
+        bat --style=plain --paging=never "$file"
+    # Fallback to less with color codes
+    elif command -v less &> /dev/null; then
+        less -R "$file"
+    # Ultimate fallback to cat
+    else
+        cat "$file"
+    fi
+}
+
+# Function to display the main menu
+display_main_menu() {
+    clear
+    echo -e "${BLUE}"
+    echo "██████╗  █████╗ ███████╗███████╗███╗   ██╗"
+    echo "██╔══██╗██╔══██╗╚══███╔╝██╔════╝████╗  ██║"
+    echo "██████╔╝███████║  ███╔╝ █████╗  ██╔██╗ ██║"
+    echo "██╔══██╗██╔══██║ ███╔╝  ██╔══╝  ██║╚██╗██║"
+    echo "██║  ██║██║  ██║███████╗███████╗██║ ╚████║"
+    echo "╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝"
+    echo -e "${NC}"
+    echo -e "${BOLD}${PURPLE}Documentation Browser${NC}"
+    echo
+    echo -e "${CYAN}Please select a category:${NC}"
+    echo
+    echo -e "  ${GREEN}1.${NC} Getting Started"
+    echo -e "  ${GREEN}2.${NC} Language Reference"
+    echo -e "  ${GREEN}3.${NC} Examples"
+    echo -e "  ${GREEN}4.${NC} Tutorials"
+    echo -e "  ${GREEN}5.${NC} API Documentation"
+    echo -e "  ${GREEN}6.${NC} View Main Documentation"
+    echo
+    echo -e "  ${GREEN}q.${NC} Quit"
+    echo
+    echo -n -e "${YELLOW}Enter your choice: ${NC}"
+    read -r choice
+    
+    case "$choice" in
+        1) display_getting_started ;;
+        2) display_language_reference ;;
+        3) display_examples ;;
+        4) display_tutorials ;;
+        5) display_api ;;
+        6) display_markdown "$DOCS_DIR/README.md" && echo && read -p "Press Enter to continue..." ;;
+        q|Q) exit 0 ;;
+        *) echo -e "${RED}Invalid choice. Please try again.${NC}" && sleep 1 && display_main_menu ;;
+    esac
+}
+
+# Function to display getting started guide
+display_getting_started() {
+    clear
+    echo -e "${BOLD}${PURPLE}Getting Started with Razen${NC}"
+    echo
+    display_markdown "$DOCS_DIR/getting-started/README.md"
+    echo
+    read -p "Press Enter to return to the main menu..." 
+    display_main_menu
+}
+
+# Function to display language reference
+display_language_reference() {
+    clear
+    echo -e "${BOLD}${PURPLE}Razen Language Reference${NC}"
+    echo
+    display_markdown "$DOCS_DIR/language-reference/README.md"
+    echo
+    read -p "Press Enter to return to the main menu..." 
+    display_main_menu
+}
+
+# Function to display examples
+display_examples() {
+    clear
+    echo -e "${BOLD}${PURPLE}Razen Code Examples${NC}"
+    echo
+    
+    # Display the examples README
+    display_markdown "$DOCS_DIR/examples/README.md"
+    
+    echo
+    echo -e "${CYAN}Would you like to view a specific example? (y/n)${NC}"
+    read -r view_example
+    
+    if [[ "$view_example" =~ ^[Yy]$ ]]; then
+        # List available examples
+        echo
+        echo -e "${CYAN}Available examples:${NC}"
+        echo
+        
+        # Find all .rzn files in the examples directory
+        mapfile -t examples < <(find "$DOCS_DIR/examples" -name "*.rzn" -type f | sort)
+        
+        if [ ${#examples[@]} -eq 0 ]; then
+            echo -e "${YELLOW}No examples found.${NC}"
+        else
+            for i in "${!examples[@]}"; do
+                example="${examples[$i]}"
+                basename=$(basename "$example")
+                echo -e "  ${GREEN}$((i+1)).${NC} $basename"
+            done
+            
+            echo
+            echo -n -e "${YELLOW}Enter the number of the example to view (or 0 to return): ${NC}"
+            read -r example_choice
+            
+            if [[ "$example_choice" =~ ^[0-9]+$ ]] && [ "$example_choice" -gt 0 ] && [ "$example_choice" -le "${#examples[@]}" ]; then
+                clear
+                example="${examples[$((example_choice-1))]}"
+                basename=$(basename "$example")
+                echo -e "${BOLD}${PURPLE}Example: $basename${NC}"
+                echo
+                display_code "$example"
+                echo
+                echo -e "${CYAN}Would you like to run this example? (y/n)${NC}"
+                read -r run_example
+                
+                if [[ "$run_example" =~ ^[Yy]$ ]]; then
+                    echo
+                    echo -e "${YELLOW}Running example...${NC}"
+                    echo
+                    razen-run "$example"
+                    echo
+                fi
+            fi
+        fi
+    fi
+    
+    read -p "Press Enter to return to the main menu..." 
+    display_main_menu
+}
+
+# Function to display tutorials
+display_tutorials() {
+    clear
+    echo -e "${BOLD}${PURPLE}Razen Tutorials${NC}"
+    echo
+    
+    # Find all tutorial categories (directories)
+    mapfile -t categories < <(find "$DOCS_DIR/tutorials" -mindepth 1 -maxdepth 1 -type d | sort)
+    
+    if [ ${#categories[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No tutorials found.${NC}"
+    else
+        echo -e "${CYAN}Available tutorial categories:${NC}"
+        echo
+        
+        for i in "${!categories[@]}"; do
+            category="${categories[$i]}"
+            basename=$(basename "$category")
+            echo -e "  ${GREEN}$((i+1)).${NC} ${basename^}"
+        done
+        
+        echo
+        echo -n -e "${YELLOW}Enter the number of the category to explore (or 0 to return): ${NC}"
+        read -r category_choice
+        
+        if [[ "$category_choice" =~ ^[0-9]+$ ]] && [ "$category_choice" -gt 0 ] && [ "$category_choice" -le "${#categories[@]}" ]; then
+            category="${categories[$((category_choice-1))]}"
+            display_tutorial_category "$category"
+        fi
+    fi
+    
+    read -p "Press Enter to return to the main menu..." 
+    display_main_menu
+}
+
+# Function to display a specific tutorial category
+display_tutorial_category() {
+    local category="$1"
+    local category_name=$(basename "$category")
+    
+    clear
+    echo -e "${BOLD}${PURPLE}Tutorial Category: ${category_name^}${NC}"
+    echo
+    
+    # Find all tutorial files in this category
+    mapfile -t tutorials < <(find "$category" -name "*.rzn" -type f | sort)
+    
+    if [ ${#tutorials[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No tutorials found in this category.${NC}"
+    else
+        echo -e "${CYAN}Available tutorials:${NC}"
+        echo
+        
+        for i in "${!tutorials[@]}"; do
+            tutorial="${tutorials[$i]}"
+            basename=$(basename "$tutorial" .rzn)
+            echo -e "  ${GREEN}$((i+1)).${NC} ${basename^}"
+        done
+        
+        echo
+        echo -n -e "${YELLOW}Enter the number of the tutorial to view (or 0 to return): ${NC}"
+        read -r tutorial_choice
+        
+        if [[ "$tutorial_choice" =~ ^[0-9]+$ ]] && [ "$tutorial_choice" -gt 0 ] && [ "$tutorial_choice" -le "${#tutorials[@]}" ]; then
+            tutorial="${tutorials[$((tutorial_choice-1))]}"
+            clear
+            basename=$(basename "$tutorial" .rzn)
+            echo -e "${BOLD}${PURPLE}Tutorial: ${basename^}${NC}"
+            echo
+            display_code "$tutorial"
+            echo
+            echo -e "${CYAN}Would you like to run this tutorial? (y/n)${NC}"
+            read -r run_tutorial
+            
+            if [[ "$run_tutorial" =~ ^[Yy]$ ]]; then
+                echo
+                echo -e "${YELLOW}Running tutorial...${NC}"
+                echo
+                razen-run "$tutorial"
+                echo
+            fi
+            
+            read -p "Press Enter to continue..." 
+            display_tutorial_category "$category"
+        fi
+    fi
+}
+
+# Function to display API documentation
+display_api() {
+    clear
+    echo -e "${BOLD}${PURPLE}Razen API Documentation${NC}"
+    echo
+    
+    if [ -f "$DOCS_DIR/api/README.md" ]; then
+        display_markdown "$DOCS_DIR/api/README.md"
+    else
+        echo -e "${YELLOW}API documentation is still under development.${NC}"
+        echo -e "${YELLOW}Please check back later.${NC}"
+    fi
+    
+    echo
+    read -p "Press Enter to return to the main menu..." 
+    display_main_menu
+}
+
+# Check for command-line arguments
+if [ "$#" -gt 0 ]; then
+    case "$1" in
+        "getting-started") display_getting_started ;;
+        "language-reference") display_language_reference ;;
+        "examples") display_examples ;;
+        "tutorials") display_tutorials ;;
+        "api") display_api ;;
+        *) 
+            # Check if it's a path to a specific documentation file
+            if [ -f "$DOCS_DIR/$1" ]; then
+                display_markdown "$DOCS_DIR/$1"
+            elif [ -f "$1" ] && [[ "$1" == *".md" || "$1" == *".rzn" ]]; then
+                if [[ "$1" == *".md" ]]; then
+                    display_markdown "$1"
+                else
+                    display_code "$1"
+                fi
+            else
+                echo -e "${RED}Unknown documentation section: $1${NC}"
+                echo -e "${YELLOW}Available sections: getting-started, language-reference, examples, tutorials, api${NC}"
+                exit 1
+            fi
+            ;;
+    esac
+else
+    # No arguments, display the main menu
+    display_main_menu
+fi

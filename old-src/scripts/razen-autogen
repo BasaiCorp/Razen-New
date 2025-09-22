@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Automatically run the autogen.py script with Python 3
+echo "🔥 Running RAZEN Autogen..."
+python3 "$(dirname "$0")/../autogen.py"
+echo "✅ RAZEN Autogen Execution Completed!"

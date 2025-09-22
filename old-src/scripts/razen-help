@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# Razen Language Help Script
+# Copyright © 2025 Prathmesh Barot, Basai Corporation
+# Version: beta v0.1.687 (Windows Installtion fixed 2nd)
+
+# Colors for terminal output
+BLUE="\033[0;34m"
+GREEN="\033[0;32m"
+YELLOW="\033[0;33m"
+RED="\033[0;31m"
+PURPLE="\033[0;35m"
+CYAN="\033[0;36m"
+NC="\033[0m" # No Color
+
+# Function to detect OS
+detect_os() {
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "linux"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "macos"
+    elif [[ "$OSTYPE" == "cygwin" || "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
+        echo "windows"
+    else
+        echo "unknown"
+    fi
+}
+
+# Detect the OS
+OS=$(detect_os)
+
+# Get installation directory based on OS
+if [ "$OS" == "linux" ]; then
+    INSTALL_DIR="/usr/local/lib/razen"
+elif [ "$OS" == "macos" ]; then
+    INSTALL_DIR="/usr/local/razen"
+elif [ "$OS" == "windows" ]; then
+    INSTALL_DIR="/mnt/c/Program Files/Razen"
+fi
+
+# Check if installation directory exists
+if [ -d "$INSTALL_DIR" ]; then
+    VERSION=$(cat "$INSTALL_DIR/version" 2>/dev/null || echo "unknown")
+else
+    VERSION="unknown"
+fi
+
+# Print header
+echo -e "${BLUE}"
+echo "██████╗  █████╗ ███████╗███████╗███╗   ██╗"
+echo "██╔══██╗██╔══██╗╚══███╔╝██╔════╝████╗  ██║"
+echo "██████╔╝███████║  ███╔╝ █████╗  ██╔██╗ ██║"
+echo "██╔══██╗██╔══██║ ███╔╝  ██╔══╝  ██║╚██╗██║"
+echo "██║  ██║██║  ██║███████╗███████╗██║ ╚████║"
+echo "╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝╚═╝  ╚═══╝"
+echo -e "${NC}"
+
+echo -e "${YELLOW}Razen Programming Language ${PURPLE}$VERSION${NC}"
+echo -e "${CYAN}By Prathmesh Barot, Basai Corporation${NC}"
+echo -e "${YELLOW}Copyright © 2025 Prathmesh Barot${NC}\n"
+
+# USAGE SECTION
+echo -e "${BLUE}USAGE:${NC}"
+echo -e "  ${GREEN}razen <command> [arguments]${NC}\n"
+
+# COMMANDS SECTION
+echo -e "${BLUE}COMMANDS:${NC}"
+echo -e "  ${GREEN}razen run <file>${NC} - Run a Razen program"
+echo -e "  ${GREEN}razen new <name>${NC} - Create a new Razen program"
+echo -e "  ${GREEN}razen version${NC} - Display version information"
+echo -e "  ${GREEN}razen uninstall${NC} - Remove Razen from your system\n"
+
+echo -e "  ${GREEN}razen-debug <file>${NC} - Run a program in debug mode"
+echo -e "  ${GREEN}razen-test [dir]${NC} - Run tests in a directory"
+echo -e "  ${GREEN}razen-run <file>${NC} - Run programs with clean output"
+echo -e "  ${GREEN}razen-update${NC} - Update Razen to the latest version"
+echo -e "  ${GREEN}razen-help${NC} - Show this help message\n"
+
+# COMMAND DETAILS SECTION
+echo -e "${BLUE}COMMAND DETAILS:${NC}"
+echo -e "  ${YELLOW}run${NC} - Execute a Razen program"
+echo -e "    ${CYAN}Usage:${NC} razen run <filename.rzn>"
+echo -e "    ${CYAN}Example:${NC} razen run hello_world.rzn\n"
+
+echo -e "  ${YELLOW}new${NC} - Create a new Razen program"
+echo -e "    ${CYAN}Usage:${NC} razen new <program_name>"
+echo -e "    ${CYAN}Example:${NC} razen new my_program\n"
+
+echo -e "  ${YELLOW}version${NC} - Display Razen version information"
+echo -e "    ${CYAN}Usage:${NC} razen version"
+echo -e "    ${CYAN}Example:${NC} razen version\n"
+
+echo -e "  ${YELLOW}debug${NC} - Run a program with debug information"
+echo -e "    ${CYAN}Usage:${NC} razen-debug <filename.rzn>"
+echo -e "    ${CYAN}Example:${NC} razen-debug hello_world.rzn\n"
+
+echo -e "  ${YELLOW}test${NC} - Run Razen tests"
+echo -e "    ${CYAN}Usage:${NC} razen-test [directory]"
+echo -e "    ${CYAN}Example:${NC} razen-test examples/\n"
+
+echo -e "  ${YELLOW}update${NC} - Update Razen to the latest version"
+echo -e "    ${CYAN}Usage:${NC} razen-update"
+echo -e "    ${CYAN}Example:${NC} razen-update\n"
+
+echo -e "  ${RED}uninstall${NC} - Remove Razen from your system"
+echo -e "    ${CYAN}Usage:${NC} razen uninstall"
+echo -e "    ${CYAN}Example:${NC} razen uninstall\n"
+
+# EXAMPLES SECTION
+echo -e "${BLUE}EXAMPLES:${NC}"
+echo -e "  ${GREEN}razen run hello_world.rzn${NC}"
+echo -e "  ${GREEN}razen new awesome_program${NC}"
+echo -e "  ${GREEN}razen-debug math_test.rzn${NC}"
+echo -e "  ${GREEN}razen-update${NC}"
+echo -e "  ${GREEN}razen uninstall${NC}\n"
+
+# INSTALLATION INFO
+echo -e "${BLUE}INSTALLATION:${NC}"
+echo -e "  Razen is installed in: ${GREEN}$INSTALL_DIR${NC}"
+echo -e "  Installation type: ${GREEN}$OS${NC}"
+echo -e "  Version: ${PURPLE}$VERSION${NC}\n"
+
+# HELP
+echo -e "${BLUE}HELP:${NC}"
+echo -e "  For more information, visit: ${CYAN}https://razen-lang.org${NC}"
+echo -e "  Report issues: ${CYAN}https://github.com/BasaiCorp/razen-lang/issues${NC}\n"
+
+# COPYRIGHT
+echo -e "${YELLOW}Copyright © 2025 Prathmesh Barot, Basai Corporation${NC}"

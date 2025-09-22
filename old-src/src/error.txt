@@ -1,0 +1,100 @@
+// src/error.rs
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+pub struct Location {
+    pub line: usize,   // 1-indexed line number for user display
+    pub column: usize, // 1-indexed column number for user display
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Hash)]
+pub struct Span {
+    pub start: Location,
+    pub end: Location,
+    // We might also add byte offsets (start_byte, end_byte) if needed for direct source slicing
+}
+
+impl Span {
+    // Helper to create a span for a single token if start and end are the same
+    pub fn new(start_line: usize, start_col: usize, end_line: usize, end_col: usize) -> Self {
+        Span {
+            start: Location { line: start_line, column: start_col },
+            end: Location { line: end_line, column: end_col },
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ErrorKind {
+    SyntaxError,
+    TypeError,
+    ReferenceError, // e.g., undefined variable
+    RuntimeError,
+    ArgumentError, // e.g., wrong number of arguments
+    LibraryError,  // Errors specific to library calls
+    InternalCompilerError, // For unexpected issues within the compiler
+    // Add more kinds as needed
+}
+
+#[derive(Debug, Clone)]
+pub struct RazenError {
+    pub kind: ErrorKind,
+    pub message: String,
+    pub span: Span,
+    pub help: Option<String>, // Optional suggestions for fixing the error
+    // pub source_line: Option<String>, // Optionally store the line of code itself
+}
+
+impl RazenError {
+    pub fn new(kind: ErrorKind, message: String, span: Span) -> Self {
+        RazenError {
+            kind,
+            message,
+            span,
+            help: None,
+            // source_line: None,
+        }
+    }
+
+    pub fn with_help(mut self, help_message: String) -> Self {
+        self.help = Some(help_message);
+        self
+    }
+}
+
+// Function to format and display errors (can be expanded later)
+pub fn report_error(source_code: &str, error: &RazenError) {
+    // Basic reporting for now. This will be significantly enhanced.
+    eprintln!(
+        "Error [{:?}] at Line {}, Column {}: {}",
+        error.kind, error.span.start.line, error.span.start.column, error.message
+    );
+
+    // Attempt to print the line of code
+    // This needs careful handling of multi-line spans and ensuring lines are 0-indexed for slicing
+    let line_0_indexed = error.span.start.line.saturating_sub(1);
+    if let Some(line_content) = source_code.lines().nth(line_0_indexed) {
+        eprintln!("  | {}", line_content);
+        // Add a caret pointing to the error column
+        // Column is 1-indexed, so adjust for 0-indexed string
+        let col_0_indexed = error.span.start.column.saturating_sub(1);
+        let mut caret_line = String::from("  | ");
+        for _ in 0..col_0_indexed {
+            caret_line.push(' ');
+        }
+        // For multi-character spans, we can extend the caret
+        let span_len = if error.span.start.line == error.span.end.line {
+            error.span.end.column.saturating_sub(error.span.start.column).max(1)
+        } else {
+            1 // Default to 1 for multi-line or simple errors
+        };
+        for _ in 0..span_len {
+            caret_line.push('^');
+        }
+        eprintln!("{}", caret_line);
+    }
+
+    if let Some(help) = &error.help {
+        eprintln!("  Hint: {}", help);
+    }
+    eprintln!("---");
+}
