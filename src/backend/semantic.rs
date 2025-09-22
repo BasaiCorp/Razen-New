@@ -282,9 +282,19 @@ impl SemanticAnalyzer {
         // Create new scope for function
         self.symbol_table.push_scope();
         
-        // Add parameters to scope
+        // Add parameters to scope with their proper types
         for param in &func_decl.parameters {
-            self.declare_variable(&param.name.name, "param", Position::new(1, 1, 0), true);
+            let param_type = match &param.type_annotation {
+                TypeAnnotation::Int => "int",
+                TypeAnnotation::Float => "float", 
+                TypeAnnotation::String => "str",
+                TypeAnnotation::Bool => "bool",
+                TypeAnnotation::Char => "char",
+                TypeAnnotation::Any => "any", // For unspecified types
+                TypeAnnotation::Custom(id) => &id.name,
+                _ => "any", // Default for complex types
+            };
+            self.declare_variable(&param.name.name, param_type, Position::new(1, 1, 0), true);
         }
         
         // Analyze function body
@@ -309,15 +319,33 @@ impl SemanticAnalyzer {
             self.diagnostics.add(diagnostic);
         }
         
-        // Analyze initializer if present
-        if let Some(ref expr) = var_decl.initializer {
-            self.analyze_expression(expr);
-        }
+        // Analyze initializer and infer type if present
+        let inferred_type = if let Some(ref expr) = var_decl.initializer {
+            self.analyze_expression(expr).unwrap_or_else(|| "any".to_string())
+        } else {
+            "any".to_string()
+        };
+        
+        // Use explicit type annotation if provided, otherwise use inferred type
+        let var_type = if let Some(ref type_ann) = var_decl.type_annotation {
+            match type_ann {
+                TypeAnnotation::Int => "int",
+                TypeAnnotation::Float => "float",
+                TypeAnnotation::String => "str",
+                TypeAnnotation::Bool => "bool",
+                TypeAnnotation::Char => "char",
+                TypeAnnotation::Any => "any",
+                TypeAnnotation::Custom(id) => &id.name,
+                _ => "any",
+            }
+        } else {
+            &inferred_type
+        };
         
         // Declare the variable
         self.declare_variable(
             var_name,
-            "var", // TODO: infer actual type
+            var_type,
             Position::new(1, 1, 0), // TODO: get actual position
             true,
         );
@@ -340,10 +368,15 @@ impl SemanticAnalyzer {
                     BinaryOperator::Add | BinaryOperator::Subtract | BinaryOperator::Multiply | 
                     BinaryOperator::Divide | BinaryOperator::Modulo => {
                         if let (Some(left), Some(right)) = (&left_type, &right_type) {
-                            if left == "str" || right == "str" {
+                            // Allow "any" type to be compatible with anything
+                            if left == "any" || right == "any" {
+                                Some("any".to_string()) // Any type is flexible
+                            } else if left == "str" || right == "str" {
                                 Some("str".to_string()) // String concatenation
                             } else if left == "int" && right == "int" {
                                 Some("int".to_string())
+                            } else if left == "float" || right == "float" {
+                                Some("float".to_string()) // Promote to float
                             } else {
                                 let diagnostic = helpers::type_mismatch(
                                     "compatible types",

@@ -458,6 +458,12 @@ impl Compiler {
     pub fn execute(&self) -> Result<(), String> {
         let mut runtime = Runtime::new();
         runtime.set_clean_output(self.clean_output);
+        
+        // Register function parameter names with runtime
+        for (func_name, params) in &self.function_param_names {
+            runtime.register_function_params(func_name.clone(), params.clone());
+        }
+        
         runtime.execute(&self.ir)
     }
 

@@ -273,9 +273,11 @@ export function activate(context: vscode.ExtensionContext) {
 
         // Save the file first
         document.save().then(() => {
+            const inputFile = document.fileName;
+            const outputFile = inputFile.replace(/\.(rzn|razen)$/i, '') + '.exe';
             const terminal = vscode.window.createTerminal('Razen Compiler');
             terminal.show();
-            terminal.sendText(`cargo run -- --jit "${document.fileName}"`);
+            terminal.sendText(`razen compile "${inputFile}" -o "${outputFile}"`);
         });
     });
 
@@ -296,7 +298,7 @@ export function activate(context: vscode.ExtensionContext) {
         document.save().then(() => {
             const terminal = vscode.window.createTerminal('Razen Runner');
             terminal.show();
-            terminal.sendText(`cargo run -- --jit "${document.fileName}"`);
+            terminal.sendText(`razen run "${document.fileName}"`);
         });
     });
 

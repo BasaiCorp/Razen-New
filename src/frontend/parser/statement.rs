@@ -189,8 +189,14 @@ impl<'a> StatementParser<'a> {
         if !self.check(&TokenKind::RightParen) {
             loop {
                 let param_name = self.consume_identifier("Expected parameter name")?;
-                self.consume(TokenKind::Colon, "Expected ':' after parameter name")?;
-                let param_type = self.parse_type_annotation()?;
+                
+                // Make type annotation optional (like old implementation)
+                let param_type = if self.match_tokens(&[TokenKind::Colon]) {
+                    self.parse_type_annotation()?
+                } else {
+                    // Default to 'Any' type if no type annotation (like old implementation)
+                    TypeAnnotation::Any
+                };
                 
                 parameters.push(Parameter {
                     name: Identifier::new(param_name),

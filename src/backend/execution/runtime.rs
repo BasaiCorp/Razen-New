@@ -10,8 +10,10 @@ use super::ir::IR;
 pub struct Runtime {
     stack: Vec<String>,
     variables: HashMap<String, String>,
+    functions: HashMap<String, String>, // Separate function registry
     call_stack: Vec<(usize, HashMap<String, String>)>,
     exception_handlers: Vec<(String, usize)>,
+    function_params: HashMap<String, Vec<String>>, // Store function parameter names
     clean_output: bool,
 }
 
@@ -20,14 +22,21 @@ impl Runtime {
         Runtime {
             stack: Vec::new(),
             variables: HashMap::new(),
+            functions: HashMap::new(),
             call_stack: Vec::new(),
             exception_handlers: Vec::new(),
+            function_params: HashMap::new(),
             clean_output: false,
         }
     }
 
     pub fn set_clean_output(&mut self, clean: bool) {
         self.clean_output = clean;
+    }
+
+    /// Register function parameter names for proper parameter binding
+    pub fn register_function_params(&mut self, name: String, params: Vec<String>) {
+        self.function_params.insert(name, params);
     }
 
     /// Execute IR instructions
@@ -37,14 +46,15 @@ impl Runtime {
             println!("Generated {} IR instructions", ir.len());
         }
 
-        // Pre-pass: register function addresses
+        // Pre-pass: register function addresses and extract parameter info from compiler
         let mut function_count = 0;
         for (i, instruction) in ir.iter().enumerate() {
-            if let IR::DefineFunction(name, _) = instruction {
-                self.variables.insert(name.clone(), i.to_string());
+            if let IR::DefineFunction(name, actual_addr) = instruction {
+                // Use the actual function address, not the DefineFunction instruction address
+                self.functions.insert(name.clone(), actual_addr.to_string());
                 function_count += 1;
                 if !self.clean_output {
-                    println!("Registered function '{}' at address {}", name, i);
+                    println!("Registered function '{}' at address {} (instruction at {})", name, actual_addr, i);
                 }
             }
         }
@@ -265,24 +275,54 @@ impl Runtime {
                     if self.is_builtin(name) {
                         self.execute_builtin(name, *arg_count)?;
                     } else {
-                        // User-defined function call
+                        // User-defined function call - collect arguments from stack
                         let mut args = Vec::new();
                         for _ in 0..*arg_count {
                             if let Some(arg) = self.stack.pop() {
                                 args.push(arg);
                             }
                         }
-                        args.reverse();
+                        args.reverse(); // Arguments are pushed in reverse order
 
-                        if let Some(func_addr_str) = self.variables.get(name) {
+                        if !self.clean_output {
+                            println!("Looking for function '{}' in functions: {:?}", name, self.functions.keys().collect::<Vec<_>>());
+                        }
+                        
+                        if let Some(func_addr_str) = self.functions.get(name) {
                             if let Ok(func_addr) = func_addr_str.parse::<usize>() {
-                                let func_variables = self.variables.clone();
+                                if !self.clean_output {
+                                    println!("Found function '{}' at address {}", name, func_addr);
+                                }
+                                // Create new function scope with parameters
+                                let mut func_variables = HashMap::new();
+                                
+                                // If we have parameter names stored, bind arguments to parameters
+                                if let Some(param_names) = self.function_params.get(name) {
+                                    for (i, param_name) in param_names.iter().enumerate() {
+                                        if i < args.len() {
+                                            func_variables.insert(param_name.clone(), args[i].clone());
+                                        } else {
+                                            func_variables.insert(param_name.clone(), "null".to_string());
+                                        }
+                                    }
+                                } else {
+                                    // Fallback: create generic parameter names
+                                    for (i, arg) in args.iter().enumerate() {
+                                        func_variables.insert(format!("param{}", i), arg.clone());
+                                    }
+                                }
+                                
+                                // Save current state and jump to function
                                 self.call_stack.push((pc + 1, self.variables.clone()));
                                 self.variables = func_variables;
                                 pc = func_addr;
                                 continue;
                             }
                         } else {
+                            // Function not found - push undefined and continue
+                            if !self.clean_output {
+                                println!("Warning: Function '{}' not found", name);
+                            }
                             self.stack.push("undefined".to_string());
                         }
                     }
@@ -323,6 +363,17 @@ impl Runtime {
                     if let Some(duration_str) = self.stack.pop() {
                         if let Ok(duration) = duration_str.parse::<f64>() {
                             thread::sleep(Duration::from_secs_f64(duration));
+                        }
+                    }
+                },
+                IR::FloorDiv => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<f64>(), b.parse::<f64>()) {
+                            if b_num != 0.0 {
+                                self.stack.push((a_num / b_num).floor().to_string());
+                            } else {
+                                return Err("Division by zero".to_string());
+                            }
                         }
                     }
                 },
