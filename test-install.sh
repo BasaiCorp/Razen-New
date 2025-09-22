@@ -12,12 +12,85 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m'
 
+# Check for existing installation and version comparison (local test version)
+check_and_prompt_update() {
+    if [ -d "$RAZEN_HOME" ] && [ -f "$RAZEN_HOME/version" ]; then
+        echo -e "${BLUE}Checking for updates...${NC}"
+
+        # Read local version
+        local LOCAL_VERSION=$(cat "$RAZEN_HOME/version" 2>/dev/null)
+        echo -e "${CYAN}Current version: $LOCAL_VERSION${NC}"
+
+        # Read local production version
+        if [ -f "production/version" ]; then
+            local REMOTE_VERSION=$(cat "production/version" 2>/dev/null)
+
+            if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
+                echo -e "${YELLOW}Razen is already installed with the same version (${LOCAL_VERSION})${NC}"
+                echo ""
+                read -p "Do you want to reinstall anyway? (y/N): " -n 1 -r
+                echo ""
+
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    echo -e "${BLUE}Reinstalling Razen...${NC}"
+                    return 0
+                else
+                    echo -e "${YELLOW}Reinstallation cancelled. Razen is already at version $LOCAL_VERSION${NC}"
+                    echo ""
+                    echo -e "${BLUE}Usage Examples:${NC}"
+                    echo "  razen run program.rzn          # Compile and run"
+                    echo "  razen dev program.rzn          # Development mode"
+                    echo "  razen compile program.rzn      # Compile to executable"
+                    echo "  razen test program.rzn         # Run tests"
+                    echo "  razen --help                   # Show help"
+                    echo ""
+                    exit 0
+                fi
+            else
+                echo -e "${YELLOW}New version available:${NC}"
+                echo -e "${CYAN}  Current: $LOCAL_VERSION${NC}"
+                echo -e "${CYAN}  Local:   $REMOTE_VERSION${NC}"
+                echo ""
+
+                read -p "Do you want to update Razen? (y/N): " -n 1 -r
+                echo ""
+
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    echo -e "${BLUE}Updating Razen...${NC}"
+                    return 0
+                else
+                    echo -e "${YELLOW}Update cancelled. Razen is still at version $LOCAL_VERSION${NC}"
+                    echo ""
+                    echo -e "${BLUE}Usage Examples:${NC}"
+                    echo "  razen run program.rzn          # Compile and run"
+                    echo "  razen dev program.rzn          # Development mode"
+                    echo "  razen compile program.rzn      # Compile to executable"
+                    echo "  razen test program.rzn         # Run tests"
+                    echo "  razen --help                   # Show help"
+                    echo ""
+                    exit 0
+                fi
+            fi
+        else
+            echo -e "${YELLOW}⚠ Could not check local production/version file${NC}"
+            echo -e "${YELLOW}Proceeding with reinstallation...${NC}"
+            return 0
+        fi
+    else
+        echo -e "${GREEN}Fresh installation detected${NC}"
+        return 0
+    fi
+}
+
 echo -e "${BLUE}🧪 Testing Razen Installation Locally${NC}"
 echo ""
 
-# Set up local variables
+# Set up local variables FIRST
 RAZEN_HOME="$HOME/.razen"
 BINARY_NAME="razen"
+
+# Check for existing installation and version
+check_and_prompt_update
 
 # Remove existing installation
 if [ -d "$RAZEN_HOME" ]; then

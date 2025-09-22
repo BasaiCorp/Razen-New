@@ -15,8 +15,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="https://github.com/BasaiCorp/razen-lang-new"  # Replace with your actual repo
-GITHUB_RAW="https://raw.githubusercontent.com/BasaiCorp/razen-lang-new/main/production"  # Replace with your actual repo
+GITHUB_REPO="https://github.com/BasaiCorp/Razen-New"  # Replace with your actual repo
+GITHUB_RAW="https://raw.githubusercontent.com/BasaiCorp/Razen-New/main/production/"  # Replace with your actual repo
 RAZEN_HOME="$HOME/.razen"
 BINARY_NAME="razen"
 TEMP_DIR="/tmp/razen-install-$$"
@@ -53,7 +53,70 @@ check_dependencies() {
     echo -e "${GREEN}✓ Dependencies satisfied${NC}"
 }
 
-# Detect OS and architecture
+# Check for existing installation and version comparison
+check_and_prompt_update() {
+    if [ -d "$RAZEN_HOME" ] && [ -f "$RAZEN_HOME/version" ]; then
+        echo -e "${BLUE}Checking for updates...${NC}"
+
+        # Read local version
+        local LOCAL_VERSION=$(cat "$RAZEN_HOME/version" 2>/dev/null)
+        echo -e "${CYAN}Current version: $LOCAL_VERSION${NC}"
+
+        # Download remote version to temp location
+        local TEMP_VERSION_FILE="$TEMP_DIR/remote_version"
+        mkdir -p "$TEMP_DIR"
+
+        if curl -s -o "$TEMP_VERSION_FILE" "$GITHUB_RAW/version"; then
+            local REMOTE_VERSION=$(cat "$TEMP_VERSION_FILE" 2>/dev/null)
+
+            if [ "$LOCAL_VERSION" = "$REMOTE_VERSION" ]; then
+                echo -e "${GREEN}✓ Razen is already up to date (${LOCAL_VERSION})${NC}"
+                echo ""
+                echo -e "${BLUE}Usage Examples:${NC}"
+                echo "  razen run program.rzn          # Compile and run"
+                echo "  razen dev program.rzn          # Development mode"
+                echo "  razen compile program.rzn      # Compile to executable"
+                echo "  razen test program.rzn         # Run tests"
+                echo "  razen --help                   # Show help"
+                echo ""
+                cleanup
+                exit 0
+            else
+                echo -e "${YELLOW}New version available:${NC}"
+                echo -e "${CYAN}  Current: $LOCAL_VERSION${NC}"
+                echo -e "${CYAN}  Remote:  $REMOTE_VERSION${NC}"
+                echo ""
+
+                read -p "Do you want to update Razen? (y/N): " -n 1 -r
+                echo ""
+
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    echo -e "${BLUE}Updating Razen...${NC}"
+                    return 0
+                else
+                    echo -e "${YELLOW}Update cancelled. Razen is still at version $LOCAL_VERSION${NC}"
+                    echo ""
+                    echo -e "${BLUE}Usage Examples:${NC}"
+                    echo "  razen run program.rzn          # Compile and run"
+                    echo "  razen dev program.rzn          # Development mode"
+                    echo "  razen compile program.rzn      # Compile to executable"
+                    echo "  razen test program.rzn         # Run tests"
+                    echo "  razen --help                   # Show help"
+                    echo ""
+                    cleanup
+                    exit 0
+                fi
+            fi
+        else
+            echo -e "${YELLOW}⚠ Could not check for updates (network issue)${NC}"
+            echo -e "${YELLOW}Proceeding with installation/update...${NC}"
+            return 0
+        fi
+    else
+        echo -e "${GREEN}Fresh installation detected${NC}"
+        return 0
+    fi
+}
 detect_platform() {
     local os=$(uname -s | tr '[:upper:]' '[:lower:]')
     local arch=$(uname -m)
@@ -117,24 +180,38 @@ download_razen() {
 # Install Razen to ~/.razen
 install_razen() {
     echo -e "${BLUE}Installing Razen to $RAZEN_HOME...${NC}"
-    
+
+    # Backup existing version file if updating
+    local VERSION_BACKUP=""
+    if [ -f "$RAZEN_HOME/version" ]; then
+        VERSION_BACKUP="$RAZEN_HOME/version.backup"
+        cp "$RAZEN_HOME/version" "$VERSION_BACKUP"
+        echo -e "${CYAN}Backing up existing version...${NC}"
+    fi
+
     # Remove existing installation
     if [ -d "$RAZEN_HOME" ]; then
         echo -e "${YELLOW}Removing existing installation...${NC}"
         rm -rf "$RAZEN_HOME"
     fi
-    
+
     # Create .razen directory
     mkdir -p "$RAZEN_HOME"
-    
+
     # Copy production contents to ~/.razen
     echo -e "${CYAN}Copying files...${NC}"
     cp -r "$PRODUCTION_DIR"/* "$RAZEN_HOME/"
-    
+
+    # Restore version file if it was backed up
+    if [ -n "$VERSION_BACKUP" ]; then
+        mv "$VERSION_BACKUP" "$RAZEN_HOME/version"
+        echo -e "${GREEN}✓ Version file preserved${NC}"
+    fi
+
     # Make binary executable
     if [ -f "$RAZEN_HOME/bin/razen-lang" ]; then
         chmod +x "$RAZEN_HOME/bin/razen-lang"
-        
+
         # Create razen symlink
         ln -sf "$RAZEN_HOME/bin/razen-lang" "$RAZEN_HOME/bin/$BINARY_NAME"
         chmod +x "$RAZEN_HOME/bin/$BINARY_NAME"
@@ -142,7 +219,7 @@ install_razen() {
         echo -e "${RED}Error: Binary not found in production/bin/${NC}"
         exit 1
     fi
-    
+
     echo -e "${GREEN}✓ Installation completed${NC}"
 }
 
@@ -234,15 +311,16 @@ cleanup() {
 main() {
     echo -e "${BLUE}Starting Razen installation...${NC}"
     echo ""
-    
+
     check_dependencies
     detect_platform
+    check_and_prompt_update
     download_razen
     install_razen
     setup_path
     test_installation
     cleanup
-    
+
     echo ""
     echo -e "${GREEN}Razen Programming Language installed successfully!${NC}"
     echo -e "${CYAN}Installation directory: $RAZEN_HOME${NC}"
