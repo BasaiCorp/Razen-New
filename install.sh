@@ -16,7 +16,7 @@ NC='\033[0m' # No Color
 
 # Configuration
 GITHUB_REPO="https://github.com/BasaiCorp/Razen-New"  # Replace with your actual repo
-GITHUB_RAW="https://raw.githubusercontent.com/BasaiCorp/Razen-New/main/production/"  # Replace with your actual repo
+GITHUB_RAW="https://raw.githubusercontent.com/BasaiCorp/Razen-New/main/production"  # Replace with your actual repo
 RAZEN_HOME="$HOME/.razen"
 BINARY_NAME="razen"
 TEMP_DIR="/tmp/razen-install-$$"
