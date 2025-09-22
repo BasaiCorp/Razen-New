@@ -15,8 +15,8 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="https://github.com/YOUR_USERNAME/razen-lang-new"  # Replace with your actual repo
-GITHUB_RAW="https://raw.githubusercontent.com/YOUR_USERNAME/razen-lang-new/main"  # Replace with your actual repo
+GITHUB_REPO="https://github.com/BasaiCorp/razen-lang-new"  # Replace with your actual repo
+GITHUB_RAW="https://raw.githubusercontent.com/BasaiCorp/razen-lang-new/main/production"  # Replace with your actual repo
 RAZEN_HOME="$HOME/.razen"
 BINARY_NAME="razen"
 TEMP_DIR="/tmp/razen-install-$$"
@@ -244,9 +244,9 @@ main() {
     cleanup
     
     echo ""
-    echo -e "${GREEN}🎉 Razen Programming Language installed successfully!${NC}"
+    echo -e "${GREEN}Razen Programming Language installed successfully!${NC}"
     echo -e "${CYAN}Installation directory: $RAZEN_HOME${NC}"
-    echo -e "${BLUE}Happy coding with Razen! 🚀${NC}"
+    echo -e "${BLUE}Happy coding with Razen!${NC}"
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
     echo "1. Restart your terminal or run: source ~/.bashrc"
