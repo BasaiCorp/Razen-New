@@ -1,7 +1,8 @@
+fun greet(name) {
+    println(f"Hello, " + name)
+}
+
 fun main() {
-    println("Hello from Razen JIT!")
-    var x: int = 42
-    var y: int = 8
-    var result: int = x + y
-    println("Result: " + result)
+    var name: str = input()
+    greet(name)
 }

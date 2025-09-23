@@ -4,12 +4,14 @@
 
 use crate::frontend::parser::ast::*;
 use crate::frontend::diagnostics::{Diagnostic, Diagnostics, helpers, Span, Position};
+use crate::backend::type_checker::TypeChecker;
 use std::collections::HashMap;
 
 /// Semantic analyzer that validates the AST and reports errors
 pub struct SemanticAnalyzer {
     diagnostics: Diagnostics,
     symbol_table: SymbolTable,
+    type_checker: TypeChecker,
     current_function: Option<String>,
     in_loop: bool,
     source_lines: Vec<String>,
@@ -51,6 +53,7 @@ impl SemanticAnalyzer {
         let mut analyzer = SemanticAnalyzer {
             diagnostics: Diagnostics::new(),
             symbol_table: SymbolTable::new(),
+            type_checker: TypeChecker::new(),
             current_function: None,
             in_loop: false,
             source_lines: Vec::new(),
@@ -71,9 +74,16 @@ impl SemanticAnalyzer {
             }
         }
         
-        // Second pass: analyze function bodies
+        // Second pass: analyze function bodies and perform type checking
         for stmt in &program.statements {
             self.analyze_statement(stmt);
+        }
+        
+        // Third pass: comprehensive type checking
+        let type_errors = self.type_checker.check_program(program);
+        for error in type_errors {
+            let diagnostic = helpers::type_error(&error, Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)));
+            self.diagnostics.add(diagnostic);
         }
         
         // Check for unused variables
@@ -284,15 +294,19 @@ impl SemanticAnalyzer {
         
         // Add parameters to scope with their proper types
         for param in &func_decl.parameters {
-            let param_type = match &param.type_annotation {
-                TypeAnnotation::Int => "int",
-                TypeAnnotation::Float => "float", 
-                TypeAnnotation::String => "str",
-                TypeAnnotation::Bool => "bool",
-                TypeAnnotation::Char => "char",
-                TypeAnnotation::Any => "any", // For unspecified types
-                TypeAnnotation::Custom(id) => &id.name,
-                _ => "any", // Default for complex types
+            let param_type = if let Some(ref type_ann) = param.type_annotation {
+                match type_ann {
+                    TypeAnnotation::Int => "int",
+                    TypeAnnotation::Float => "float", 
+                    TypeAnnotation::String => "str",
+                    TypeAnnotation::Bool => "bool",
+                    TypeAnnotation::Char => "char",
+                    TypeAnnotation::Any => "any",
+                    TypeAnnotation::Custom(id) => &id.name,
+                    _ => "any",
+                }
+            } else {
+                "any" // Parameters without type annotations are flexible
             };
             self.declare_variable(&param.name.name, param_type, Position::new(1, 1, 0), true);
         }
@@ -328,7 +342,7 @@ impl SemanticAnalyzer {
         
         // Use explicit type annotation if provided, otherwise use inferred type
         let var_type = if let Some(ref type_ann) = var_decl.type_annotation {
-            match type_ann {
+            let declared_type = match type_ann {
                 TypeAnnotation::Int => "int",
                 TypeAnnotation::Float => "float",
                 TypeAnnotation::String => "str",
@@ -337,7 +351,21 @@ impl SemanticAnalyzer {
                 TypeAnnotation::Any => "any",
                 TypeAnnotation::Custom(id) => &id.name,
                 _ => "any",
+            };
+            
+            // Check type compatibility if both declared type and initializer exist
+            if let Some(ref _expr) = var_decl.initializer {
+                if !self.types_compatible(&inferred_type, declared_type) {
+                    let diagnostic = helpers::type_mismatch(
+                        declared_type,
+                        &inferred_type,
+                        self.create_span_from_identifier(&var_decl.name),
+                    );
+                    self.diagnostics.add(diagnostic);
+                }
             }
+            
+            declared_type
         } else {
             &inferred_type
         };
@@ -657,6 +685,24 @@ impl SemanticAnalyzer {
             }
         }
         (1, 1) // Final fallback
+    }
+    
+    /// Check if two types are compatible for assignment
+    fn types_compatible(&self, from_type: &str, to_type: &str) -> bool {
+        match (from_type, to_type) {
+            // Exact matches
+            (a, b) if a == b => true,
+            
+            // Any type is flexible
+            ("any", _) | (_, "any") => true,
+            
+            // Numeric coercions
+            ("int", "float") | ("float", "int") => true,
+            
+            // String concatenation flexibility (but not for explicit type declarations)
+            // For explicit declarations, we want strict typing
+            _ => false,
+        }
     }
 }
 

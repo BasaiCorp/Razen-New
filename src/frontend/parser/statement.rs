@@ -192,10 +192,10 @@ impl<'a> StatementParser<'a> {
                 
                 // Make type annotation optional (like old implementation)
                 let param_type = if self.match_tokens(&[TokenKind::Colon]) {
-                    self.parse_type_annotation()?
+                    Some(self.parse_type_annotation()?)
                 } else {
-                    // Default to 'Any' type if no type annotation (like old implementation)
-                    TypeAnnotation::Any
+                    // No type annotation means flexible parameter
+                    None
                 };
                 
                 parameters.push(Parameter {

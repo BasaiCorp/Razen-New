@@ -252,6 +252,13 @@ pub mod helpers {
             .with_severity(Severity::Help)
             .with_label(Label::new(span).with_severity(Severity::Help))
     }
+
+    /// Create a type error diagnostic
+    pub fn type_error<S: Into<String>>(message: S, span: Span) -> Diagnostic {
+        Diagnostic::new(DiagnosticKind::custom(message))
+            .with_label(Label::primary(span))
+            .with_code("E0020")
+    }
 }
 
 #[cfg(test)]

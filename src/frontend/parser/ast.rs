@@ -137,7 +137,7 @@ pub struct FunctionDeclaration {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: Identifier,
-    pub type_annotation: TypeAnnotation,
+    pub type_annotation: Option<TypeAnnotation>,
 }
 
 // Data Structures

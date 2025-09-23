@@ -1,0 +1,19 @@
+fun main() {
+    // This should cause type errors
+    
+    // Error 1: String assigned to int
+    var number: int = "hello"
+    
+    // Error 2: Boolean assigned to string  
+    var text: bool = true
+    
+    // Error 3: Float assigned to boolean
+    var flag: bool = 3.14
+    
+    // This should work (flexible typing)
+    var flexible = 42
+    flexible = "now string"
+    flexible = true
+    
+    println("Type checking test completed")
+}

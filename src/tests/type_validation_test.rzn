@@ -1,0 +1,28 @@
+// Test type validation with proper error handling
+
+fun main() {
+    println("=== Type Validation Test ===")
+    
+    // Test integer input with validation
+    println("Please enter your age (integer):")
+    var age: int = input_int("Enter your age: ")
+    println("You are " + age + " years old")
+    
+    // Test string input (always valid)
+    var name: str = input_str("Enter your name: ")
+    println("Hello, " + name + "!")
+    
+    // Test boolean input with validation
+    var likes_programming: bool = input_bool("Do you like programming? (true/false): ")
+    if likes_programming {
+        println("Great! Programming is awesome!")
+    } else {
+        println("That's okay, everyone has different interests.")
+    }
+    
+    // Test float input with validation
+    var height: float = input_float("Enter your height in meters: ")
+    println("Your height is " + height + " meters")
+    
+    println("=== All inputs validated successfully! ===")
+}

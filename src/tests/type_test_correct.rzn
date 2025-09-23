@@ -1,0 +1,36 @@
+fun main() {
+    // Correct type annotations
+    var x: int = 3
+    println(x)
+    
+    // Flexible typing without annotation
+    var y = 4
+    println(y)
+    
+    // Flexible variable can change type
+    y = "Hero"
+    println(y)
+    
+    // Correct string assignment
+    var name: str = "John"
+    println(name)
+    
+    // Input returns string, which matches str type
+    var username: str = input()
+    println(username)
+    
+    // Mixed types with flexible variables
+    var flexible_var = 42
+    println(flexible_var)
+    
+    flexible_var = "Now I'm a string!"
+    println(flexible_var)
+    
+    // Type coercion examples
+    var number: float = 3.14
+    var integer: int = 42
+    
+    // This should work (int to float coercion)
+    number = integer
+    println(number)
+}
