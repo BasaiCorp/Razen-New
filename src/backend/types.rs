@@ -46,12 +46,15 @@ impl Type {
             // Numeric coercions
             (Type::Int, Type::Float) | (Type::Float, Type::Int) => true,
             
-            // String concatenation with any type (flexible)
-            (Type::String, _) | (_, Type::String) => true,
-            
             // Everything else is incompatible
             _ => false,
         }
+    }
+    
+    /// Check if this type can be used in string concatenation (more permissive)
+    pub fn can_concatenate_with_string(&self) -> bool {
+        // For string concatenation, any type can be converted to string
+        true
     }
     
     /// Convert TypeAnnotation to Type

@@ -1,8 +1,12 @@
-fun greet(name: str) {
-    println(f"Hello, {name}")
-}
-
 fun main() {
-    var name = 71
-    greet(name)
+    while true {
+        println("Please enter something")
+        var choice = input()
+        var stop = true
+        if stop {
+            break
+        } else {
+            println("try again")
+        }
+    }
 }

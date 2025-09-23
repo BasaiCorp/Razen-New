@@ -162,9 +162,9 @@ impl TypeChecker {
                 self.context.declare_variable(var_name.clone(), declared);
             }
             
-            // Only initializer, no declared type (flexible typing)
-            (None, Some(_inferred)) => {
-                self.context.declare_variable(var_name.clone(), Type::Any);
+            // Only initializer, no declared type (use inferred type)
+            (None, Some(inferred)) => {
+                    self.context.declare_variable(var_name.clone(), inferred);
             }
             
             // Neither declared type nor initializer
@@ -188,6 +188,7 @@ impl TypeChecker {
         let return_type = func_decl.return_type.as_ref()
             .map(|t| Type::from_annotation(t))
             .unwrap_or(Type::Null);
+        
         
         self.context.declare_function(
             func_decl.name.name.clone(),
