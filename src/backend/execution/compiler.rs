@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use crate::frontend::parser::ast::{Program, Statement, Expression};
+use crate::frontend::parser::ast::{Program, Statement, Expression, InterpolatedString, InterpolationPart};
 use super::ir::IR;
 use super::runtime::Runtime;
 
@@ -447,10 +447,42 @@ impl Compiler {
                     }
                 };
             },
+            Expression::InterpolatedString(interp_str) => {
+                self.compile_interpolated_string(interp_str);
+            },
             _ => {
                 // Handle other expression types as needed
                 self.emit(IR::PushNull);
             }
+        }
+    }
+    
+    /// Compile interpolated string (f-string) into IR
+    fn compile_interpolated_string(&mut self, interp_str: InterpolatedString) {
+        if interp_str.parts.is_empty() {
+            self.emit(IR::PushString("".to_string()));
+            return;
+        }
+        
+        // Compile each part and concatenate them
+        let mut first = true;
+        for part in interp_str.parts {
+            match part {
+                InterpolationPart::Text(text) => {
+                    self.emit(IR::PushString(text));
+                },
+                InterpolationPart::Expression(expr) => {
+                    self.compile_expression(expr);
+                    // Convert the expression result to string if needed
+                    // For now, assume it's already a string or will be converted during runtime
+                }
+            }
+            
+            // If this is not the first part, concatenate with the previous result
+            if !first {
+                self.emit(IR::Add); // String concatenation
+            }
+            first = false;
         }
     }
 

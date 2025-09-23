@@ -227,7 +227,15 @@ impl Scanner {
             '\n' => self.line += 1,
             '"' => self.string(),
             c if c.is_digit(10) => self.number(),
-            c if c.is_alphabetic() || c == '_' => self.identifier(),
+            c if c.is_alphabetic() || c == '_' => {
+                // Check for f-string
+                if c == 'f' && self.peek() == '"' {
+                    self.advance(); // consume 'f'
+                    self.f_string();
+                } else {
+                    self.identifier();
+                }
+            }
             _ => self.add_token(TokenKind::Illegal),
         }
     }
@@ -278,6 +286,27 @@ impl Scanner {
 
         let value: String = self.source[self.start + 1..self.current - 1].iter().collect();
         self.add_token(TokenKind::String(value));
+    }
+
+    fn f_string(&mut self) {
+        self.advance(); // consume opening "
+        
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' { self.line += 1; }
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            // Unterminated f-string.
+            self.add_token(TokenKind::Illegal);
+            return;
+        }
+
+        self.advance(); // The closing ".
+
+        // Extract the f-string content (without f" and ")
+        let value: String = self.source[self.start + 2..self.current - 1].iter().collect();
+        self.add_token(TokenKind::FString(value));
     }
 
     fn match_char(&mut self, expected: char) -> bool {

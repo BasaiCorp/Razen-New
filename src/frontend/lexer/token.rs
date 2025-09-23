@@ -18,7 +18,7 @@ pub enum TokenKind {
     Int, Str, Bool, Char, Array, Map, Any, FloatType, // Added FloatType
 
     // Literals
-    Identifier, String(String), Integer(i64), Float(f64), True, False, Null,
+    Identifier, String(String), FString(String), Integer(i64), Float(f64), True, False, Null,
 
     // Arithmetic Operators
     Plus, Minus, Star, Slash, Percent, StarStar,

@@ -456,20 +456,18 @@ impl<'a> ExpressionParser<'a> {
                 return Ok(Expression::StringLiteral(StringLiteral::new(value.clone())));
             }
         }
+        
+        // Handle f-strings
+        if let Some(token) = self.match_token_kind(&TokenKind::FString("".to_string())) {
+            if let TokenKind::FString(value) = &token.kind {
+                return Ok(self.parse_f_string(value)?);
+            }
+        }
 
         if self.match_tokens(&[TokenKind::Identifier]) {
             let name = self.previous().lexeme.clone();
             
-            // Check for string interpolation: f"string"
-            if name == "f" {
-                if let Some(token) = self.match_token_kind(&TokenKind::String("".to_string())) {
-                    if let TokenKind::String(value) = &token.kind {
-                        // For now, treat interpolated strings as regular strings
-                        // TODO: Parse interpolation expressions within {}
-                        return Ok(Expression::StringLiteral(StringLiteral::new(value.clone())));
-                    }
-                }
-            }
+            // f-strings are now handled by the FString token type above
             
             return Ok(Expression::Identifier(Identifier::new(name)));
         }
@@ -580,10 +578,7 @@ impl<'a> ExpressionParser<'a> {
         if self.check(&TokenKind::Identifier) {
             Ok(self.advance().lexeme.clone())
         } else {
-            Err(ParseError::missing_token(
-                "identifier".to_string(),
-                self.token_to_span(self.peek()),
-            ))
+            Err(ParseError::new("Expected identifier".to_string(), self.peek().line))
         }
     }
 
@@ -592,6 +587,113 @@ impl<'a> ExpressionParser<'a> {
         let start = Position::new(token.line, 1, 0); // We don't have column info yet
         let end = Position::new(token.line, token.lexeme.len() + 1, token.lexeme.len());
         Span::new(start, end)
+    }
+    
+    /// Parse f-string with interpolation support
+    fn parse_f_string(&mut self, content: &str) -> ParseResult<Expression> {
+        let mut parts = Vec::new();
+        let mut current_text = String::new();
+        let mut chars = content.chars().peekable();
+        
+        while let Some(ch) = chars.next() {
+            if ch == '{' {
+                // Check for escaped brace {{
+                if chars.peek() == Some(&'{') {
+                    chars.next(); // consume second {
+                    current_text.push('{');
+                    continue;
+                }
+                
+                // Save any accumulated text
+                if !current_text.is_empty() {
+                    parts.push(InterpolationPart::Text(current_text.clone()));
+                    current_text.clear();
+                }
+                
+                // Parse expression inside {}
+                let mut expr_content = String::new();
+                let mut brace_count = 1;
+                
+                while let Some(expr_ch) = chars.next() {
+                    if expr_ch == '{' {
+                        brace_count += 1;
+                    } else if expr_ch == '}' {
+                        brace_count -= 1;
+                        if brace_count == 0 {
+                            break;
+                        }
+                    }
+                    expr_content.push(expr_ch);
+                }
+                
+                if brace_count > 0 {
+                    return Err(ParseError::new("Unclosed brace in f-string".to_string(), self.peek().line));
+                }
+                
+                // Parse the expression content
+                if !expr_content.trim().is_empty() {
+                    let expr = self.parse_f_string_expression(&expr_content)?;
+                    parts.push(InterpolationPart::Expression(expr));
+                }
+            } else if ch == '}' {
+                // Check for escaped brace }}
+                if chars.peek() == Some(&'}') {
+                    chars.next(); // consume second }
+                    current_text.push('}');
+                } else {
+                    return Err(ParseError::new("Unmatched '}' in f-string".to_string(), self.peek().line));
+                }
+            } else {
+                current_text.push(ch);
+            }
+        }
+        
+        // Add any remaining text
+        if !current_text.is_empty() {
+            parts.push(InterpolationPart::Text(current_text));
+        }
+        
+        Ok(Expression::InterpolatedString(InterpolatedString { parts }))
+    }
+    
+    /// Parse an expression inside f-string braces
+    fn parse_f_string_expression(&mut self, expr_content: &str) -> ParseResult<Expression> {
+        // For now, we'll handle simple variable names and basic expressions
+        let trimmed = expr_content.trim();
+        
+        // Handle simple identifiers
+        if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') && !trimmed.is_empty() {
+            return Ok(Expression::Identifier(Identifier::new(trimmed.to_string())));
+        }
+        
+        // Handle string concatenation like "Hello, " + name
+        if let Some(plus_pos) = trimmed.find(" + ") {
+            let left_part = trimmed[..plus_pos].trim();
+            let right_part = trimmed[plus_pos + 3..].trim();
+            
+            let left_expr = if left_part.starts_with('"') && left_part.ends_with('"') {
+                let string_content = left_part[1..left_part.len()-1].to_string();
+                Expression::StringLiteral(StringLiteral::new(string_content))
+            } else {
+                Expression::Identifier(Identifier::new(left_part.to_string()))
+            };
+            
+            let right_expr = if right_part.starts_with('"') && right_part.ends_with('"') {
+                let string_content = right_part[1..right_part.len()-1].to_string();
+                Expression::StringLiteral(StringLiteral::new(string_content))
+            } else {
+                Expression::Identifier(Identifier::new(right_part.to_string()))
+            };
+            
+            return Ok(Expression::BinaryExpression(BinaryExpression {
+                left: Box::new(left_expr),
+                operator: BinaryOperator::Add,
+                right: Box::new(right_expr),
+            }));
+        }
+        
+        // Fallback: treat as identifier
+        Ok(Expression::Identifier(Identifier::new(trimmed.to_string())))
     }
 }
 
