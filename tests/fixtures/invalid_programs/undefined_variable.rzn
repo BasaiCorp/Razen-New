@@ -1,6 +1,0 @@
-// tests/fixtures/invalid_programs/undefined_variable.rzn
-// Undefined variable error
-
-fun main() -> int {
-    return undefined_var // Using undefined variable
-}

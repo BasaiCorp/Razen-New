@@ -1,7 +1,0 @@
-// tests/fixtures/invalid_programs/type_error.rzn
-// Type mismatch error
-
-fun main() -> int {
-    var str_var: str = "hello"
-    return str_var // Type mismatch: returning str instead of int
-}

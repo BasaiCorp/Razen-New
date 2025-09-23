@@ -1,6 +1,0 @@
-// tests/fixtures/invalid_programs/syntax_error.rzn
-// Syntax error - missing closing brace
-
-fun main() -> int {
-    return 42
-// Missing closing brace

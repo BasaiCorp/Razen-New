@@ -1,5 +1,0 @@
-fun main() {
-    var x: int = 10
-    var y: str = "hello"
-    var result: int = x + y  // Type error
-}

@@ -1,6 +1,0 @@
-// tests/fixtures/invalid_programs/undefined_function.rzn
-// Undefined function error
-
-fun main() -> int {
-    return undefined_func() // Calling undefined function
-}

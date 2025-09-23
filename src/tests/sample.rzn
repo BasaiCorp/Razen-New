@@ -1,9 +1,0 @@
-fun main() {
-    println("Hello, Razen World!")
-    print("Enter your name: ")
-    var name: str = input()
-    println("Hello, " + name)
-    print("Enter your age: ")
-    var age: int = input()
-    println("You are " + age + " years old")
-}

@@ -1,9 +1,0 @@
-fun test() {
-    var x: int = 10
-    var y = 15
-    println(f"{x + y}")
-}
-
-fun main() {
-    test()
-}

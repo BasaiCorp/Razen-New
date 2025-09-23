@@ -258,21 +258,7 @@ impl Compiler {
                 self.leave_scope();
             },
             Statement::IfStatement(if_stmt) => {
-                let then_statements = if let Statement::BlockStatement(block) = *if_stmt.then_branch {
-                    block.statements
-                } else {
-                    vec![*if_stmt.then_branch]
-                };
-                
-                let else_statements = if_stmt.else_branch.map(|else_branch| {
-                    if let Statement::BlockStatement(block) = *else_branch {
-                        block.statements
-                    } else {
-                        vec![*else_branch]
-                    }
-                });
-                
-                self.compile_if_statement(if_stmt.condition, then_statements, else_statements);
+                self.compile_if_elif_else_statement(if_stmt);
             },
             Statement::WhileStatement(while_stmt) => {
                 let body_statements = if let Statement::BlockStatement(block) = *while_stmt.body {
@@ -333,32 +319,61 @@ impl Compiler {
         self.current_function = old_function;
     }
 
-    fn compile_if_statement(&mut self, condition: Expression, consequence: Vec<Statement>, alternative: Option<Vec<Statement>>) {
-        let else_label = self.generate_label("else_");
+    fn compile_if_elif_else_statement(&mut self, if_stmt: crate::frontend::parser::ast::IfStatement) {
         let end_label = self.generate_label("end_");
-
-        self.compile_expression(condition);
+        let mut jump_to_end_positions = Vec::new();
+        
+        // Compile the main if condition
+        self.compile_expression(if_stmt.condition);
         self.emit(IR::JumpIfFalse(0));
-        let jump_to_else_pos = self.ir.len() - 1;
-
-        for stmt in consequence {
-            self.compile_statement(stmt);
-        }
-
+        let jump_to_next_pos = self.ir.len() - 1;
+        
+        // Compile the then branch
+        self.compile_statement(*if_stmt.then_branch);
+        
+        // Jump to end after executing then branch
         self.emit(IR::Jump(0));
-        let jump_to_end_pos = self.ir.len() - 1;
-
-        let else_pos = self.emit_label(&else_label);
-        self.replace_instruction(jump_to_else_pos, IR::JumpIfFalse(else_pos));
-
-        if let Some(alt) = alternative {
-            for stmt in alt {
-                self.compile_statement(stmt);
-            }
+        jump_to_end_positions.push(self.ir.len() - 1);
+        
+        // Handle elif branches
+        let mut current_jump_pos = jump_to_next_pos;
+        for elif_branch in if_stmt.elif_branches {
+            // Mark position for the previous condition to jump to
+            let elif_pos = self.ir.len();
+            self.replace_instruction(current_jump_pos, IR::JumpIfFalse(elif_pos));
+            
+            // Compile elif condition
+            self.compile_expression(elif_branch.condition);
+            self.emit(IR::JumpIfFalse(0));
+            current_jump_pos = self.ir.len() - 1;
+            
+            // Compile elif body
+            self.compile_statement(*elif_branch.body);
+            
+            // Jump to end after executing elif branch
+            self.emit(IR::Jump(0));
+            jump_to_end_positions.push(self.ir.len() - 1);
         }
-
+        
+        // Handle else branch
+        if let Some(else_branch) = if_stmt.else_branch {
+            // Mark position for the last condition to jump to
+            let else_pos = self.ir.len();
+            self.replace_instruction(current_jump_pos, IR::JumpIfFalse(else_pos));
+            
+            // Compile else body
+            self.compile_statement(*else_branch);
+        } else {
+            // No else branch, last condition jumps to end
+            let end_pos = self.ir.len();
+            self.replace_instruction(current_jump_pos, IR::JumpIfFalse(end_pos));
+        }
+        
+        // Mark the end position and patch all jumps to end
         let end_pos = self.emit_label(&end_label);
-        self.replace_instruction(jump_to_end_pos, IR::Jump(end_pos));
+        for jump_pos in jump_to_end_positions {
+            self.replace_instruction(jump_pos, IR::Jump(end_pos));
+        }
     }
 
     fn compile_while_statement(&mut self, condition: Expression, body: Vec<Statement>) {
