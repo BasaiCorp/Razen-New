@@ -26,7 +26,7 @@ struct SymbolTable {
 
 #[derive(Debug, Clone)]
 struct Symbol {
-    name: String,
+    _name: String,
     symbol_type: SymbolType,
     defined_at: Position,
     used: bool,
@@ -35,7 +35,7 @@ struct Symbol {
 
 #[derive(Debug, Clone)]
 struct FunctionSymbol {
-    name: String,
+    _name: String,
     parameters: Vec<String>,
     return_type: Option<String>,
     defined_at: Position,
@@ -44,7 +44,9 @@ struct FunctionSymbol {
 #[derive(Debug, Clone, PartialEq)]
 enum SymbolType {
     Variable(String), // type name
+    #[allow(dead_code)]
     Function,
+    #[allow(dead_code)]
     Builtin,
 }
 
@@ -112,7 +114,7 @@ impl SemanticAnalyzer {
 
         for (name, params) in builtins {
             self.symbol_table.functions.insert(name.to_string(), FunctionSymbol {
-                name: name.to_string(),
+                _name: name.to_string(),
                 parameters: params.into_iter().map(|s| s.to_string()).collect(),
                 return_type: None,
                 defined_at: Position::new(0, 0, 0),
@@ -140,7 +142,7 @@ impl SemanticAnalyzer {
             .collect();
 
         self.symbol_table.functions.insert(func_name.clone(), FunctionSymbol {
-            name: func_name.clone(),
+            _name: func_name.clone(),
             parameters: params,
             return_type: func_decl.return_type.as_ref().map(|_| "unknown".to_string()),
             defined_at: Position::new(1, 1, 0), // TODO: get actual position
@@ -612,7 +614,7 @@ impl SemanticAnalyzer {
 
     fn declare_variable(&mut self, name: &str, var_type: &str, pos: Position, mutable: bool) {
         let symbol = Symbol {
-            name: name.to_string(),
+            _name: name.to_string(),
             symbol_type: SymbolType::Variable(var_type.to_string()),
             defined_at: pos,
             used: false,
@@ -649,6 +651,7 @@ impl SemanticAnalyzer {
         }
     }
     
+    #[allow(dead_code)]
     fn estimate_line_number(&self, identifier: &str) -> usize {
         // Search for the identifier in the source lines
         for (line_idx, line) in self.source_lines.iter().enumerate() {

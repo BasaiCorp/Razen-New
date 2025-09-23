@@ -583,6 +583,7 @@ impl<'a> ExpressionParser<'a> {
     }
 
     /// Convert a token to a span
+    #[allow(dead_code)]
     fn token_to_span(&self, token: &Token) -> Span {
         let start = Position::new(token.line, 1, 0); // We don't have column info yet
         let end = Position::new(token.line, token.lexeme.len() + 1, token.lexeme.len());

@@ -1,5 +1,9 @@
-fun test(name) -> void {
-    var name: str
-    input(f"Enter your name: {name}")
-    println("name")
+fun test() {
+    var x: int = 10
+    var y = 15
+    println(f"{x + y}")
+}
+
+fun main() {
+    test()
 }

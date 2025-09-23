@@ -40,6 +40,7 @@ impl SymbolTable {
         index
     }
 
+    #[allow(dead_code)]
     fn resolve(&self, name: &str) -> Option<usize> {
         match self.symbols.get(name) {
             Some(index) => Some(*index),
@@ -83,8 +84,8 @@ pub struct Compiler {
     function_table: FunctionTable,
     function_param_names: HashMap<String, Vec<String>>,
     current_function: Option<String>,
-    break_stack: Vec<Vec<usize>>,
-    continue_stack: Vec<Vec<usize>>,
+    _break_stack: Vec<Vec<usize>>,
+    _continue_stack: Vec<Vec<usize>>,
     label_counter: usize,
     clean_output: bool,
     pub errors: Vec<String>,
@@ -98,8 +99,8 @@ impl Compiler {
             function_table: FunctionTable::new(),
             function_param_names: HashMap::new(),
             current_function: None,
-            break_stack: Vec::new(),
-            continue_stack: Vec::new(),
+            _break_stack: Vec::new(),
+            _continue_stack: Vec::new(),
             label_counter: 0,
             clean_output: false,
             errors: Vec::new(),

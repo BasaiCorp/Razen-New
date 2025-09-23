@@ -12,7 +12,7 @@ pub struct Runtime {
     variables: HashMap<String, String>,
     functions: HashMap<String, String>, // Separate function registry
     call_stack: Vec<(usize, HashMap<String, String>)>,
-    exception_handlers: Vec<(String, usize)>,
+    _exception_handlers: Vec<(String, usize)>,
     function_params: HashMap<String, Vec<String>>, // Store function parameter names
     clean_output: bool,
 }
@@ -24,7 +24,7 @@ impl Runtime {
             variables: HashMap::new(),
             functions: HashMap::new(),
             call_stack: Vec::new(),
-            exception_handlers: Vec::new(),
+            _exception_handlers: Vec::new(),
             function_params: HashMap::new(),
             clean_output: false,
         }

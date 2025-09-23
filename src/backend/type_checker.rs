@@ -8,7 +8,7 @@ use std::collections::HashMap;
 /// Type context for tracking variable and function types
 #[derive(Debug, Clone)]
 pub struct TypeContext {
-    variables: HashMap<String, Type>,
+    _variables: HashMap<String, Type>,
     functions: HashMap<String, (Vec<Type>, Type)>, // (params, return_type)
     scopes: Vec<HashMap<String, Type>>,
 }
@@ -22,7 +22,7 @@ pub struct TypeChecker {
 impl TypeContext {
     pub fn new() -> Self {
         let mut context = TypeContext {
-            variables: HashMap::new(),
+            _variables: HashMap::new(),
             functions: HashMap::new(),
             scopes: vec![HashMap::new()],
         };
