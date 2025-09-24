@@ -659,42 +659,83 @@ impl<'a> ExpressionParser<'a> {
     
     /// Parse an expression inside f-string braces
     fn parse_f_string_expression(&mut self, expr_content: &str) -> ParseResult<Expression> {
-        // For now, we'll handle simple variable names and basic expressions
+        // Create a mini lexer and parser for the expression content
         let trimmed = expr_content.trim();
         
-        // Handle simple identifiers
+        // Handle simple identifiers first
         if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') && !trimmed.is_empty() {
             return Ok(Expression::Identifier(Identifier::new(trimmed.to_string())));
         }
         
-        // Handle string concatenation like "Hello, " + name
-        if let Some(plus_pos) = trimmed.find(" + ") {
-            let left_part = trimmed[..plus_pos].trim();
-            let right_part = trimmed[plus_pos + 3..].trim();
-            
-            let left_expr = if left_part.starts_with('"') && left_part.ends_with('"') {
-                let string_content = left_part[1..left_part.len()-1].to_string();
-                Expression::StringLiteral(StringLiteral::new(string_content))
-            } else {
-                Expression::Identifier(Identifier::new(left_part.to_string()))
-            };
-            
-            let right_expr = if right_part.starts_with('"') && right_part.ends_with('"') {
-                let string_content = right_part[1..right_part.len()-1].to_string();
-                Expression::StringLiteral(StringLiteral::new(string_content))
-            } else {
-                Expression::Identifier(Identifier::new(right_part.to_string()))
-            };
-            
-            return Ok(Expression::BinaryExpression(BinaryExpression {
-                left: Box::new(left_expr),
-                operator: BinaryOperator::Add,
-                right: Box::new(right_expr),
-            }));
+        // Parse arithmetic expressions
+        if let Ok(expr) = self.parse_arithmetic_expression(trimmed) {
+            return Ok(expr);
         }
         
         // Fallback: treat as identifier
         Ok(Expression::Identifier(Identifier::new(trimmed.to_string())))
+    }
+    
+    /// Parse arithmetic expressions in f-strings
+    fn parse_arithmetic_expression(&mut self, expr_str: &str) -> ParseResult<Expression> {
+        // Handle binary operations: +, -, *, /
+        let operators = [" + ", " - ", " * ", " / "];
+        let binary_ops = [BinaryOperator::Add, BinaryOperator::Subtract, BinaryOperator::Multiply, BinaryOperator::Divide];
+        
+        for (i, op_str) in operators.iter().enumerate() {
+            if let Some(op_pos) = expr_str.find(op_str) {
+                let left_part = expr_str[..op_pos].trim();
+                let right_part = expr_str[op_pos + op_str.len()..].trim();
+                
+                let left_expr = self.parse_simple_expression(left_part)?;
+                let right_expr = self.parse_simple_expression(right_part)?;
+                
+                return Ok(Expression::BinaryExpression(BinaryExpression {
+                    left: Box::new(left_expr),
+                    operator: binary_ops[i].clone(),
+                    right: Box::new(right_expr),
+                }));
+            }
+        }
+        
+        // No binary operator found, parse as simple expression
+        self.parse_simple_expression(expr_str)
+    }
+    
+    /// Parse simple expressions (identifiers, numbers, strings)
+    fn parse_simple_expression(&mut self, expr_str: &str) -> ParseResult<Expression> {
+        let trimmed = expr_str.trim();
+        
+        // Handle string literals
+        if trimmed.starts_with('"') && trimmed.ends_with('"') {
+            let string_content = trimmed[1..trimmed.len()-1].to_string();
+            return Ok(Expression::StringLiteral(StringLiteral::new(string_content)));
+        }
+        
+        // Handle numeric literals
+        if let Ok(int_val) = trimmed.parse::<i64>() {
+            return Ok(Expression::IntegerLiteral(IntegerLiteral::new(int_val)));
+        }
+        
+        if let Ok(float_val) = trimmed.parse::<f64>() {
+            return Ok(Expression::FloatLiteral(FloatLiteral::new(float_val)));
+        }
+        
+        // Handle boolean literals
+        if trimmed == "true" {
+            return Ok(Expression::BooleanLiteral(BooleanLiteral::new(true)));
+        }
+        
+        if trimmed == "false" {
+            return Ok(Expression::BooleanLiteral(BooleanLiteral::new(false)));
+        }
+        
+        // Handle identifiers
+        if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') && !trimmed.is_empty() {
+            return Ok(Expression::Identifier(Identifier::new(trimmed.to_string())));
+        }
+        
+        Err(ParseError::new(format!("Invalid expression in f-string: '{}'", trimmed), 0))
     }
 }
 

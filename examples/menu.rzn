@@ -21,7 +21,7 @@ fun add() {
     var a = input().toint()
     print("Enter second number: ")
     var b = input().toint()
-    println(a + b)
+    println(f"{a} + {b} = {a + b}")
 }
 
 fun sub() {
@@ -29,7 +29,7 @@ fun sub() {
     var a = input().toint()
     print("Enter second number: ")
     var b = input().toint()
-    println(a - b)
+    println(f"{a} - {b} = {a - b}")
 }
 
 fun mul() {
@@ -37,7 +37,7 @@ fun mul() {
     var a = input().toint()
     print("Enter second number: ")
     var b = input().toint()
-    println(a * b)
+    println(f"{a} * {b} = {a * b}")
 }
 
 fun div() {
@@ -45,7 +45,7 @@ fun div() {
     var a = input().toint()
     print("Enter second number: ")
     var b = input().toint()
-    println(a / b)
+    println(f"{a} / {b} = {a / b}")
 }
 
 fun exit() {
