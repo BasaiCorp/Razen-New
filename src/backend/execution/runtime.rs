@@ -398,7 +398,7 @@ impl Runtime {
     }
 
     fn is_builtin(&self, name: &str) -> bool {
-        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove")
+        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool")
     }
 
     fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
@@ -444,6 +444,77 @@ impl Runtime {
                     self.stack.push(value.len().to_string());
                 } else {
                     self.stack.push("0".to_string());
+                }
+            },
+            // Dot notation type conversion methods
+            "toint" => {
+                if let Some(value) = self.stack.pop() {
+                    match value.trim().parse::<i64>() {
+                        Ok(int_val) => self.stack.push(int_val.to_string()),
+                        Err(_) => {
+                            // Try to convert from float first
+                            match value.trim().parse::<f64>() {
+                                Ok(float_val) => self.stack.push((float_val as i64).to_string()),
+                                Err(_) => {
+                                    // Try boolean conversion
+                                    if value == "true" || value == "True" {
+                                        self.stack.push("1".to_string());
+                                    } else if value == "false" || value == "False" {
+                                        self.stack.push("0".to_string());
+                                    } else {
+                                        return Err(format!("Cannot convert '{}' to int", value));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    return Err("toint() requires one argument".to_string());
+                }
+            },
+            "tofloat" => {
+                if let Some(value) = self.stack.pop() {
+                    match value.trim().parse::<f64>() {
+                        Ok(float_val) => self.stack.push(float_val.to_string()),
+                        Err(_) => {
+                            // Try boolean conversion
+                            if value == "true" || value == "True" {
+                                self.stack.push("1.0".to_string());
+                            } else if value == "false" || value == "False" {
+                                self.stack.push("0.0".to_string());
+                            } else {
+                                return Err(format!("Cannot convert '{}' to float", value));
+                            }
+                        }
+                    }
+                } else {
+                    return Err("tofloat() requires one argument".to_string());
+                }
+            },
+            "tostr" => {
+                if let Some(value) = self.stack.pop() {
+                    // Everything can be converted to string
+                    self.stack.push(value);
+                } else {
+                    return Err("tostr() requires one argument".to_string());
+                }
+            },
+            "tobool" => {
+                if let Some(value) = self.stack.pop() {
+                    let bool_val = match value.as_str() {
+                        "true" | "True" | "1" => "true",
+                        "false" | "False" | "0" | "" | "null" => "false",
+                        _ => {
+                            // Non-empty strings are truthy, try to parse as number
+                            match value.trim().parse::<f64>() {
+                                Ok(num) => if num != 0.0 { "true" } else { "false" },
+                                Err(_) => if !value.trim().is_empty() { "true" } else { "false" }
+                            }
+                        }
+                    };
+                    self.stack.push(bool_val.to_string());
+                } else {
+                    return Err("tobool() requires one argument".to_string());
                 }
             },
             _ => {

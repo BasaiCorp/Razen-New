@@ -1,0 +1,33 @@
+fun main() {
+    println("=== Testing Dot Notation Type Conversion ===")
+    
+    // Test toint() conversion
+    println("Testing .toint() conversion:")
+    var str_num = "42"
+    println(f"Converting '{str_num}' to int:")
+    var converted_int = str_num.toint()
+    println(f"Result: {converted_int}")
+    
+    // Test with input
+    println("Testing .toint() with input:")
+    print("Enter a number: ")
+    var user_input = input()
+    println(f"You entered: '{user_input}'")
+    var user_int = user_input.toint()
+    println(f"Converted to int: {user_int}")
+    
+    // Test tofloat conversion
+    println("Testing .tofloat() conversion:")
+    var float_result = "3.14".tofloat()
+    println(f"'3.14'.tofloat() = {float_result}")
+    
+    // Test tobool conversion
+    println("Testing .tobool() conversion:")
+    var bool_result = "true".tobool()
+    println(f"'true'.tobool() = {bool_result}")
+    
+    // Test tostr conversion
+    println("Testing .tostr() conversion:")
+    var str_result = "123".tostr()
+    println(f"'123'.tostr() = {str_result}")
+}

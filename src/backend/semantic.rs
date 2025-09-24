@@ -108,6 +108,11 @@ impl SemanticAnalyzer {
             ("read", vec!["filename"]),
             ("write", vec!["filename", "content"]),
             ("len", vec!["value"]),
+            // Dot notation type conversion methods
+            ("toint", vec!["value"]),
+            ("tofloat", vec!["value"]),
+            ("tostr", vec!["value"]),
+            ("tobool", vec!["value"]),
             ("append", vec!["list", "value"]),
             ("remove", vec!["list", "index"]),
         ];

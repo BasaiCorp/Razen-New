@@ -39,6 +39,12 @@ impl TypeContext {
         self.functions.insert("input".to_string(), (vec![], Type::String));
         self.functions.insert("read".to_string(), (vec![Type::String], Type::String));
         self.functions.insert("write".to_string(), (vec![Type::String, Type::String], Type::Bool));
+        
+        // Dot notation type conversion methods
+        self.functions.insert("toint".to_string(), (vec![Type::Any], Type::Int));
+        self.functions.insert("tofloat".to_string(), (vec![Type::Any], Type::Float));
+        self.functions.insert("tostr".to_string(), (vec![Type::Any], Type::String));
+        self.functions.insert("tobool".to_string(), (vec![Type::Any], Type::Bool));
     }
     
     pub fn push_scope(&mut self) {
@@ -309,42 +315,62 @@ impl TypeChecker {
     }
     
     fn check_call_expression(&mut self, call_expr: &CallExpression) -> Type {
-        if let Expression::Identifier(func_name) = call_expr.callee.as_ref() {
-            // Clone the function signature to avoid borrowing issues
-            let func_signature = self.context.get_function_signature(&func_name.name).cloned();
-            
-            if let Some((param_types, return_type)) = func_signature {
-                // Check argument count (flexible for input function)
-                if func_name.name != "input" && param_types.len() != call_expr.arguments.len() {
-                    self.errors.push(format!(
-                        "Function '{}' expects {} arguments, got {}",
-                        func_name.name, param_types.len(), call_expr.arguments.len()
-                    ));
-                }
+        match call_expr.callee.as_ref() {
+            Expression::Identifier(func_name) => {
+                // Regular function call
+                let func_signature = self.context.get_function_signature(&func_name.name).cloned();
                 
-                // Check argument types
-                for (i, arg) in call_expr.arguments.iter().enumerate() {
-                    let arg_type = self.check_expression(arg);
-                    if i < param_types.len() {
-                        let expected_type = &param_types[i];
-                        if !arg_type.can_assign_to(expected_type) {
-                            self.errors.push(format!(
-                                "Argument {} of function '{}' expects type '{}', got '{}'",
-                                i + 1, func_name.name, expected_type, arg_type
-                            ));
+                if let Some((param_types, return_type)) = func_signature {
+                    // Check argument count (flexible for input function)
+                    if func_name.name != "input" && param_types.len() != call_expr.arguments.len() {
+                        self.errors.push(format!(
+                            "Function '{}' expects {} arguments, got {}",
+                            func_name.name, param_types.len(), call_expr.arguments.len()
+                        ));
+                    }
+                    
+                    // Check argument types
+                    for (i, arg) in call_expr.arguments.iter().enumerate() {
+                        let arg_type = self.check_expression(arg);
+                        if i < param_types.len() {
+                            let expected_type = &param_types[i];
+                            if !arg_type.can_assign_to(expected_type) {
+                                self.errors.push(format!(
+                                    "Argument {} of function '{}' expects type '{}', got '{}'",
+                                    i + 1, func_name.name, expected_type, arg_type
+                                ));
+                            }
                         }
                     }
+                    
+                    return_type
+                } else {
+                    self.errors.push(format!("Undefined function: '{}'", func_name.name));
+                    Type::Unknown
                 }
+            }
+            Expression::MemberExpression(member_expr) => {
+                // Method call like input().toint()
+                let _object_type = self.check_expression(&member_expr.object);
+                let method_name = &member_expr.property.name;
                 
-                return_type
-            } else {
-                self.errors.push(format!("Undefined function: '{}'", func_name.name));
+                // Check if it's a known method and return its type
+                match method_name.as_str() {
+                    "toint" => Type::Int,
+                    "tofloat" => Type::Float,
+                    "tostr" => Type::String,
+                    "tobool" => Type::Bool,
+                    _ => {
+                        self.errors.push(format!("Unknown method: '{}'", method_name));
+                        Type::Unknown
+                    }
+                }
+            }
+            _ => {
+                // Other complex callee expressions
+                self.check_expression(&call_expr.callee);
                 Type::Unknown
             }
-        } else {
-            // Complex callee expression
-            self.check_expression(&call_expr.callee);
-            Type::Unknown
         }
     }
     

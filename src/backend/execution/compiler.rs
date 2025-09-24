@@ -269,10 +269,13 @@ impl Compiler {
                 
                 self.compile_while_statement(while_stmt.condition, body_statements);
             },
+            Statement::MatchStatement(match_stmt) => {
+                self.compile_match_statement(match_stmt);
+            },
             _ => {
                 // Handle other statement types as needed
                 if !self.clean_output {
-                    println!("Unhandled statement type");
+                    println!("Unhandled statement type: {:?}", std::mem::discriminant(&stmt));
                 }
             }
         }
@@ -396,6 +399,68 @@ impl Compiler {
         self.replace_instruction(jump_to_end_pos, IR::JumpIfFalse(end_pos));
     }
 
+    fn compile_match_statement(&mut self, match_stmt: crate::frontend::parser::ast::MatchStatement) {
+        // Compile the match expression
+        self.compile_expression(match_stmt.expression);
+        
+        let mut jump_to_end_positions = Vec::new();
+        
+        // Compile each match arm
+        for arm in match_stmt.arms {
+            // Duplicate the match value for comparison
+            self.emit(IR::Dup);
+            
+            // Compile the pattern
+            self.compile_pattern(arm.pattern);
+            
+            // Compare the values
+            self.emit(IR::Equal);
+            
+            // Jump to next arm if not equal
+            self.emit(IR::JumpIfFalse(0));
+            let jump_to_next_pos = self.ir.len() - 1;
+            
+            // Pop the duplicated match value since we found a match
+            self.emit(IR::Pop);
+            
+            // Compile the arm body
+            self.compile_expression(arm.body);
+            self.emit(IR::Pop); // Discard result
+            
+            // Jump to end
+            self.emit(IR::Jump(0));
+            jump_to_end_positions.push(self.ir.len() - 1);
+            
+            // Update the jump to next arm
+            let next_arm_pos = self.ir.len();
+            self.replace_instruction(jump_to_next_pos, IR::JumpIfFalse(next_arm_pos));
+        }
+        
+        // Pop the match value if no arm matched
+        self.emit(IR::Pop);
+        
+        // Update all jumps to end
+        let end_pos = self.ir.len();
+        for jump_pos in jump_to_end_positions {
+            self.replace_instruction(jump_pos, IR::Jump(end_pos));
+        }
+    }
+
+    fn compile_pattern(&mut self, pattern: crate::frontend::parser::ast::Pattern) {
+        match pattern {
+            crate::frontend::parser::ast::Pattern::Literal(expr) => {
+                self.compile_expression(expr);
+            },
+            crate::frontend::parser::ast::Pattern::Identifier(ident) => {
+                self.emit(IR::LoadVar(ident.name));
+            },
+            crate::frontend::parser::ast::Pattern::Wildcard => {
+                // Wildcard matches anything, push true
+                self.emit(IR::PushBoolean(true));
+            },
+        }
+    }
+
     fn compile_expression(&mut self, expr: Expression) {
         match expr {
             Expression::Identifier(ident) => {
@@ -422,9 +487,19 @@ impl Compiler {
                     self.compile_expression(arg.clone());
                 }
 
-                // Get function name
-                if let Expression::Identifier(ident) = *call_expr.callee {
-                    self.emit(IR::Call(ident.name, call_expr.arguments.len()));
+                // Handle different types of callees
+                match *call_expr.callee {
+                    Expression::Identifier(ident) => {
+                        // Regular function call
+                        self.emit(IR::Call(ident.name, call_expr.arguments.len()));
+                    },
+                    Expression::MemberExpression(member_expr) => {
+                        // Method call like input().toint()
+                        self.compile_method_call(member_expr, call_expr.arguments.len());
+                    },
+                    _ => {
+                        self.errors.push("Invalid function call".to_string());
+                    }
                 }
             },
             Expression::BinaryExpression(bin_expr) => {
@@ -469,6 +544,37 @@ impl Compiler {
             _ => {
                 // Handle other expression types as needed
                 self.emit(IR::PushNull);
+            }
+        }
+    }
+    
+    /// Compile method call like input().toint()
+    fn compile_method_call(&mut self, member_expr: crate::frontend::parser::ast::MemberExpression, _arg_count: usize) {
+        // First, compile the object (e.g., input())
+        self.compile_expression(*member_expr.object);
+        
+        // Then handle the method call based on the method name
+        let method_name = &member_expr.property.name;
+        
+        match method_name.as_str() {
+            "toint" => {
+                // Convert the value on stack to integer
+                self.emit(IR::Call("toint".to_string(), 1)); // 1 argument (the object itself)
+            },
+            "tofloat" => {
+                // Convert the value on stack to float
+                self.emit(IR::Call("tofloat".to_string(), 1));
+            },
+            "tostr" => {
+                // Convert the value on stack to string
+                self.emit(IR::Call("tostr".to_string(), 1));
+            },
+            "tobool" => {
+                // Convert the value on stack to boolean
+                self.emit(IR::Call("tobool".to_string(), 1));
+            },
+            _ => {
+                self.errors.push(format!("Unknown method: {}", method_name));
             }
         }
     }
