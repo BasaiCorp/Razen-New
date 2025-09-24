@@ -260,7 +260,28 @@ impl SemanticAnalyzer {
                 
                 // Create new scope for loop variable
                 self.symbol_table.push_scope();
-                self.declare_variable(&for_stmt.variable.name, "var", Position::new(1, 1, 0), true);
+                
+                // Determine loop variable type based on iterable
+                let loop_var_type = match &for_stmt.iterable {
+                    Expression::RangeExpression(_) => "int", // Range produces integers
+                    Expression::ArrayLiteral(array) => {
+                        // Infer type from first array element if possible
+                        if !array.elements.is_empty() {
+                            match &array.elements[0] {
+                                Expression::IntegerLiteral(_) => "int",
+                                Expression::FloatLiteral(_) => "float",
+                                Expression::StringLiteral(_) => "str",
+                                Expression::BooleanLiteral(_) => "bool",
+                                _ => "var"
+                            }
+                        } else {
+                            "var"
+                        }
+                    },
+                    _ => "var" // Default to var for other types
+                };
+                
+                self.declare_variable(&for_stmt.variable.name, loop_var_type, Position::new(1, 1, 0), true);
                 
                 let was_in_loop = self.in_loop;
                 self.in_loop = true;
