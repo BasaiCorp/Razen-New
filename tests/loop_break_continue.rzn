@@ -1,0 +1,18 @@
+fun main() {
+    println("Testing break and continue:")
+    
+    var i = 1
+    while i <= 10 {
+        if i == 3 {
+            i = i + 1
+            continue
+        }
+        if i == 7 {
+            break
+        }
+        println(f"Number: {i}")
+        i = i + 1
+    }
+    
+    println("Loop with break/continue completed!")
+}

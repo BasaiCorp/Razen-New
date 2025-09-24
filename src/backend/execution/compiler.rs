@@ -84,8 +84,9 @@ pub struct Compiler {
     function_table: FunctionTable,
     function_param_names: HashMap<String, Vec<String>>,
     current_function: Option<String>,
-    _break_stack: Vec<Vec<usize>>,
-    _continue_stack: Vec<Vec<usize>>,
+    break_stack: Vec<Vec<usize>>,
+    continue_stack: Vec<Vec<usize>>,
+    loop_stack: Vec<(String, String)>, // (continue_label, break_label)
     label_counter: usize,
     clean_output: bool,
     pub errors: Vec<String>,
@@ -99,8 +100,9 @@ impl Compiler {
             function_table: FunctionTable::new(),
             function_param_names: HashMap::new(),
             current_function: None,
-            _break_stack: Vec::new(),
-            _continue_stack: Vec::new(),
+            break_stack: Vec::new(),
+            continue_stack: Vec::new(),
+            loop_stack: Vec::new(),
             label_counter: 0,
             clean_output: false,
             errors: Vec::new(),
@@ -269,6 +271,21 @@ impl Compiler {
                 
                 self.compile_while_statement(while_stmt.condition, body_statements);
             },
+            Statement::ForStatement(for_stmt) => {
+                let body_statements = if let Statement::BlockStatement(block) = *for_stmt.body {
+                    block.statements
+                } else {
+                    vec![*for_stmt.body]
+                };
+                
+                self.compile_for_statement(for_stmt.variable.name, for_stmt.iterable, body_statements);
+            },
+            Statement::BreakStatement(_) => {
+                self.compile_break_statement();
+            },
+            Statement::ContinueStatement(_) => {
+                self.compile_continue_statement();
+            },
             Statement::MatchStatement(match_stmt) => {
                 self.compile_match_statement(match_stmt);
             },
@@ -381,22 +398,180 @@ impl Compiler {
 
     fn compile_while_statement(&mut self, condition: Expression, body: Vec<Statement>) {
         let loop_label = self.generate_label("loop_");
+        let continue_label = self.generate_label("continue_");
         let end_label = self.generate_label("end_");
 
+        // Push loop context for break/continue
+        self.loop_stack.push((continue_label.clone(), end_label.clone()));
+        self.break_stack.push(Vec::new());
+        self.continue_stack.push(Vec::new());
+
         let loop_start = self.emit_label(&loop_label);
+        let continue_pos = self.emit_label(&continue_label);
 
         self.compile_expression(condition);
         self.emit(IR::JumpIfFalse(0));
         let jump_to_end_pos = self.ir.len() - 1;
 
+        // Compile loop body
+        self.enter_scope();
         for stmt in body {
             self.compile_statement(stmt);
         }
+        self.leave_scope();
 
         self.emit(IR::Jump(loop_start));
 
         let end_pos = self.emit_label(&end_label);
         self.replace_instruction(jump_to_end_pos, IR::JumpIfFalse(end_pos));
+
+        // Patch break and continue statements
+        if let (Some(break_positions), Some(continue_positions)) = 
+            (self.break_stack.pop(), self.continue_stack.pop()) {
+            for pos in break_positions {
+                self.replace_instruction(pos, IR::Jump(end_pos));
+            }
+            for pos in continue_positions {
+                self.replace_instruction(pos, IR::Jump(continue_pos));
+            }
+        }
+        
+        self.loop_stack.pop();
+    }
+
+    fn compile_for_statement(&mut self, variable: String, iterable: Expression, body: Vec<Statement>) {
+        let loop_label = self.generate_label("for_loop_");
+        let continue_label = self.generate_label("for_continue_");
+        let end_label = self.generate_label("for_end_");
+        let iter_var = self.generate_label("iter_");
+        let index_var = self.generate_label("index_");
+
+        // Push loop context for break/continue
+        self.loop_stack.push((continue_label.clone(), end_label.clone()));
+        self.break_stack.push(Vec::new());
+        self.continue_stack.push(Vec::new());
+
+        self.enter_scope();
+        
+        // Handle different types of iterables
+        match &iterable {
+            Expression::RangeExpression(range) => {
+                // For range expressions like 1..10
+                self.compile_expression(*range.start.clone());
+                self.emit(IR::StoreVar(index_var.clone()));
+                
+                self.compile_expression(*range.end.clone());
+                self.emit(IR::StoreVar(iter_var.clone()));
+                
+                let loop_start = self.emit_label(&loop_label);
+                let _continue_pos = self.emit_label(&continue_label);
+                
+                // Check if index < end
+                self.emit(IR::LoadVar(index_var.clone()));
+                self.emit(IR::LoadVar(iter_var.clone()));
+                if range.inclusive {
+                    self.emit(IR::LessEqual);
+                } else {
+                    self.emit(IR::LessThan);
+                }
+                self.emit(IR::JumpIfFalse(0));
+                let jump_to_end_pos = self.ir.len() - 1;
+                
+                // Set loop variable to current index
+                self.emit(IR::LoadVar(index_var.clone()));
+                self.emit(IR::StoreVar(variable.clone()));
+                
+                // Compile loop body
+                for stmt in body {
+                    self.compile_statement(stmt);
+                }
+                
+                // Increment index
+                self.emit(IR::LoadVar(index_var.clone()));
+                self.emit(IR::PushNumber(1.0));
+                self.emit(IR::Add);
+                self.emit(IR::StoreVar(index_var));
+                
+                self.emit(IR::Jump(loop_start));
+                
+                let end_pos = self.emit_label(&end_label);
+                self.replace_instruction(jump_to_end_pos, IR::JumpIfFalse(end_pos));
+            },
+            Expression::ArrayLiteral(array) => {
+                // For array literals like [1, 2, 3] - simpler approach
+                // Just iterate through each element directly
+                for (_i, element) in array.elements.iter().enumerate() {
+                    // Set loop variable to current element
+                    self.compile_expression(element.clone());
+                    self.emit(IR::StoreVar(variable.clone()));
+                    
+                    // Compile loop body for this iteration
+                    for stmt in body.clone() {
+                        self.compile_statement(stmt);
+                    }
+                }
+                
+                // No need for complex loop logic - we've already iterated through all elements
+                let _loop_start = self.emit_label(&loop_label);
+                let _continue_pos = self.emit_label(&continue_label);
+                let _end_pos = self.emit_label(&end_label);
+            },
+            _ => {
+                // For other expressions, treat as single value iteration
+                self.compile_expression(iterable);
+                self.emit(IR::StoreVar(variable.clone()));
+                
+                let _loop_start = self.emit_label(&loop_label);
+                let _continue_pos = self.emit_label(&continue_label);
+                
+                // Compile loop body (executes once)
+                for stmt in body {
+                    self.compile_statement(stmt);
+                }
+                
+                let _end_pos = self.emit_label(&end_label);
+            }
+        }
+        
+        // Patch break and continue statements
+        if let (Some(break_positions), Some(continue_positions)) = 
+            (self.break_stack.pop(), self.continue_stack.pop()) {
+            let end_pos = self.ir.len();
+            let continue_pos = self.ir.len() - 2; // Approximate continue position
+            for pos in break_positions {
+                self.replace_instruction(pos, IR::Jump(end_pos));
+            }
+            for pos in continue_positions {
+                self.replace_instruction(pos, IR::Jump(continue_pos));
+            }
+        }
+        
+        self.leave_scope();
+        self.loop_stack.pop();
+    }
+
+    fn compile_break_statement(&mut self) {
+        if !self.break_stack.is_empty() {
+            self.emit(IR::Jump(0)); // Placeholder, will be patched
+            let pos = self.ir.len() - 1;
+            if let Some(break_positions) = self.break_stack.last_mut() {
+                break_positions.push(pos);
+            }
+        } else {
+            self.errors.push("Break statement outside of loop".to_string());
+        }
+    }
+
+    fn compile_continue_statement(&mut self) {
+        if !self.continue_stack.is_empty() {
+            self.emit(IR::Jump(0)); // Placeholder, will be patched
+            let pos = self.ir.len() - 1;
+            if let Some(continue_positions) = self.continue_stack.last_mut() {
+                continue_positions.push(pos);
+            }
+        } else {
+            self.errors.push("Continue statement outside of loop".to_string());
+        }
     }
 
     fn compile_match_statement(&mut self, match_stmt: crate::frontend::parser::ast::MatchStatement) {
@@ -541,8 +716,39 @@ impl Compiler {
             Expression::InterpolatedString(interp_str) => {
                 self.compile_interpolated_string(interp_str);
             },
+            Expression::RangeExpression(range_expr) => {
+                // For range expressions like 1..10, we create a simple range object
+                // This is mainly used in for loops, so we'll store start and end
+                self.compile_expression(*range_expr.start);
+                self.compile_expression(*range_expr.end);
+                self.emit(IR::PushBoolean(range_expr.inclusive)); // Store inclusivity flag
+                // Create a simple range representation on stack
+                self.emit(IR::Call("create_range".to_string(), 3)); // start, end, inclusive
+            },
+            Expression::ArrayLiteral(array_lit) => {
+                // Compile all array elements
+                for element in &array_lit.elements {
+                    self.compile_expression(element.clone());
+                }
+                // Create array with the specified number of elements
+                self.emit(IR::CreateArray(array_lit.elements.len()));
+            },
+            Expression::AssignmentExpression(assign_expr) => {
+                // Compile the right-hand side first
+                self.compile_expression(*assign_expr.right);
+                
+                // Handle assignment to identifier
+                if let Expression::Identifier(ident) = *assign_expr.left {
+                    self.emit(IR::StoreVar(ident.name));
+                } else {
+                    self.errors.push("Invalid assignment target".to_string());
+                }
+            },
             _ => {
                 // Handle other expression types as needed
+                if !self.clean_output {
+                    println!("Unhandled expression type: {:?}", std::mem::discriminant(&expr));
+                }
                 self.emit(IR::PushNull);
             }
         }

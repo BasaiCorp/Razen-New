@@ -1,0 +1,11 @@
+fun main() {
+    println("Testing for loop with array:")
+    for item in [10, 20, 30, 40, 50] {
+        println(f"Array item: {item}")
+    }
+    
+    println("\nTesting for loop with string array:")
+    for name in ["Alice", "Bob", "Charlie"] {
+        println(f"Name: {name}")
+    }
+}

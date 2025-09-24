@@ -116,7 +116,13 @@ impl Scanner {
             }
             '.' => {
                 if self.match_char('.') {
-                    let kind = if self.match_char('.') { TokenKind::DotDotDot } else { TokenKind::DotDot };
+                    let kind = if self.match_char('.') {
+                        TokenKind::DotDotDot
+                    } else if self.match_char('=') {
+                        TokenKind::DotDotEqual
+                    } else {
+                        TokenKind::DotDot
+                    };
                     self.add_token(kind);
                 } else {
                     self.add_token(TokenKind::Dot);

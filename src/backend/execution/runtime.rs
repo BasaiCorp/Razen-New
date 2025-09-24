@@ -398,7 +398,7 @@ impl Runtime {
     }
 
     fn is_builtin(&self, name: &str) -> bool {
-        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool")
+        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
     }
 
     fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
@@ -515,6 +515,76 @@ impl Runtime {
                     self.stack.push(bool_val.to_string());
                 } else {
                     return Err("tobool() requires one argument".to_string());
+                }
+            },
+            "create_range" => {
+                // Create a range object from start, end, and inclusive flag
+                if arg_count >= 3 {
+                    let inclusive = self.stack.pop().unwrap_or("false".to_string());
+                    let end = self.stack.pop().unwrap_or("0".to_string());
+                    let start = self.stack.pop().unwrap_or("0".to_string());
+                    
+                    // Store range as a formatted string "start..end" or "start..=end"
+                    let range_str = if inclusive == "true" {
+                        format!("{}..={}", start, end)
+                    } else {
+                        format!("{}..{}", start, end)
+                    };
+                    self.stack.push(range_str);
+                } else {
+                    return Err("create_range() requires 3 arguments (start, end, inclusive)".to_string());
+                }
+            },
+            "array_get" => {
+                // Get array element by index (simplified implementation)
+                if arg_count >= 2 {
+                    let array_name = self.stack.pop().unwrap_or("array_0".to_string());
+                    let index = self.stack.pop().unwrap_or("0".to_string());
+                    
+                    // Try to parse index as number
+                    if let Ok(idx) = index.parse::<usize>() {
+                        let var_name = format!("{}{}", array_name, idx);
+                        if let Some(value) = self.variables.get(&var_name) {
+                            self.stack.push(value.clone());
+                        } else {
+                            // Debug: print available variables
+                            if !self.clean_output {
+                                println!("Looking for variable '{}', available: {:?}", var_name, self.variables.keys().collect::<Vec<_>>());
+                            }
+                            self.stack.push("null".to_string());
+                        }
+                    } else {
+                        self.stack.push("null".to_string());
+                    }
+                } else {
+                    return Err("array_get() requires 2 arguments (array, index)".to_string());
+                }
+            },
+            "concat_string" => {
+                // Concatenate two strings/values
+                if arg_count >= 2 {
+                    let second = self.stack.pop().unwrap_or("".to_string());
+                    let first = self.stack.pop().unwrap_or("".to_string());
+                    let result = format!("{}{}", second, first); // Note: reversed order due to stack
+                    self.stack.push(result);
+                } else {
+                    return Err("concat_string() requires 2 arguments".to_string());
+                }
+            },
+            "load_var_by_name" => {
+                // Load a variable by its name (from stack)
+                if arg_count >= 1 {
+                    let var_name = self.stack.pop().unwrap_or("".to_string());
+                    if let Some(value) = self.variables.get(&var_name) {
+                        self.stack.push(value.clone());
+                    } else {
+                        if !self.clean_output {
+                            println!("Variable '{}' not found, available: {:?}", var_name, self.variables.keys().collect::<Vec<_>>());
+                        }
+                        self.stack.push("null".to_string());
+                    }
+                } else {
+                    return Err("load_var_by_name() requires 1 argument".to_string());
                 }
             },
             _ => {

@@ -261,6 +261,13 @@ impl<'a> ExpressionParser<'a> {
                 end: Box::new(end),
                 inclusive: false,
             }));
+        } else if self.match_tokens(&[TokenKind::DotDotEqual]) {
+            let end = self.parse_term()?;
+            return Ok(Expression::RangeExpression(RangeExpression {
+                start: Box::new(expr),
+                end: Box::new(end),
+                inclusive: true,
+            }));
         }
 
         Ok(expr)

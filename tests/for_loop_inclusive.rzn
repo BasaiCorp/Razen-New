@@ -1,0 +1,11 @@
+fun main() {
+    println("Testing inclusive range (1..=5):")
+    for i in 1..=5 {
+        println(f"Inclusive: {i}")
+    }
+    
+    println("\nTesting exclusive range (1..5):")
+    for i in 1..5 {
+        println(f"Exclusive: {i}")
+    }
+}

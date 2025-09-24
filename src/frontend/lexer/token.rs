@@ -39,7 +39,7 @@ pub enum TokenKind {
     PlusPlus, MinusMinus,
 
     // Special Operators
-    Question, QuestionQuestion, DotDot, DotDotDot,
+    Question, QuestionQuestion, DotDot, DotDotEqual, DotDotDot,
 
     // Punctuators & Delimiters
     LeftBrace, RightBrace, LeftParen, RightParen, LeftBracket, RightBracket,
