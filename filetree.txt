@@ -1,21 +1,94 @@
-razen-lang-new/
-├── Cargo.toml                   # Project configuration with cranelift dependencies
-├── filetree.txt                 # This file (project structure)
-├── README.md                    # Project documentation
-└── src/
-    ├── main.rs                  # CLI entry point with semantic analysis testing
-    ├── lib.rs                   # Library root module exports
-    ├── frontend/                # Frontend - COMPLETE ✅
-    │   ├── mod.rs               # Frontend module exports
-    │   ├── lexer/               # Lexical analysis
-    │   │   ├── mod.rs           # Lexer module
-    │   │   ├── token.rs         # Token definitions
-    │   │   └── scanner.rs       # Source code scanner
-    │   ├── parser/              # Syntax analysis
-    │   │   ├── mod.rs           # Parser module with error handling
-    │   │   ├── ast.rs           # Abstract Syntax Tree definitions
-    │   │   ├── expression.rs    # Expression parsing
-    │   │   └── statement.rs     # Statement parsing
+razen-lang-new/                    # Razen Programming Language v0.1-beta.4
+├── Cargo.toml                   # Rust project configuration
+├── Cargo.lock                   # Dependency lock file
+├── LICENSE                      # Apache 2.0 License
+├── README.md                    # Professional project documentation
+├── filetree.txt                 # Project structure overview (this file)
+├── .gitignore                   # Git ignore patterns
+├── install.sh                   # One-line installation script
+├── test-install.sh              # Installation testing script
+│
+├── src/                         # Main source code
+│   ├── main.rs                  # CLI entry point
+│   ├── lib.rs                   # Library root module
+│   │
+│   ├── frontend/                # Frontend compilation phases
+│   │   ├── mod.rs               # Frontend module exports
+│   │   ├── lexer/               # Lexical analysis (tokenization)
+│   │   │   ├── mod.rs           # Lexer module
+│   │   │   ├── token.rs         # Token type definitions
+│   │   │   └── scanner.rs       # Source code scanner
+│   │   ├── parser/              # Syntax analysis (AST generation)
+│   │   │   ├── mod.rs           # Parser module with error handling
+│   │   │   ├── ast.rs           # Abstract Syntax Tree definitions
+│   │   │   ├── expression.rs    # Expression parsing logic
+│   │   │   └── statement.rs     # Statement parsing logic
+│   │   └── diagnostics/         # Error reporting and diagnostics
+│   │       ├── mod.rs           # Diagnostics module
+│   │       ├── error.rs         # Error type definitions
+│   │       └── reporter.rs      # Error reporting utilities
+│   │
+│   ├── backend/                 # Backend compilation phases
+│   │   ├── mod.rs               # Backend module exports
+│   │   ├── semantic.rs          # Semantic analysis and validation
+│   │   ├── types.rs             # Type system definitions
+│   │   ├── type_checker.rs      # Type checking implementation
+│   │   └── execution/           # Code execution engine
+│   │       ├── mod.rs           # Execution module
+│   │       ├── compiler.rs      # IR compilation
+│   │       ├── interpreter.rs   # Direct interpretation
+│   │       └── runtime.rs       # Runtime environment
+│   │
+│   ├── commands/                # CLI command implementations
+│   │   ├── mod.rs               # Commands module
+│   │   ├── run.rs               # `razen run` command
+│   │   ├── dev.rs               # `razen dev` command
+│   │   ├── compile.rs           # `razen compile` command
+│   │   ├── test.rs              # `razen test` command
+│   │   └── cli.rs               # CLI argument parsing
+│   │
+│   ├── utils/                   # Utility functions
+│   │   ├── mod.rs               # Utils module
+│   │   ├── file_utils.rs        # File I/O utilities
+│   │   └── string_utils.rs      # String manipulation utilities
+│   │
+│   └── properties/              # Configuration and properties
+│       ├── mod.rs               # Properties module
+│       └── config.rs            # Configuration management
+│
+├── tests/                       # Test programs and examples
+│   ├── for_loop.rzn             # For loop examples
+│   ├── for_loop_inclusive.rzn   # Inclusive range loops
+│   ├── for_loop_array.rzn       # Array iteration
+│   ├── while_loop.rzn           # While loop examples
+│   ├── loop_break_continue.rzn  # Break/continue statements
+│   ├── nested_loops.rzn         # Nested loop examples
+│   ├── comprehensive_loops.rzn  # Complete loop testing
+│   ├── multiplication_test.rzn  # Arithmetic operations
+│   ├── test_fstring_fix.rzn     # F-string formatting
+│   └── test_dot_notation.rzn    # Object property access
+│
+├── examples/                    # Example Razen programs
+│   └── hello_world.rzn          # Basic "Hello, World!" example
+│
+├── benches/                     # Performance benchmarks
+│   └── compiler_bench.rs        # Compiler performance tests
+│
+├── extensions/                  # IDE extensions and tooling
+│   └── razen-vscode/            # Visual Studio Code extension
+│       ├── package.json         # Extension manifest
+│       ├── README.md            # Extension documentation
+│       ├── syntaxes/            # Syntax highlighting
+│       ├── themes/              # Color themes
+│       └── language-configuration.json # Language configuration
+│
+├── production/                  # Production builds and releases
+│   └── bin/                     # Compiled binaries
+│       └── razen-lang           # Main executable
+│
+└── target/                      # Rust build artifacts (generated)
+    └── release/                 # Release build outputs
+        └── razen-lang           # Optimized executable
     │   └── diagnostics/         # Error reporting system
     │       ├── mod.rs           # Diagnostic utilities and macros
     │       ├── error.rs         # Diagnostic types and error codes

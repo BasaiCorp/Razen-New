@@ -796,11 +796,14 @@ mod tests {
                     name: Identifier::new("main".to_string()),
                     parameters: vec![],
                     return_type: None,
-                    body: vec![
-                        Statement::ExpressionStatement(ExpressionStatement {
-                            expression: Expression::Identifier(Identifier::new("undefined_var".to_string())),
-                        })
-                    ],
+                    body: BlockStatement {
+                        statements: vec![
+                            Statement::ExpressionStatement(ExpressionStatement {
+                                expression: Expression::Identifier(Identifier::new("undefined_var".to_string())),
+                            })
+                        ],
+                    },
+                    is_public: false,
                 })
             ],
         };
@@ -821,18 +824,21 @@ mod tests {
                     name: Identifier::new("main".to_string()),
                     parameters: vec![],
                     return_type: None,
-                    body: vec![
-                        Statement::ExpressionStatement(ExpressionStatement {
-                            expression: Expression::CallExpression(CallExpression {
-                                callee: Box::new(Expression::Identifier(Identifier::new("println".to_string()))),
-                                arguments: vec![
-                                    Expression::StringLiteral(StringLiteral {
-                                        value: "Hello, world!".to_string(),
-                                    })
-                                ],
-                            }),
-                        })
-                    ],
+                    body: BlockStatement {
+                        statements: vec![
+                            Statement::ExpressionStatement(ExpressionStatement {
+                                expression: Expression::CallExpression(CallExpression {
+                                    callee: Box::new(Expression::Identifier(Identifier::new("println".to_string()))),
+                                    arguments: vec![
+                                        Expression::StringLiteral(StringLiteral {
+                                            value: "Hello, world!".to_string(),
+                                        })
+                                    ],
+                                }),
+                            })
+                        ],
+                    },
+                    is_public: false,
                 })
             ],
         };

@@ -395,7 +395,7 @@ impl DiagnosticRenderer {
     fn write_source_without_file(&self, output: &mut String, source_id: &Option<String>, labels: Vec<&Label>) {
         // Fallback when we don't have the source file
         for label in labels {
-            let location = if let Some(ref id) = source_id {
+            let location = if let Some(id) = source_id {
                 format!("{}:{}", id, label.span.start)
             } else {
                 format!("{}", label.span.start)
