@@ -723,11 +723,67 @@ impl Compiler {
                 };
             },
             Expression::UnaryExpression(unary_expr) => {
-                self.compile_expression(*unary_expr.operand);
-                
                 match unary_expr.operator {
-                    crate::frontend::parser::ast::UnaryOperator::Minus => self.emit(IR::Negate),
-                    crate::frontend::parser::ast::UnaryOperator::Not => self.emit(IR::Not),
+                    crate::frontend::parser::ast::UnaryOperator::Minus => {
+                        self.compile_expression(*unary_expr.operand);
+                        self.emit(IR::Negate);
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::Not => {
+                        self.compile_expression(*unary_expr.operand);
+                        self.emit(IR::Not);
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::Plus => {
+                        // Unary plus is a no-op, just compile the operand
+                        self.compile_expression(*unary_expr.operand);
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::PreIncrement => {
+                        // ++var: increment then use
+                        if let Expression::Identifier(ident) = *unary_expr.operand {
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::PushNumber(1.0));
+                            self.emit(IR::Add);
+                            self.emit(IR::Dup); // Duplicate for return value
+                            self.emit(IR::StoreVar(ident.name));
+                        } else {
+                            self.errors.push("Pre-increment can only be applied to variables".to_string());
+                        }
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::PostIncrement => {
+                        // var++: use then increment
+                        if let Expression::Identifier(ident) = *unary_expr.operand {
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::Dup); // Keep original value for return
+                            self.emit(IR::PushNumber(1.0));
+                            self.emit(IR::Add);
+                            self.emit(IR::StoreVar(ident.name));
+                        } else {
+                            self.errors.push("Post-increment can only be applied to variables".to_string());
+                        }
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::PreDecrement => {
+                        // --var: decrement then use
+                        if let Expression::Identifier(ident) = *unary_expr.operand {
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::PushNumber(1.0));
+                            self.emit(IR::Subtract);
+                            self.emit(IR::Dup); // Duplicate for return value
+                            self.emit(IR::StoreVar(ident.name));
+                        } else {
+                            self.errors.push("Pre-decrement can only be applied to variables".to_string());
+                        }
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::PostDecrement => {
+                        // var--: use then decrement
+                        if let Expression::Identifier(ident) = *unary_expr.operand {
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::Dup); // Keep original value for return
+                            self.emit(IR::PushNumber(1.0));
+                            self.emit(IR::Subtract);
+                            self.emit(IR::StoreVar(ident.name));
+                        } else {
+                            self.errors.push("Post-decrement can only be applied to variables".to_string());
+                        }
+                    },
                     _ => {
                         self.errors.push(format!("Unknown unary operator: {:?}", unary_expr.operator));
                         return;

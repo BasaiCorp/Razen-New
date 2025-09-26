@@ -1,0 +1,39 @@
+// ===== MATCH STATEMENT TEST =====
+// Testing pattern matching functionality
+
+fun main() {
+    println("=== MATCH STATEMENT TEST ===")
+    
+    // Test basic match with numbers
+    println("1. Number matching:")
+    var number = 2
+    
+    match number {
+        1 => println("It's one!")
+        2 => println("It's two!")
+        3 => println("It's three!")
+        _ => println("It's something else!")
+    }
+    
+    // Test match with strings
+    println("2. String matching:")
+    var color = "red"
+    
+    match color {
+        "red" => println("Color is red")
+        "blue" => println("Color is blue")
+        "green" => println("Color is green")
+        _ => println("Unknown color")
+    }
+    
+    // Test match with boolean
+    println("3. Boolean matching:")
+    var flag = true
+    
+    match flag {
+        true => println("Flag is true")
+        false => println("Flag is false")
+    }
+    
+    println("=== MATCH TEST COMPLETED ===")
+}

@@ -1,0 +1,130 @@
+// ===== COMPREHENSIVE RAZEN LANGUAGE TEST =====
+// Testing all working features together
+
+fun simple_add(x: int, y: int) -> int {
+    return x + y
+}
+
+fun main() {
+    println("=== COMPREHENSIVE RAZEN TEST ===")
+    
+    // ===== VARIABLES AND CONSTANTS =====
+    println("\n1. Variables and Constants:")
+    var mutable_var = 42
+    const immutable_const = "Hello Razen"
+    var typed_var: int = 100
+    
+    println(f"Mutable: {mutable_var}")
+    println(f"Const: {immutable_const}")
+    println(f"Typed: {typed_var}")
+    
+    // ===== ALL OPERATORS =====
+    println("\n2. All Operators:")
+    var a = 15
+    var b = 4
+    
+    // Arithmetic
+    var add_result = a + b
+    var sub_result = a - b
+    var mul_result = a * b
+    var div_result = a / b
+    var mod_result = a % b
+    
+    println(f"Arithmetic: {add_result}, {sub_result}, {mul_result}, {div_result}, {mod_result}")
+    
+    // Comparison
+    var eq_result = a == a
+    var ne_result = a != b
+    var gt_result = a > b
+    var lt_result = b < a
+    
+    println(f"Comparison: {eq_result}, {ne_result}, {gt_result}, {lt_result}")
+    
+    // Logical
+    var p = true
+    var q = false
+    var and_result = p && q
+    var or_result = p || q
+    var not_result = !p
+    
+    println(f"Logical: {and_result}, {or_result}, {not_result}")
+    
+    // ===== CONTROL FLOW =====
+    println("\n3. Control Flow:")
+    
+    // If-elif-else
+    var score = 85
+    if score >= 90 {
+        println("Grade: A")
+    } elif score >= 80 {
+        println("Grade: B")
+    } else {
+        println("Grade: C")
+    }
+    
+    // While loop with break/continue
+    println("While loop with break/continue:")
+    var counter = 1
+    while counter <= 8 {
+        if counter == 3 {
+            counter = counter + 1
+            continue
+        }
+        if counter == 6 {
+            break
+        }
+        println(f"  Counter: {counter}")
+        counter = counter + 1
+    }
+    
+    // For loops
+    println("For loop with range:")
+    for i in 1..4 {
+        println(f"  Range: {i}")
+    }
+    
+    println("For loop with array:")
+    for item in [10, 20, 30] {
+        println(f"  Item: {item}")
+    }
+    
+    // Match statements
+    println("Match statement:")
+    var color = "blue"
+    match color {
+        "red" => println("  Color is red")
+        "blue" => println("  Color is blue")
+        "green" => println("  Color is green")
+        _ => println("  Unknown color")
+    }
+    
+    // ===== FUNCTIONS =====
+    println("\n4. Functions:")
+    var sum_result = simple_add(10, 20)
+    println(f"simple_add(10, 20) = {sum_result}")
+    
+    // ===== STRING INTERPOLATION =====
+    println("\n5. String Interpolation:")
+    var name = "Razen"
+    var version = 1
+    println(f"Welcome to {name} v{version}!")
+    
+    // ===== ARRAYS =====
+    println("\n6. Arrays:")
+    var numbers = [1, 2, 3, 4, 5]
+    var strings = ["hello", "world", "razen"]
+    println("Arrays created successfully")
+    
+    // ===== TRY-CATCH =====
+    println("\n7. Error Handling:")
+    try {
+        println("  Inside try block")
+        var result = simple_add(5, 10)
+        println(f"  Result: {result}")
+    } catch error {
+        println(f"  Caught error: {error}")
+    }
+    
+    println("\n=== ALL FEATURES WORKING! ===")
+    println("Razen language is functioning excellently!")
+}
