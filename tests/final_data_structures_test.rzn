@@ -1,0 +1,95 @@
+// ===== FINAL COMPREHENSIVE DATA STRUCTURES TEST =====
+// Testing all data structures: structs, enums, arrays, maps
+
+// Define structs
+struct Person {
+    name: str,
+    age: int,
+    email: str
+}
+
+struct Point {
+    x: int,
+    y: int
+}
+
+// Define enums
+enum Color {
+    Red,
+    Green,
+    Blue,
+    RGB(int, int, int)
+}
+
+enum Status {
+    Active,
+    Inactive,
+    Pending
+}
+
+fun main() {
+    println("=== FINAL DATA STRUCTURES TEST ===")
+    
+    // ===== STRUCTS =====
+    println("\n1. Struct Usage:")
+    var person = Person { name: "Alice", age: 28, email: "alice@example.com" }
+    var point = Point { x: 10, y: 20 }
+    
+    println("Person struct:")
+    println("  Name: " + person.name)
+    println("  Age: " + person.age)
+    println("  Email: " + person.email)
+    
+    println("Point struct:")
+    println("  X: " + point.x)
+    println("  Y: " + point.y)
+    
+    // ===== ENUMS =====
+    println("\n2. Enum Usage:")
+    var color1 = Color.Red
+    var color2 = Color.Green
+    var status1 = Status.Active
+    var status2 = Status.Pending
+    
+    println("Colors:")
+    println("  Color 1: " + color1)
+    println("  Color 2: " + color2)
+    
+    println("Statuses:")
+    println("  Status 1: " + status1)
+    println("  Status 2: " + status2)
+    
+    // ===== ARRAYS =====
+    println("\n3. Array Usage:")
+    var numbers = [1, 2, 3, 4, 5]
+    var names = ["Alice", "Bob", "Charlie"]
+    var mixed = [42, "hello", true]
+    
+    println("Arrays:")
+    println("  Numbers: " + numbers)
+    println("  Names: " + names)
+    println("  Mixed: " + mixed)
+    
+    // ===== MAPS =====
+    println("\n4. Map Usage:")
+    var config = {"debug": "true", "port": "8080", "version": "1.0"}
+    var scores = {"alice": "95", "bob": "87", "charlie": "92"}
+    
+    println("Maps:")
+    println("  Config: " + config)
+    println("  Scores: " + scores)
+    
+    // ===== COMBINED USAGE =====
+    println("\n5. Combined Usage:")
+    var team_leader = Person { name: "David", age: 35, email: "david@company.com" }
+    var project_status = Status.Active
+    var team_colors = [Color.Red, Color.Blue]
+    
+    println("Team Info:")
+    println("  Leader: " + team_leader.name + " (age " + team_leader.age + ")")
+    println("  Project Status: " + project_status)
+    println("  Team Colors: " + team_colors)
+    
+    println("\n=== ALL DATA STRUCTURES WORKING PERFECTLY! ===")
+    println("🎉 Razen now supports structs, enums, arrays, and maps! 🎉")
+}

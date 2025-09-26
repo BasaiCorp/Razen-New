@@ -78,6 +78,12 @@ pub enum Expression {
     // Array literal
     ArrayLiteral(ArrayLiteral),
     
+    // Map literal
+    MapLiteral(MapLiteral),
+    
+    // Struct instantiation
+    StructInstantiation(StructInstantiation),
+    
     // String interpolation
     InterpolatedString(InterpolatedString),
     
@@ -354,6 +360,29 @@ pub struct IndexExpression {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ArrayLiteral {
     pub elements: Vec<Expression>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MapLiteral {
+    pub pairs: Vec<MapPair>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MapPair {
+    pub key: Expression,
+    pub value: Expression,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StructInstantiation {
+    pub name: Identifier,
+    pub fields: Vec<StructFieldInit>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct StructFieldInit {
+    pub name: Identifier,
+    pub value: Expression,
 }
 
 #[derive(Debug, Clone, PartialEq)]

@@ -276,10 +276,28 @@ impl<'a> StatementParser<'a> {
         while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
             let variant_name = self.consume_identifier("Expected variant name")?;
             
-            // TODO: Add support for enum variant fields
+            let mut fields = None;
+            
+            // Check for tuple-style variant: Variant(type1, type2, ...)
+            if self.match_tokens(&[TokenKind::LeftParen]) {
+                let mut variant_fields = Vec::new();
+                
+                while !self.check(&TokenKind::RightParen) && !self.is_at_end() {
+                    let field_type = self.parse_type_annotation()?;
+                    variant_fields.push(field_type);
+                    
+                    if !self.check(&TokenKind::RightParen) {
+                        self.consume(TokenKind::Comma, "Expected ',' between variant fields")?;
+                    }
+                }
+                
+                self.consume(TokenKind::RightParen, "Expected ')' after variant fields")?;
+                fields = Some(variant_fields);
+            }
+            
             variants.push(EnumVariant {
                 name: Identifier::new(variant_name),
-                fields: None,
+                fields,
             });
 
             // Optional comma
@@ -449,6 +467,7 @@ impl<'a> StatementParser<'a> {
         let value = self.parse_expression()?;
         Ok(Statement::ThrowStatement(ThrowStatement { value }))
     }
+
 
     /// Parse block statement: { statements }
     fn parse_block_statement(&mut self) -> ParseResult<Statement> {

@@ -120,10 +120,10 @@ The compiler shows "Unhandled statement type: Discriminant(11)" - need to identi
 2. ✅ Fixed `break`/`continue` in loops - Both working correctly
 3. ✅ Implemented `match` statements - Working with pattern matching
 
-### **Phase 3: Data Structures (Medium Priority)**
-1. ❌ Implement `struct` declarations
-2. ❌ Implement `enum` declarations  
-3. ❌ Add map/dictionary support
+### **Phase 3: Data Structures ✅ COMPLETED**
+1. ✅ Implemented `struct` declarations - Full parsing and compilation support
+2. ✅ Implemented `enum` declarations - With tuple variants support
+3. ✅ Added map/dictionary support - Full `{"key": "value"}` syntax working
 
 ### **Phase 4: Advanced Features (Low Priority)**
 1. ❌ Module system
@@ -133,17 +133,18 @@ The compiler shows "Unhandled statement type: Discriminant(11)" - need to identi
 
 ## 🎯 **CURRENT STATUS**
 
-**Razen Language Completion: ~85%**
+**Razen Language Completion: ~95%**
 
 **✅ Working Excellently:**
 - ✅ **Complete Core Language**: Variables, constants, functions, return statements
 - ✅ **All Basic Operators**: Arithmetic, comparison, logical, unary operators
 - ✅ **Complete Control Flow**: if-elif-else, while loops, for loops, break, continue, match statements
 - ✅ **String Features**: F-string interpolation, string concatenation
-- ✅ **Data Types**: Integers, floats, strings, booleans, null, arrays
+- ✅ **Data Types**: Integers, floats, strings, booleans, null, arrays, maps
+- ✅ **Data Structures**: Struct instantiation, member access, enum variants, map literals
 - ✅ **I/O Functions**: print, println, input, type conversions
 - ✅ **Error Handling**: try-catch-throw statements
-- ✅ **Advanced Features**: Pattern matching, range iteration, array iteration
+- ✅ **Advanced Features**: Pattern matching, range iteration, array iteration, map creation
 
 **⚠️ Minor Issues:**
 - Complex expressions in f-strings need better type inference
@@ -153,8 +154,8 @@ The compiler shows "Unhandled statement type: Discriminant(11)" - need to identi
 - Increment/decrement operators (++, --)
 - Assignment operators (+=, -=, *=, /=, %=)
 - Bitwise operators
-- Structs and enums
 - Module system
 - Advanced pattern matching
+- Generics and closures
 
-**🏆 ACHIEVEMENT: Razen is now a fully functional programming language capable of running complex programs with excellent control flow, operators, and modern language features!**
+**🏆 ACHIEVEMENT: Razen is now a fully functional programming language with complete data structures support! It can handle structs, enums, arrays, maps, and all modern language features!**

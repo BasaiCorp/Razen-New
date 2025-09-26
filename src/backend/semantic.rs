@@ -250,12 +250,14 @@ impl SemanticAnalyzer {
                 // Declare the constant with the inferred type (immutable)
                 self.declare_variable(const_name, &inferred_type, Position::new(1, 1, 0), false);
             }
-            Statement::StructDeclaration(_) => {
-                // TODO: Implement struct analysis
-            }
-            Statement::EnumDeclaration(_) => {
-                // TODO: Implement enum analysis
-            }
+            Statement::StructDeclaration(struct_decl) => {
+                // Register struct type in symbol table
+                self.declare_variable(&struct_decl.name.name, "type", Position::new(1, 1, 0), false);
+            },
+            Statement::EnumDeclaration(enum_decl) => {
+                // Register enum type in symbol table
+                self.declare_variable(&enum_decl.name.name, "type", Position::new(1, 1, 0), false);
+            },
             Statement::ForStatement(for_stmt) => {
                 // Analyze iterable
                 self.analyze_expression(&for_stmt.iterable);
@@ -553,6 +555,21 @@ impl SemanticAnalyzer {
                     self.analyze_expression(element);
                 }
                 Some("array".to_string())
+            }
+            Expression::MapLiteral(map_lit) => {
+                for pair in &map_lit.pairs {
+                    self.analyze_expression(&pair.key);
+                    self.analyze_expression(&pair.value);
+                }
+                Some("map".to_string())
+            }
+            Expression::StructInstantiation(struct_inst) => {
+                // Analyze all field values
+                for field in &struct_inst.fields {
+                    self.analyze_expression(&field.value);
+                }
+                // Return the struct type name
+                Some(struct_inst.name.name.clone())
             }
             Expression::InterpolatedString(interp_str) => {
                 for part in &interp_str.parts {

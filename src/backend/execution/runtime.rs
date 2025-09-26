@@ -377,6 +377,66 @@ impl Runtime {
                         }
                     }
                 },
+                IR::CreateArray(size) => {
+                    // Pop 'size' elements from stack and create an array representation
+                    let mut elements = Vec::new();
+                    for _ in 0..*size {
+                        if let Some(element) = self.stack.pop() {
+                            elements.push(element);
+                        }
+                    }
+                    elements.reverse(); // Restore original order
+                    
+                    // For now, represent array as a string (in a full implementation, we'd use proper data structures)
+                    let array_repr = format!("[{}]", elements.join(", "));
+                    self.stack.push(array_repr);
+                },
+                IR::CreateMap(size) => {
+                    // Pop 'size * 2' elements from stack (key-value pairs) and create a map representation
+                    let mut pairs = Vec::new();
+                    for _ in 0..*size {
+                        if let (Some(value), Some(key)) = (self.stack.pop(), self.stack.pop()) {
+                            pairs.push(format!("{}: {}", key, value));
+                        }
+                    }
+                    pairs.reverse(); // Restore original order
+                    
+                    // For now, represent map as a string (in a full implementation, we'd use proper data structures)
+                    let map_repr = format!("{{{}}}", pairs.join(", "));
+                    self.stack.push(map_repr);
+                },
+                IR::GetKey => {
+                    // Pop key and object from stack, push the value for that key
+                    if let (Some(key), Some(object)) = (self.stack.pop(), self.stack.pop()) {
+                        let mut found = false;
+                        
+                        // For now, parse the object as a map-like string representation
+                        if object.starts_with('{') && object.ends_with('}') {
+                            let content = &object[1..object.len()-1]; // Remove braces
+                            if !content.is_empty() {
+                                let pairs: Vec<&str> = content.split(", ").collect();
+                                
+                                for pair in pairs {
+                                    if let Some(colon_pos) = pair.find(": ") {
+                                        let pair_key = &pair[..colon_pos];
+                                        let pair_value = &pair[colon_pos + 2..];
+                                        
+                                        if pair_key == key {
+                                            self.stack.push(pair_value.to_string());
+                                            found = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if !found {
+                            // Key not found, push null
+                            self.stack.push("null".to_string());
+                        }
+                    }
+                },
                 IR::DefineFunction(_, _) | IR::Label(_) => {
                     // Ignored at runtime
                 },

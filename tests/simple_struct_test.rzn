@@ -1,0 +1,23 @@
+// ===== SIMPLE STRUCT TEST =====
+// Testing just struct instantiation
+
+struct Person {
+    name: str,
+    age: int
+}
+
+fun main() {
+    println("=== SIMPLE STRUCT TEST ===")
+    
+    // Test struct instantiation
+    var person1 = Person { name: "John", age: 30 }
+    println(f"Person created: {person1}")
+    
+    // Test member access (without f-strings for now)
+    var name = person1.name
+    var age = person1.age
+    println("Name: " + name)
+    println("Age: " + age)
+    
+    println("=== STRUCT TEST COMPLETED ===")
+}

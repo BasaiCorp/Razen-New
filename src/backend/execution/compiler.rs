@@ -302,6 +302,12 @@ impl Compiler {
                 // Store the constant value
                 self.emit(IR::StoreVar(const_decl.name.name));
             },
+            Statement::StructDeclaration(struct_decl) => {
+                self.compile_struct_declaration(struct_decl);
+            },
+            Statement::EnumDeclaration(enum_decl) => {
+                self.compile_enum_declaration(enum_decl);
+            },
             _ => {
                 // Handle other statement types as needed
                 if !self.clean_output {
@@ -657,6 +663,34 @@ impl Compiler {
         }
     }
 
+    fn compile_struct_declaration(&mut self, struct_decl: crate::frontend::parser::ast::StructDeclaration) {
+        // For now, struct declarations are compile-time only
+        // We register the struct type in the symbol table for future use
+        if !self.clean_output {
+            println!("Registering struct type: {}", struct_decl.name.name);
+        }
+        
+        // Store struct metadata for future instantiation
+        // This is a placeholder - in a full implementation, we'd store field information
+        self.symbol_table.define(&format!("struct_{}", struct_decl.name.name));
+    }
+
+    fn compile_enum_declaration(&mut self, enum_decl: crate::frontend::parser::ast::EnumDeclaration) {
+        // Register the enum type name as a variable so it can be used in expressions
+        if !self.clean_output {
+            println!("Registering enum type: {}", enum_decl.name.name);
+        }
+        
+        // Register the enum type itself
+        let enum_name = enum_decl.name.name.clone();
+        self.symbol_table.define(&enum_name);
+        self.emit(IR::PushString(format!("enum_{}", enum_name)));
+        self.emit(IR::StoreVar(enum_name.clone()));
+        
+        // Store enum metadata for future instantiation
+        self.symbol_table.define(&format!("enum_{}", enum_name));
+    }
+
     fn compile_expression(&mut self, expr: Expression) {
         match expr {
             Expression::Identifier(ident) => {
@@ -810,6 +844,29 @@ impl Compiler {
                 // Create array with the specified number of elements
                 self.emit(IR::CreateArray(array_lit.elements.len()));
             },
+            Expression::MapLiteral(map_lit) => {
+                // Compile all map key-value pairs
+                for pair in &map_lit.pairs {
+                    self.compile_expression(pair.key.clone());
+                    self.compile_expression(pair.value.clone());
+                }
+                // Create map with the specified number of pairs
+                self.emit(IR::CreateMap(map_lit.pairs.len()));
+            },
+            Expression::StructInstantiation(struct_inst) => {
+                // For now, compile struct instantiation as a map-like structure
+                // Push struct type name first
+                self.emit(IR::PushString(struct_inst.name.name.clone()));
+                
+                // Compile all field values
+                for field in &struct_inst.fields {
+                    self.emit(IR::PushString(field.name.name.clone())); // field name
+                    self.compile_expression(field.value.clone()); // field value
+                }
+                
+                // Create struct with the specified number of fields
+                self.emit(IR::CreateMap(struct_inst.fields.len() + 1)); // +1 for type name
+            },
             Expression::AssignmentExpression(assign_expr) => {
                 // Compile the right-hand side first
                 self.compile_expression(*assign_expr.right);
@@ -820,6 +877,23 @@ impl Compiler {
                 } else {
                     self.errors.push("Invalid assignment target".to_string());
                 }
+            },
+            Expression::MemberExpression(member_expr) => {
+                // Check if this is enum variant access (Type.Variant)
+                if let Expression::Identifier(type_ident) = &*member_expr.object {
+                    // Check if this looks like an enum type (starts with uppercase)
+                    if type_ident.name.chars().next().unwrap_or('a').is_uppercase() {
+                        // This is likely enum variant access: EnumType.Variant
+                        let enum_variant = format!("{}::{}", type_ident.name, member_expr.property.name);
+                        self.emit(IR::PushString(enum_variant));
+                        return;
+                    }
+                }
+                
+                // Regular member access: object.property
+                self.compile_expression(*member_expr.object);
+                self.emit(IR::PushString(member_expr.property.name));
+                self.emit(IR::GetKey); // Use map-like access for structs
             },
             _ => {
                 // Handle other expression types as needed

@@ -474,6 +474,37 @@ impl<'a> ExpressionParser<'a> {
         if self.match_tokens(&[TokenKind::Identifier]) {
             let name = self.previous().lexeme.clone();
             
+            // Check if this is a struct instantiation: TypeName { ... }
+            if self.check(&TokenKind::LeftBrace) {
+                self.advance(); // consume '{'
+                
+                let mut fields = Vec::new();
+                
+                if !self.check(&TokenKind::RightBrace) {
+                    loop {
+                        let field_name = self.consume_identifier("Expected field name")?;
+                        self.consume(TokenKind::Colon, "Expected ':' after field name")?;
+                        let field_value = self.parse_expression()?;
+                        
+                        fields.push(StructFieldInit {
+                            name: Identifier::new(field_name),
+                            value: field_value,
+                        });
+                        
+                        if !self.match_tokens(&[TokenKind::Comma]) {
+                            break;
+                        }
+                    }
+                }
+                
+                self.consume(TokenKind::RightBrace, "Expected '}' after struct fields")?;
+                
+                return Ok(Expression::StructInstantiation(StructInstantiation {
+                    name: Identifier::new(name),
+                    fields,
+                }));
+            }
+            
             // f-strings are now handled by the FString token type above
             
             return Ok(Expression::Identifier(Identifier::new(name)));
@@ -516,6 +547,28 @@ impl<'a> ExpressionParser<'a> {
 
             self.consume(TokenKind::RightBracket, "Expected ']' after array elements")?;
             return Ok(Expression::ArrayLiteral(ArrayLiteral { elements }));
+        }
+
+        if self.match_tokens(&[TokenKind::LeftBrace]) {
+            // Map literal: {key: value, key2: value2}
+            let mut pairs = Vec::new();
+            
+            if !self.check(&TokenKind::RightBrace) {
+                loop {
+                    let key = self.parse_expression()?;
+                    self.consume(TokenKind::Colon, "Expected ':' after map key")?;
+                    let value = self.parse_expression()?;
+                    
+                    pairs.push(MapPair { key, value });
+                    
+                    if !self.match_tokens(&[TokenKind::Comma]) {
+                        break;
+                    }
+                }
+            }
+
+            self.consume(TokenKind::RightBrace, "Expected '}' after map elements")?;
+            return Ok(Expression::MapLiteral(MapLiteral { pairs }));
         }
 
         Err(ParseError::new(

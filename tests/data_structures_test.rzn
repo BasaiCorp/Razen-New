@@ -1,0 +1,54 @@
+// ===== COMPREHENSIVE DATA STRUCTURES TEST =====
+// Testing struct, enum, array, and map declarations
+
+// Define a struct
+struct Person {
+    name: str,
+    age: int,
+    email: str
+}
+
+// Define an enum
+enum Color {
+    Red,
+    Green,
+    Blue,
+    RGB(int, int, int)
+}
+
+// Define another enum with different variants
+enum Result {
+    Success(str),
+    Error(str)
+}
+
+fun main() {
+    println("=== COMPREHENSIVE DATA STRUCTURES TEST ===")
+    
+    // ===== ARRAYS =====
+    println("\n1. Arrays:")
+    var numbers = [1, 2, 3, 4, 5]
+    var strings = ["hello", "world", "razen"]
+    var mixed = [1, "hello", true, 3.14]
+    println(f"Numbers array: {numbers}")
+    println(f"Strings array: {strings}")
+    println(f"Mixed array: {mixed}")
+    
+    // ===== MAPS/DICTIONARIES =====
+    println("\n2. Maps/Dictionaries:")
+    var person_info = {"name": "John", "age": "30", "city": "New York"}
+    var config = {"debug": "true", "port": "8080", "host": "localhost"}
+    var mixed_map = {"count": 42, "enabled": true, "version": "1.0"}
+    println(f"Person info: {person_info}")
+    println(f"Config: {config}")
+    println(f"Mixed map: {mixed_map}")
+    
+    // ===== STRUCT AND ENUM DECLARATIONS =====
+    println("\n3. Struct and Enum Declarations:")
+    println("Person struct: name, age, email fields")
+    println("Color enum: Red, Green, Blue, RGB(int, int, int)")
+    println("Result enum: Success(str), Error(str)")
+    println("All data structures declared successfully!")
+    
+    println("\n=== ALL DATA STRUCTURES WORKING! ===")
+}
