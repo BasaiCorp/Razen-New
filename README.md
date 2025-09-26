@@ -2,7 +2,7 @@
 
 Razen is a modern, efficient programming language designed for building reliable and performant software with clean, readable syntax.
 
-**Current Version: v0.1-beta.4**
+**Current Version: v0.1-beta.5**
 
 This is the main source code repository for Razen. It contains the compiler, standard library, and documentation.
 
@@ -52,7 +52,6 @@ Run your program:
 ```bash
 razen run hello.rzn
 ```
-
 ## Usage
 
 After installation, you can use Razen with the following commands:
@@ -63,6 +62,15 @@ razen run program.rzn
 
 # Development mode with detailed compiler output
 razen dev program.rzn
+
+# Create a new Razen file
+razen new hello --main
+
+# Create a new Razen project
+razen create my-project --template basic
+
+# Initialize razen.toml in existing directory
+razen init --name my-project
 
 # Compile to native executable
 razen compile program.rzn -o myprogram
@@ -117,12 +125,16 @@ rm -rf ~/.razen
 
 ## Language Features
 
-- **Modern Syntax**: Clean, readable code structure
-- **Static Typing**: Compile-time type checking with type inference
-- **Memory Safety**: Automatic memory management without garbage collection overhead
+- **Modern Syntax**: Clean, readable code structure with intuitive keywords
+- **Complete Operator Support**: All modern operators including increment/decrement, compound assignment, and bitwise operations
+- **Static Typing**: Compile-time type checking with intelligent type inference
+- **Data Structures**: Built-in support for structs, enums, arrays, and maps
+- **Control Flow**: Comprehensive conditional statements, loops, and pattern matching
+- **String Processing**: F-string interpolation and powerful string operations
+- **Memory Safety**: Automatic memory management with predictable performance
 - **Cross-Platform**: Runs on Linux, macOS, and Windows
 - **Fast Compilation**: Quick build times for rapid development cycles
-- **Professional Tooling**: Comprehensive CLI with helpful diagnostics
+- **Professional Tooling**: Comprehensive CLI with project management and helpful diagnostics
 
 ## Getting Help
 

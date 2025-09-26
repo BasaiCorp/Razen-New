@@ -468,6 +468,21 @@ impl SemanticAnalyzer {
                         }
                         Some("bool".to_string())
                     }
+                    BinaryOperator::BitwiseAnd | BinaryOperator::BitwiseOr | BinaryOperator::BitwiseXor |
+                    BinaryOperator::LeftShift | BinaryOperator::RightShift => {
+                        // Check that both operands are integers
+                        if let (Some(left), Some(right)) = (&left_type, &right_type) {
+                            if left != "int" || right != "int" {
+                                let diagnostic = helpers::type_mismatch(
+                                    "int",
+                                    &format!("{} and {}", left, right),
+                                    Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
+                                );
+                                self.diagnostics.add(diagnostic);
+                            }
+                        }
+                        Some("int".to_string())
+                    }
                     _ => None,
                 }
             }
@@ -500,7 +515,33 @@ impl SemanticAnalyzer {
                         }
                         Some("int".to_string())
                     }
-                    _ => operand_type,
+                    UnaryOperator::BitwiseNot => {
+                        if let Some(ref op_type) = operand_type {
+                            if op_type != "int" {
+                                let diagnostic = helpers::type_mismatch(
+                                    "int",
+                                    &op_type,
+                                    Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
+                                );
+                                self.diagnostics.add(diagnostic);
+                            }
+                        }
+                        Some("int".to_string())
+                    }
+                    UnaryOperator::PreIncrement | UnaryOperator::PostIncrement |
+                    UnaryOperator::PreDecrement | UnaryOperator::PostDecrement => {
+                        if let Some(ref op_type) = operand_type {
+                            if op_type != "int" {
+                                let diagnostic = helpers::type_mismatch(
+                                    "int",
+                                    &op_type,
+                                    Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
+                                );
+                                self.diagnostics.add(diagnostic);
+                            }
+                        }
+                        Some("int".to_string())
+                    }
                 }
             }
             Expression::CallExpression(call_expr) => {

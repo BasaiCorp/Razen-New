@@ -67,6 +67,11 @@ impl<'a> ExpressionParser<'a> {
             TokenKind::StarEqual,
             TokenKind::SlashEqual,
             TokenKind::PercentEqual,
+            TokenKind::AmpersandEqual,
+            TokenKind::PipeEqual,
+            TokenKind::CaretEqual,
+            TokenKind::LessLessEqual,
+            TokenKind::GreaterGreaterEqual,
         ]) {
             let operator = self.previous().kind.clone();
             let right = self.parse_assignment()?;
@@ -78,6 +83,11 @@ impl<'a> ExpressionParser<'a> {
                 TokenKind::StarEqual => AssignmentOperator::MultiplyAssign,
                 TokenKind::SlashEqual => AssignmentOperator::DivideAssign,
                 TokenKind::PercentEqual => AssignmentOperator::ModuloAssign,
+                TokenKind::AmpersandEqual => AssignmentOperator::BitwiseAndAssign,
+                TokenKind::PipeEqual => AssignmentOperator::BitwiseOrAssign,
+                TokenKind::CaretEqual => AssignmentOperator::BitwiseXorAssign,
+                TokenKind::LessLessEqual => AssignmentOperator::LeftShiftAssign,
+                TokenKind::GreaterGreaterEqual => AssignmentOperator::RightShiftAssign,
                 _ => unreachable!(),
             };
 

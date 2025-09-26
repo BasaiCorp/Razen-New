@@ -49,6 +49,14 @@ pub enum IR {
     Or,
     Not,
 
+    // Bitwise operations
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
+    BitwiseNot,
+    LeftShift,
+    RightShift,
+
     // Control flow
     Jump(usize),
     JumpIfFalse(usize),
@@ -112,6 +120,12 @@ impl fmt::Display for IR {
             IR::And => write!(f, "AND"),
             IR::Or => write!(f, "OR"),
             IR::Not => write!(f, "NOT"),
+            IR::BitwiseAnd => write!(f, "BIT_AND"),
+            IR::BitwiseOr => write!(f, "BIT_OR"),
+            IR::BitwiseXor => write!(f, "BIT_XOR"),
+            IR::BitwiseNot => write!(f, "BIT_NOT"),
+            IR::LeftShift => write!(f, "LSHIFT"),
+            IR::RightShift => write!(f, "RSHIFT"),
             IR::Jump(addr) => write!(f, "JUMP {}", addr),
             IR::JumpIfFalse(addr) => write!(f, "JIF {}", addr),
             IR::JumpIfTrue(addr) => write!(f, "JIT {}", addr),

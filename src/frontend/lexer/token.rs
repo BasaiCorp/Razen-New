@@ -25,6 +25,7 @@ pub enum TokenKind {
 
     // Assignment Operators
     Equal, PlusEqual, MinusEqual, StarEqual, SlashEqual, PercentEqual,
+    AmpersandEqual, PipeEqual, CaretEqual, LessLessEqual, GreaterGreaterEqual,
 
     // Comparison Operators
     EqualEqual, BangEqual, Less, Greater, LessEqual, GreaterEqual,

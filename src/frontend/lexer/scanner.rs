@@ -107,7 +107,10 @@ impl Scanner {
             ',' => self.add_token(TokenKind::Comma),
             ';' => self.add_token(TokenKind::Semicolon),
             '~' => self.add_token(TokenKind::Tilde),
-            '^' => self.add_token(TokenKind::Caret),
+            '^' => {
+                let kind = if self.match_char('=') { TokenKind::CaretEqual } else { TokenKind::Caret };
+                self.add_token(kind);
+            }
             '#' => self.add_token(TokenKind::Hash),
             '@' => self.add_token(TokenKind::At),
             '?' => {
@@ -201,7 +204,11 @@ impl Scanner {
                 let kind = if self.match_char('=') {
                     TokenKind::LessEqual
                 } else if self.match_char('<') {
-                    TokenKind::LessLess
+                    if self.match_char('=') {
+                        TokenKind::LessLessEqual
+                    } else {
+                        TokenKind::LessLess
+                    }
                 } else {
                     TokenKind::Less
                 };
@@ -211,18 +218,34 @@ impl Scanner {
                 let kind = if self.match_char('=') {
                     TokenKind::GreaterEqual
                 } else if self.match_char('>') {
-                    TokenKind::GreaterGreater
+                    if self.match_char('=') {
+                        TokenKind::GreaterGreaterEqual
+                    } else {
+                        TokenKind::GreaterGreater
+                    }
                 } else {
                     TokenKind::Greater
                 };
                 self.add_token(kind);
             }
             '&' => {
-                let kind = if self.match_char('&') { TokenKind::AmpersandAmpersand } else { TokenKind::Ampersand };
+                let kind = if self.match_char('&') { 
+                    TokenKind::AmpersandAmpersand 
+                } else if self.match_char('=') {
+                    TokenKind::AmpersandEqual
+                } else { 
+                    TokenKind::Ampersand 
+                };
                 self.add_token(kind);
             }
             '|' => {
-                let kind = if self.match_char('|') { TokenKind::PipePipe } else { TokenKind::Pipe };
+                let kind = if self.match_char('|') { 
+                    TokenKind::PipePipe 
+                } else if self.match_char('=') {
+                    TokenKind::PipeEqual
+                } else { 
+                    TokenKind::Pipe 
+                };
                 self.add_token(kind);
             }
             ':' => {

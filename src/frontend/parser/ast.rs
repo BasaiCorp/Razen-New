@@ -336,6 +336,7 @@ pub struct AssignmentExpression {
 #[derive(Debug, Clone, PartialEq)]
 pub enum AssignmentOperator {
     Assign, AddAssign, SubtractAssign, MultiplyAssign, DivideAssign, ModuloAssign,
+    BitwiseAndAssign, BitwiseOrAssign, BitwiseXorAssign, LeftShiftAssign, RightShiftAssign,
 }
 
 #[derive(Debug, Clone, PartialEq)]

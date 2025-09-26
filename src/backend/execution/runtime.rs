@@ -437,6 +437,60 @@ impl Runtime {
                         }
                     }
                 },
+                IR::BitwiseAnd => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                            self.stack.push((a_num & b_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
+                IR::BitwiseOr => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                            self.stack.push((a_num | b_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
+                IR::BitwiseXor => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                            self.stack.push((a_num ^ b_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
+                IR::BitwiseNot => {
+                    if let Some(a) = self.stack.pop() {
+                        if let Ok(a_num) = a.parse::<i64>() {
+                            self.stack.push((!a_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
+                IR::LeftShift => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                            self.stack.push((a_num << b_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
+                IR::RightShift => {
+                    if let (Some(b), Some(a)) = (self.stack.pop(), self.stack.pop()) {
+                        if let (Ok(a_num), Ok(b_num)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                            self.stack.push((a_num >> b_num).to_string());
+                        } else {
+                            self.stack.push("0".to_string()); // Error case
+                        }
+                    }
+                },
                 IR::DefineFunction(_, _) | IR::Label(_) => {
                     // Ignored at runtime
                 },

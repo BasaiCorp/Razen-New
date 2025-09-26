@@ -750,6 +750,11 @@ impl Compiler {
                     crate::frontend::parser::ast::BinaryOperator::LessEqual => self.emit(IR::LessEqual),
                     crate::frontend::parser::ast::BinaryOperator::And => self.emit(IR::And),
                     crate::frontend::parser::ast::BinaryOperator::Or => self.emit(IR::Or),
+                    crate::frontend::parser::ast::BinaryOperator::BitwiseAnd => self.emit(IR::BitwiseAnd),
+                    crate::frontend::parser::ast::BinaryOperator::BitwiseOr => self.emit(IR::BitwiseOr),
+                    crate::frontend::parser::ast::BinaryOperator::BitwiseXor => self.emit(IR::BitwiseXor),
+                    crate::frontend::parser::ast::BinaryOperator::LeftShift => self.emit(IR::LeftShift),
+                    crate::frontend::parser::ast::BinaryOperator::RightShift => self.emit(IR::RightShift),
                     _ => {
                         self.errors.push(format!("Unknown operator: {:?}", bin_expr.operator));
                         return;
@@ -769,6 +774,10 @@ impl Compiler {
                     crate::frontend::parser::ast::UnaryOperator::Plus => {
                         // Unary plus is a no-op, just compile the operand
                         self.compile_expression(*unary_expr.operand);
+                    },
+                    crate::frontend::parser::ast::UnaryOperator::BitwiseNot => {
+                        self.compile_expression(*unary_expr.operand);
+                        self.emit(IR::BitwiseNot);
                     },
                     crate::frontend::parser::ast::UnaryOperator::PreIncrement => {
                         // ++var: increment then use
@@ -817,10 +826,6 @@ impl Compiler {
                         } else {
                             self.errors.push("Post-decrement can only be applied to variables".to_string());
                         }
-                    },
-                    _ => {
-                        self.errors.push(format!("Unknown unary operator: {:?}", unary_expr.operator));
-                        return;
                     }
                 };
             },
@@ -868,12 +873,85 @@ impl Compiler {
                 self.emit(IR::CreateMap(struct_inst.fields.len() + 1)); // +1 for type name
             },
             Expression::AssignmentExpression(assign_expr) => {
-                // Compile the right-hand side first
-                self.compile_expression(*assign_expr.right);
-                
                 // Handle assignment to identifier
                 if let Expression::Identifier(ident) = *assign_expr.left {
-                    self.emit(IR::StoreVar(ident.name));
+                    match assign_expr.operator {
+                        crate::frontend::parser::ast::AssignmentOperator::Assign => {
+                            // Simple assignment: var = value
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::AddAssign => {
+                            // Addition assignment: var += value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::Add);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::SubtractAssign => {
+                            // Subtraction assignment: var -= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::Subtract);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::MultiplyAssign => {
+                            // Multiplication assignment: var *= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::Multiply);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::DivideAssign => {
+                            // Division assignment: var /= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::Divide);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::ModuloAssign => {
+                            // Modulo assignment: var %= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::Modulo);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::BitwiseAndAssign => {
+                            // Bitwise AND assignment: var &= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::BitwiseAnd);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::BitwiseOrAssign => {
+                            // Bitwise OR assignment: var |= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::BitwiseOr);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::BitwiseXorAssign => {
+                            // Bitwise XOR assignment: var ^= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::BitwiseXor);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::LeftShiftAssign => {
+                            // Left shift assignment: var <<= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::LeftShift);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                        crate::frontend::parser::ast::AssignmentOperator::RightShiftAssign => {
+                            // Right shift assignment: var >>= value
+                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.compile_expression(*assign_expr.right);
+                            self.emit(IR::RightShift);
+                            self.emit(IR::StoreVar(ident.name));
+                        },
+                    }
                 } else {
                     self.errors.push("Invalid assignment target".to_string());
                 }
