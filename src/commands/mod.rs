@@ -7,7 +7,10 @@ use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
 pub mod compile;
+pub mod create;
 pub mod dev;
+pub mod init;
+pub mod new;
 pub mod run;
 pub mod test;
 
@@ -83,6 +86,46 @@ pub enum Commands {
         #[arg(short, long)]
         filter: Option<String>,
     },
+
+    /// Create a new Razen source file
+    #[command(about = "Create a new Razen source file with template")]
+    New {
+        /// Name of the new file (without .rzn extension)
+        #[arg(value_name = "NAME")]
+        name: String,
+
+        /// Create with main function template
+        #[arg(short, long)]
+        main: bool,
+
+        /// Create with function template
+        #[arg(short, long)]
+        function: bool,
+    },
+
+    /// Create a new Razen project
+    #[command(about = "Create a new Razen project with razen.toml")]
+    Create {
+        /// Name of the new project
+        #[arg(value_name = "NAME")]
+        name: String,
+
+        /// Project template type
+        #[arg(short, long, default_value = "basic")]
+        template: String,
+    },
+
+    /// Initialize razen.toml in current directory
+    #[command(about = "Initialize razen.toml configuration in existing directory")]
+    Init {
+        /// Project name (defaults to directory name)
+        #[arg(short, long)]
+        name: Option<String>,
+
+        /// Project version
+        #[arg(short, long, default_value = "0.1.0")]
+        version: String,
+    },
 }
 
 /// Execute the CLI command
@@ -103,6 +146,9 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
             verbose,
             filter,
         } => test::execute(path, verbose, filter),
+        Commands::New { name, main, function } => new::execute(name, main, function),
+        Commands::Create { name, template } => create::execute(name, template),
+        Commands::Init { name, version } => init::execute(name, version),
     }
 }
 
