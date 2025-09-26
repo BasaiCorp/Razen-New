@@ -233,6 +233,7 @@ impl SemanticAnalyzer {
             Statement::ConstantDeclaration(const_decl) => {
                 // Similar to variable declaration but immutable
                 let const_name = &const_decl.name.name;
+                
                 if let Some(existing) = self.symbol_table.lookup_in_current_scope(const_name) {
                     let diagnostic = helpers::shadowed_variable(
                         const_name,
@@ -242,11 +243,12 @@ impl SemanticAnalyzer {
                     self.diagnostics.add(diagnostic);
                 }
                 
-                // Analyze initializer
-                self.analyze_expression(&const_decl.initializer);
+                // Analyze initializer and infer type
+                let inferred_type = self.analyze_expression(&const_decl.initializer)
+                    .unwrap_or_else(|| "any".to_string());
                 
-                // Declare the constant
-                self.declare_variable(const_name, "const", Position::new(1, 1, 0), false);
+                // Declare the constant with the inferred type (immutable)
+                self.declare_variable(const_name, &inferred_type, Position::new(1, 1, 0), false);
             }
             Statement::StructDeclaration(_) => {
                 // TODO: Implement struct analysis

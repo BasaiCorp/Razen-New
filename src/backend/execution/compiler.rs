@@ -87,6 +87,7 @@ pub struct Compiler {
     break_stack: Vec<Vec<usize>>,
     continue_stack: Vec<Vec<usize>>,
     loop_stack: Vec<(String, String)>, // (continue_label, break_label)
+    continue_positions: Vec<usize>, // Store actual continue positions
     label_counter: usize,
     clean_output: bool,
     pub errors: Vec<String>,
@@ -103,6 +104,7 @@ impl Compiler {
             break_stack: Vec::new(),
             continue_stack: Vec::new(),
             loop_stack: Vec::new(),
+            continue_positions: Vec::new(),
             label_counter: 0,
             clean_output: false,
             errors: Vec::new(),
@@ -289,6 +291,17 @@ impl Compiler {
             Statement::MatchStatement(match_stmt) => {
                 self.compile_match_statement(match_stmt);
             },
+            Statement::ConstantDeclaration(const_decl) => {
+                // Handle const declarations similar to variable declarations
+                // but mark them as immutable in the symbol table
+                self.symbol_table.define(&const_decl.name.name);
+                
+                // Compile the initializer expression
+                self.compile_expression(const_decl.initializer);
+                
+                // Store the constant value
+                self.emit(IR::StoreVar(const_decl.name.name));
+            },
             _ => {
                 // Handle other statement types as needed
                 if !self.clean_output {
@@ -408,6 +421,7 @@ impl Compiler {
 
         let loop_start = self.emit_label(&loop_label);
         let continue_pos = self.emit_label(&continue_label);
+        self.continue_positions.push(continue_pos);
 
         self.compile_expression(condition);
         self.emit(IR::JumpIfFalse(0));
@@ -428,11 +442,12 @@ impl Compiler {
         // Patch break and continue statements
         if let (Some(break_positions), Some(continue_positions)) = 
             (self.break_stack.pop(), self.continue_stack.pop()) {
+            let actual_continue_pos = self.continue_positions.pop().unwrap_or(continue_pos);
             for pos in break_positions {
                 self.replace_instruction(pos, IR::Jump(end_pos));
             }
             for pos in continue_positions {
-                self.replace_instruction(pos, IR::Jump(continue_pos));
+                self.replace_instruction(pos, IR::Jump(actual_continue_pos));
             }
         }
         
@@ -464,7 +479,8 @@ impl Compiler {
                 self.emit(IR::StoreVar(iter_var.clone()));
                 
                 let loop_start = self.emit_label(&loop_label);
-                let _continue_pos = self.emit_label(&continue_label);
+                let continue_pos = self.emit_label(&continue_label);
+                self.continue_positions.push(continue_pos);
                 
                 // Check if index < end
                 self.emit(IR::LoadVar(index_var.clone()));
@@ -485,6 +501,11 @@ impl Compiler {
                 for stmt in body {
                     self.compile_statement(stmt);
                 }
+                
+                // This is where continue should jump to - the increment part
+                let actual_continue_pos = self.ir.len();
+                self.continue_positions.pop(); // Remove the old position
+                self.continue_positions.push(actual_continue_pos); // Add the correct position
                 
                 // Increment index
                 self.emit(IR::LoadVar(index_var.clone()));
@@ -537,12 +558,12 @@ impl Compiler {
         if let (Some(break_positions), Some(continue_positions)) = 
             (self.break_stack.pop(), self.continue_stack.pop()) {
             let end_pos = self.ir.len();
-            let continue_pos = self.ir.len() - 2; // Approximate continue position
+            let actual_continue_pos = self.continue_positions.pop().unwrap_or(end_pos);
             for pos in break_positions {
                 self.replace_instruction(pos, IR::Jump(end_pos));
             }
             for pos in continue_positions {
-                self.replace_instruction(pos, IR::Jump(continue_pos));
+                self.replace_instruction(pos, IR::Jump(actual_continue_pos));
             }
         }
         

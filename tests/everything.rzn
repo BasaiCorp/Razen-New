@@ -1,0 +1,192 @@
+// ===== COMPREHENSIVE RAZEN LANGUAGE TEST =====
+// Testing all major language features
+
+// ===== FUNCTION DECLARATIONS =====
+fun add(x: int, y: int) -> int {
+    return x + y
+}
+
+fun greet(name: str) {
+    println(f"Hello, {name}!")
+}
+
+fun fibonacci(n: int) -> int {
+    if n <= 1 {
+        return n
+    } else {
+        return fibonacci(n - 1) + fibonacci(n - 2)
+    }
+}
+
+// ===== MAIN FUNCTION =====
+fun main() {
+    println("=== RAZEN LANGUAGE COMPREHENSIVE TEST ===")
+    
+    // ===== VARIABLE DECLARATIONS =====
+    println("\n1. Variable Declarations:")
+    var mutable_var = 42
+    const immutable_const = "Hello World"
+    var typed_var: int = 100
+    var float_var = 3.14
+    var bool_var = true
+    var null_var = null
+    
+    println(f"Mutable var: {mutable_var}")
+    println(f"Const: {immutable_const}")
+    println(f"Typed var: {typed_var}")
+    println(f"Float: {float_var}")
+    println(f"Boolean: {bool_var}")
+    
+    // ===== ARITHMETIC OPERATIONS =====
+    println("\n2. Arithmetic Operations:")
+    var a = 15
+    var b = 4
+    println(f"{a} + {b} = {a + b}")
+    println(f"{a} - {b} = {a - b}")
+    println(f"{a} * {b} = {a * b}")
+    println(f"{a} / {b} = {a / b}")
+    println(f"{a} % {b} = {a % b}")
+    
+    // ===== ASSIGNMENT OPERATORS =====
+    println("\n3. Assignment Operators:")
+    var x = 10
+    println(f"Initial x: {x}")
+    x = x + 5
+    println(f"After x = x + 5: {x}")
+    
+    // ===== COMPARISON OPERATIONS =====
+    println("\n4. Comparison Operations:")
+    println(f"15 == 15: {15 == 15}")
+    println(f"10 != 20: {10 != 20}")
+    println(f"5 < 10: {5 < 10}")
+    println(f"20 > 15: {20 > 15}")
+    println(f"10 <= 10: {10 <= 10}")
+    println(f"15 >= 10: {15 >= 10}")
+    
+    // ===== LOGICAL OPERATIONS =====
+    println("\n5. Logical Operations:")
+    var p = true
+    var q = false
+    println(f"true && false: {p && q}")
+    println(f"true || false: {p || q}")
+    println(f"!true: {!p}")
+    
+    // ===== IF-ELSE-ELIF STATEMENTS =====
+    println("\n6. Conditional Statements:")
+    var score = 85
+    if score >= 90 {
+        println("Grade: A")
+    } elif score >= 80 {
+        println("Grade: B")
+    } elif score >= 70 {
+        println("Grade: C")
+    } else {
+        println("Grade: F")
+    }
+    
+    // ===== WHILE LOOPS =====
+    println("\n7. While Loop:")
+    var counter = 1
+    while counter <= 3 {
+        println(f"While loop iteration: {counter}")
+        counter = counter + 1
+    }
+    
+    // ===== FOR LOOPS =====
+    println("\n8. For Loops:")
+    println("Range loop (1..5):")
+    for i in 1..5 {
+        println(f"  Range value: {i}")
+    }
+    
+    println("Inclusive range loop (1..=3):")
+    for j in 1..=3 {
+        println(f"  Inclusive range: {j}")
+    }
+    
+    println("Array iteration:")
+    for item in [10, 20, 30] {
+        println(f"  Array item: {item}")
+    }
+    
+    println("String array iteration:")
+    for name in ["Alice", "Bob", "Charlie"] {
+        println(f"  Name: {name}")
+    }
+    
+    // ===== BREAK AND CONTINUE =====
+    println("\n9. Break and Continue:")
+    for k in 1..10 {
+        if k == 3 {
+            continue
+        }
+        if k == 7 {
+            break
+        }
+        println(f"  Loop value: {k}")
+    }
+    
+    // ===== FUNCTION CALLS =====
+    println("\n10. Function Calls:")
+    var sum = add(25, 17)
+    println(f"add(25, 17) = {sum}")
+    greet("Razen")
+    
+    println("Fibonacci sequence:")
+    for n in 1..=7 {
+        println(f"  fib({n}) = {fibonacci(n)}")
+    }
+    
+    // ===== STRING INTERPOLATION =====
+    println("\n11. String Interpolation:")
+    var user = "Developer"
+    var age = 25
+    println(f"User: {user}, Age: {age}")
+    
+    // ===== ARRAYS =====
+    println("\n12. Arrays:")
+    var numbers = [1, 2, 3, 4, 5]
+    println("Number array created")
+    
+    var mixed = [1, "hello", true, 3.14]
+    println("Mixed array created")
+    
+    // ===== TRY-CATCH-THROW =====
+    println("\n13. Error Handling:")
+    try {
+        println("Inside try block")
+        var result = add(10, 20)
+        println(f"Try result: {result}")
+    } catch error {
+        println(f"Caught error: {error}")
+        throw error
+    }
+    
+    // ===== NESTED CONTROL STRUCTURES =====
+    println("\n14. Nested Structures:")
+    for outer in 1..3 {
+        println(f"Outer loop: {outer}")
+        for inner in 1..3 {
+            if inner == 2 {
+                continue
+            }
+            println(f"  Inner loop: {inner}")
+        }
+    }
+    
+    // ===== TYPE CONVERSIONS =====
+    println("\n15. Type Conversions:")
+    var str_num = "42"
+    var converted = str_num.toint()
+    println(f"String '42' to int: {converted}")
+    
+    // ===== I/O OPERATIONS =====
+    println("\n16. I/O Operations:")
+    print("Enter your name: ")
+    var input_name = input()
+    println(f"You entered: {input_name}")
+    
+    // ===== FINAL MESSAGE =====
+    println("\n=== TEST COMPLETED SUCCESSFULLY ===")
+    println("All basic Razen language features tested!")
+}

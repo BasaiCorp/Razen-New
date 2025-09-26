@@ -121,6 +121,9 @@ impl TypeChecker {
             Statement::VariableDeclaration(var_decl) => {
                 self.check_variable_declaration(var_decl);
             }
+            Statement::ConstantDeclaration(const_decl) => {
+                self.check_constant_declaration(const_decl);
+            }
             Statement::FunctionDeclaration(func_decl) => {
                 self.check_function_declaration(func_decl);
             }
@@ -176,6 +179,35 @@ impl TypeChecker {
             // Neither declared type nor initializer
             (None, None) => {
                 self.context.declare_variable(var_name.clone(), Type::Any);
+            }
+        }
+    }
+    
+    fn check_constant_declaration(&mut self, const_decl: &ConstantDeclaration) {
+        let const_name = &const_decl.name.name;
+        
+        // Get the declared type if any
+        let declared_type = const_decl.type_annotation.as_ref()
+            .map(|t| Type::from_annotation(t));
+        
+        // Get the inferred type from initializer (constants must have initializers)
+        let inferred_type = self.check_expression(&const_decl.initializer);
+        
+        match declared_type {
+            // Both declared type and initializer present
+            Some(declared) => {
+                if !inferred_type.can_assign_to(&declared) {
+                    self.errors.push(format!(
+                        "Type mismatch: constant '{}' declared as '{}' but assigned value of type '{}'",
+                        const_name, declared, inferred_type
+                    ));
+                }
+                self.context.declare_variable(const_name.clone(), declared);
+            }
+            
+            // Only initializer, no declared type (use inferred type)
+            None => {
+                self.context.declare_variable(const_name.clone(), inferred_type);
             }
         }
     }
