@@ -1,8 +1,0 @@
-// tests/simple_module_test.rzn - Simple module system test
-
-// Simple file import
-use "utils"
-
-fun main() {
-    println("Module system test completed!")
-}

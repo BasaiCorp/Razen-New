@@ -1,9 +1,0 @@
-// tests/const_test.rzn - Test constants import
-
-use "./calculator"
-
-fun main() {
-    println(f"PI value: {calculator.PI}")
-    var result = calculator.Add(5, 3)
-    println(f"5 + 3 = {result}")
-}

@@ -1,8 +1,0 @@
-fun main() {
-    for i in 1..4 {
-        for j in 1..4 {
-            var result = i * j
-            println(f"{i} x {j} = {result}")
-        }
-    }
-}

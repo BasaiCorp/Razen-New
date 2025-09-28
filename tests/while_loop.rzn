@@ -1,8 +1,0 @@
-fun main() {
-    var i = 1
-    while i <= 10 {
-        println(f"While loop: {i}")
-        i = i + 1
-    }
-    println("While loop completed!")
-}

@@ -1,0 +1,9 @@
+fun test() {
+    if true {
+        println("yes")
+    } else {
+        println("no")
+    }
+}
+
+test()

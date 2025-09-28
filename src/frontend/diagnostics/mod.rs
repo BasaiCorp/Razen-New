@@ -98,7 +98,7 @@ pub mod helpers {
     pub fn undefined_variable<S: Into<String>>(name: S, span: Span) -> Diagnostic {
         let name_str = name.into();
         let mut diagnostic = Diagnostic::new(DiagnosticKind::undefined_variable(name_str.clone()))
-            .with_label(Label::primary(span).with_message("not found in this scope"))
+            .with_label(Label::primary(span).with_message(format!("cannot find value `{}` in this scope", name_str)))
             .with_code("E0004");
 
         // Add smart suggestions based on variable name
@@ -106,7 +106,13 @@ pub mod helpers {
             diagnostic = diagnostic.with_help("help: variable names should start with lowercase in Razen");
         }
         
-        diagnostic = diagnostic.with_help(format!("help: consider declaring `{}` before using it", name_str));
+        // Check for common typos
+        if name_str.contains("_") {
+            let camel_case = name_str.replace("_", "");
+            diagnostic = diagnostic.with_help(format!("help: did you mean `{}`? Razen uses camelCase for variables", camel_case));
+        }
+        
+        diagnostic = diagnostic.with_help(format!("help: declare `{}` with `var {} = value` before using it", name_str, name_str));
         
         diagnostic
     }
@@ -115,19 +121,25 @@ pub mod helpers {
     pub fn undefined_function<S: Into<String>>(name: S, span: Span) -> Diagnostic {
         let name_str = name.into();
         let mut diagnostic = Diagnostic::new(DiagnosticKind::undefined_function(name_str.clone()))
-            .with_label(Label::primary(span).with_message("not found in this scope"))
+            .with_label(Label::primary(span).with_message(format!("cannot find function `{}` in this scope", name_str)))
             .with_code("E0005");
 
         // Suggest common built-in functions if similar
         match name_str.as_str() {
-            "print_line" | "printline" => {
+            "print_line" | "printline" | "print_ln" => {
                 diagnostic = diagnostic.with_help("help: did you mean `println`?");
             }
             "printf" | "print_f" => {
                 diagnostic = diagnostic.with_help("help: use `print` or `println` for output in Razen");
             }
+            "console.log" | "console_log" => {
+                diagnostic = diagnostic.with_help("help: use `println` for console output in Razen");
+            }
+            "puts" | "echo" => {
+                diagnostic = diagnostic.with_help("help: use `println` for output in Razen");
+            }
             _ => {
-                diagnostic = diagnostic.with_help(format!("help: define function `{}` or check if it's imported", name_str));
+                diagnostic = diagnostic.with_help(format!("help: define function `{}` with `fun {}() {{ ... }}` or check if it's imported", name_str, name_str));
             }
         }
 
@@ -140,21 +152,32 @@ pub mod helpers {
         let found_str = found.into();
         
         let mut diagnostic = Diagnostic::new(DiagnosticKind::type_mismatch(expected_str.clone(), found_str.clone()))
-            .with_label(Label::primary(span))
+            .with_label(Label::primary(span).with_message(format!("expected `{}`, found `{}`", expected_str, found_str)))
             .with_code("E0006");
 
         // Add conversion suggestions
         match (expected_str.as_str(), found_str.as_str()) {
             ("str", "int") => {
-                diagnostic = diagnostic.with_help("help: use string interpolation or `to_string()` to convert");
+                diagnostic = diagnostic.with_help("help: convert with string interpolation: `f\"{value}\"` or `.toString()`");
             }
             ("int", "str") => {
-                diagnostic = diagnostic.with_help("help: use `parse()` or `to_int()` to convert string to integer");
+                diagnostic = diagnostic.with_help("help: convert with `.toInt()` or `parseInt(value)`");
+            }
+            ("float", "int") => {
+                diagnostic = diagnostic.with_help("help: convert with `.toFloat()` or add decimal point: `1.0`");
+            }
+            ("int", "float") => {
+                diagnostic = diagnostic.with_help("help: convert with `.toInt()` or use integer literal");
             }
             ("bool", _) => {
                 diagnostic = diagnostic.with_help("help: use comparison operators (==, !=, <, >) to create boolean values");
             }
-            _ => {}
+            ("str", "bool") => {
+                diagnostic = diagnostic.with_help("help: convert with `value ? \"true\" : \"false\"` or `.toString()`");
+            }
+            _ => {
+                diagnostic = diagnostic.with_help(format!("help: cannot automatically convert from `{}` to `{}`", found_str, expected_str));
+            }
         }
 
         diagnostic

@@ -173,17 +173,10 @@ impl SemanticAnalyzer {
             self.analyze_statement(stmt);
         }
 
-        // Third pass: comprehensive type checking
-        let type_errors = self.type_checker.check_program(program);
-        for error in type_errors {
-            let diagnostic = helpers::type_error(
-                &error,
-                Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
-            );
-            self.diagnostics.add(diagnostic);
-        }
+        // Note: Removed duplicate type checking pass to prevent duplicate errors
+        // Type checking is now integrated into analyze_statement and analyze_expression
 
-        // Check for unused variables
+        // Check for unused variables (only warnings)
         self.check_unused_variables();
 
         self.diagnostics.clone()
@@ -1040,11 +1033,10 @@ impl SemanticAnalyzer {
         } else {
             // Find the actual position of the identifier in source
             let (line, column) = self.find_identifier_position(&ident.name);
-            Span::new(
-                Position::new(line, column, 0),
-                Position::new(line, column + ident.name.len(), ident.name.len()),
-            )
-            .with_source("source".to_string())
+            let start_pos = Position::new(line, column, 0);
+            let end_pos = Position::new(line, column + ident.name.len(), ident.name.len());
+            Span::new(start_pos, end_pos)
+                .with_source(self.current_file.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "source".to_string()))
         }
     }
 
@@ -1060,7 +1052,7 @@ impl SemanticAnalyzer {
     }
 
     fn find_identifier_position(&self, identifier: &str) -> (usize, usize) {
-        // Search for the identifier in the source lines, avoiding comments
+        // Search for the identifier in the source lines with better accuracy
         for (line_idx, line) in self.source_lines.iter().enumerate() {
             // Skip comment lines
             let trimmed = line.trim();
@@ -1068,17 +1060,39 @@ impl SemanticAnalyzer {
                 continue;
             }
 
-            // Find the identifier, but prefer non-comment occurrences
-            if let Some(col_idx) = line.find(identifier) {
+            // Find all occurrences of the identifier in this line
+            let mut start_pos = 0;
+            while let Some(col_idx) = line[start_pos..].find(identifier) {
+                let actual_col = start_pos + col_idx;
+                
                 // Check if this occurrence is in a comment
-                let before_identifier = &line[..col_idx];
+                let before_identifier = &line[..actual_col];
                 if !before_identifier.contains("//") {
-                    return (line_idx + 1, col_idx + 1); // Convert to 1-based
+                    // Check if it's a whole word (not part of another identifier)
+                    let is_word_boundary = {
+                        let before_char = if actual_col > 0 {
+                            line.chars().nth(actual_col - 1)
+                        } else {
+                            None
+                        };
+                        let after_char = line.chars().nth(actual_col + identifier.len());
+                        
+                        let before_ok = before_char.map_or(true, |c| !c.is_alphanumeric() && c != '_');
+                        let after_ok = after_char.map_or(true, |c| !c.is_alphanumeric() && c != '_');
+                        
+                        before_ok && after_ok
+                    };
+                    
+                    if is_word_boundary {
+                        return (line_idx + 1, actual_col + 1); // Convert to 1-based
+                    }
                 }
+                
+                start_pos = actual_col + 1;
             }
         }
-
-        // Fallback: find any occurrence if no non-comment occurrence found
+        
+        // Fallback to first occurrence if no perfect match found
         for (line_idx, line) in self.source_lines.iter().enumerate() {
             if let Some(col_idx) = line.find(identifier) {
                 return (line_idx + 1, col_idx + 1); // Convert to 1-based

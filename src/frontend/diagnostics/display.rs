@@ -521,15 +521,39 @@ impl Default for DiagnosticRenderer {
     }
 }
 
-/// Convenience function to render diagnostics with default settings
+/// Convenience function to render diagnostics with clean, focused settings
 pub fn render_diagnostics(diagnostics: &Diagnostics, sources: &[(String, String)]) -> String {
-    let mut renderer = DiagnosticRenderer::default();
+    let config = DisplayConfig {
+        use_colors: true,
+        show_line_numbers: true,
+        context_lines: 1, // Reduced context for cleaner output
+        tab_width: 4,
+        max_line_length: 100,
+        show_source_path: true,
+        compact_mode: false,
+        show_suggestions: true,
+        unicode_symbols: false, // Simpler symbols for better compatibility
+    };
+    
+    let mut renderer = DiagnosticRenderer::new(config);
     
     for (name, content) in sources {
         renderer.add_source(name.clone(), content.clone());
     }
     
-    renderer.render_diagnostics(diagnostics)
+    // Filter out duplicate diagnostics
+    let mut unique_diagnostics = Diagnostics::new();
+    let mut seen_errors = std::collections::HashSet::new();
+    
+    for diagnostic in &diagnostics.diagnostics {
+        let error_key = format!("{:?}:{:?}", diagnostic.kind, diagnostic.labels.first().map(|l| &l.span));
+        if !seen_errors.contains(&error_key) {
+            seen_errors.insert(error_key);
+            unique_diagnostics.add(diagnostic.clone());
+        }
+    }
+    
+    renderer.render_diagnostics(&unique_diagnostics)
 }
 
 /// Convenience function to render a single diagnostic

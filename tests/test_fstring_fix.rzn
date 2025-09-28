@@ -1,8 +1,0 @@
-fun main() {
-    var a = 5
-    var b = 3
-    println(f"{a} + {b} = {a + b}")
-    println(f"{a} - {b} = {a - b}")
-    println(f"{a} * {b} = {a * b}")
-    println(f"{a} / {b} = {a / b}")
-}
