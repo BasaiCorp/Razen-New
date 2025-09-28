@@ -1,0 +1,16 @@
+// tests/utils_simple.rzn - Utility functions module for testing
+
+pub fun ToUpper(s: str) -> str {
+    // Placeholder implementation
+    return s
+}
+
+pub fun ToLower(s: str) -> str {
+    // Placeholder implementation  
+    return s
+}
+
+pub fun Trim(s: str) -> str {
+    // Placeholder implementation
+    return s
+}

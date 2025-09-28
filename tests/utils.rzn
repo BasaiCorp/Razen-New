@@ -1,0 +1,18 @@
+// tests/utils.rzn - Test utility module
+
+pub fun helper_function(data: str) -> str {
+    return "processed: " + data
+}
+
+pub struct Config {
+    host: str,
+    port: int
+}
+
+pub const MAX_CONNECTIONS: int = 100
+
+pub var global_counter: int = 0
+
+fun private_function() {
+    println("This is private and should not be accessible")
+}

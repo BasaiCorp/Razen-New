@@ -5,7 +5,9 @@
 use crate::backend::type_checker::TypeChecker;
 use crate::frontend::diagnostics::{helpers, Diagnostic, Diagnostics, Position, Span};
 use crate::frontend::parser::ast::*;
+use crate::frontend::module_system::{ModuleResolver, VisibilityChecker, ModuleError};
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 /// Semantic analyzer that validates the AST and reports errors
 pub struct SemanticAnalyzer {
@@ -15,6 +17,9 @@ pub struct SemanticAnalyzer {
     current_function: Option<String>,
     in_loop: bool,
     source_lines: Vec<String>,
+    module_resolver: Option<ModuleResolver>,
+    visibility_checker: VisibilityChecker,
+    current_file: Option<PathBuf>,
 }
 
 /// Symbol table for tracking variables and functions
@@ -46,8 +51,8 @@ struct FunctionSymbol {
 #[derive(Debug, Clone)]
 struct StructSymbol {
     _name: String,
-    fields: HashMap<String, String>, // field_name -> type_name
-    defined_at: Position,
+    _fields: HashMap<String, String>, // field_name -> type_name
+    _defined_at: Position,
 }
 
 #[derive(Debug, Clone)]
@@ -56,7 +61,7 @@ struct MethodSymbol {
     parameters: Vec<String>,
     return_type: Option<String>,
     is_static: bool,
-    defined_at: Position,
+    _defined_at: Position,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -129,6 +134,9 @@ impl SemanticAnalyzer {
             current_function: None,
             in_loop: false,
             source_lines: Vec::new(),
+            module_resolver: None,
+            visibility_checker: VisibilityChecker::new(),
+            current_file: None,
         };
 
         // Add built-in functions
@@ -136,8 +144,21 @@ impl SemanticAnalyzer {
         analyzer
     }
 
+    /// Create a new semantic analyzer with module support
+    pub fn with_module_support(base_dir: PathBuf, current_file: PathBuf) -> Self {
+        let mut analyzer = Self::new();
+        analyzer.module_resolver = Some(ModuleResolver::new(base_dir));
+        analyzer.current_file = Some(current_file);
+        analyzer
+    }
+
     pub fn analyze(&mut self, program: &Program) -> Diagnostics {
         self.diagnostics = Diagnostics::new();
+
+        // Module resolution pass: process use statements and resolve modules
+        if self.module_resolver.is_some() {
+            self.resolve_modules(program);
+        }
 
         // First pass: collect all function declarations
         for stmt in &program.statements {
@@ -165,6 +186,86 @@ impl SemanticAnalyzer {
         self.check_unused_variables();
 
         self.diagnostics.clone()
+    }
+
+    /// Resolve modules from use statements
+    fn resolve_modules(&mut self, program: &Program) {
+        // Collect use statements first
+        let use_statements: Vec<_> = program.statements.iter()
+            .filter_map(|stmt| {
+                if let Statement::UseStatement(use_stmt) = stmt {
+                    Some(use_stmt.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        // Process each use statement
+        for use_stmt in use_statements {
+            self.resolve_single_use_statement(&use_stmt);
+        }
+    }
+
+    /// Resolve a single use statement
+    fn resolve_single_use_statement(&mut self, use_stmt: &UseStatement) {
+        if let Some(ref mut resolver) = self.module_resolver {
+            let current_file = self.current_file.as_ref().unwrap();
+            
+            match resolver.resolve_module(&use_stmt.path, current_file) {
+                Ok(resolved_module) => {
+                    // Register the module with the visibility checker
+                    self.visibility_checker.register_module(&resolved_module);
+                    
+                    // Register the import
+                    let _module_name = if let Some(alias) = &use_stmt.alias {
+                        alias.name.clone()
+                    } else {
+                        resolved_module.name.clone()
+                    };
+                    
+                    self.visibility_checker.register_import(
+                        &use_stmt.path,
+                        use_stmt.alias.as_ref().map(|a| a.name.as_str()),
+                        &resolved_module.name,
+                    );
+                }
+                Err(module_error) => {
+                    // Convert module error to diagnostic
+                    let diagnostic = self.module_error_to_diagnostic(module_error);
+                    self.diagnostics.add(diagnostic);
+                }
+            }
+        }
+    }
+
+    /// Convert module error to diagnostic
+    fn module_error_to_diagnostic(&self, error: ModuleError) -> Diagnostic {
+        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+        
+        match error {
+            ModuleError::ModuleNotFound { path, searched_paths } => {
+                helpers::syntax_error(
+                    format!("Module '{}' not found. Searched: {}", path, searched_paths.join(", ")),
+                    span,
+                )
+            }
+            ModuleError::SymbolNotExported { symbol, module } => {
+                helpers::syntax_error(
+                    format!("Symbol '{}' is not exported from module '{}'", symbol, module),
+                    span,
+                )
+            }
+            ModuleError::CircularDependency { cycle } => {
+                helpers::syntax_error(
+                    format!("Circular dependency detected: {}", cycle.join(" -> ")),
+                    span,
+                )
+            }
+            _ => {
+                helpers::syntax_error(format!("Module error: {}", error), span)
+            }
+        }
     }
 
     pub fn analyze_with_source(&mut self, program: &Program, source: &str) -> Diagnostics {
@@ -747,6 +848,9 @@ impl SemanticAnalyzer {
             Expression::GroupingExpression(group_expr) => {
                 self.analyze_expression(&group_expr.expression)
             }
+            Expression::ModuleCallExpression(module_call) => {
+                self.analyze_module_call(module_call)
+            }
         }
     }
 
@@ -968,7 +1072,7 @@ impl SemanticAnalyzer {
                     .as_ref()
                     .map(|t| Self::get_type_name_from_type_annotation(t)),
                 is_static: method.is_static,
-                defined_at: Position::new(1, 1, 0),
+                _defined_at: Position::new(1, 1, 0),
             };
 
             methods.push(method_symbol);
@@ -1030,6 +1134,32 @@ impl SemanticAnalyzer {
         }
 
         None
+    }
+
+    /// Analyze module call expression (e.g., utils.Function())
+    fn analyze_module_call(&mut self, module_call: &ModuleCallExpression) -> Option<String> {
+        // Analyze arguments
+        for arg in &module_call.arguments {
+            self.analyze_expression(arg);
+        }
+
+        // Check if the module call is valid using visibility checker
+        match self.visibility_checker.check_symbol_access(
+            &module_call.module.name,
+            &module_call.function.name,
+        ) {
+            Ok(_symbol_info) => {
+                // Module call is valid, return unknown type for now
+                // TODO: Get actual return type from symbol info
+                Some("unknown".to_string())
+            }
+            Err(module_error) => {
+                // Module call is invalid, report error
+                let diagnostic = self.module_error_to_diagnostic(module_error);
+                self.diagnostics.add(diagnostic);
+                None
+            }
+        }
     }
 }
 

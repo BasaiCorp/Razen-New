@@ -97,6 +97,9 @@ pub enum Expression {
     // Range expression
     RangeExpression(RangeExpression),
     
+    // Module call expression (e.g., utils.Function())
+    ModuleCallExpression(ModuleCallExpression),
+    
     // Grouping (parentheses)
     GroupingExpression(GroupingExpression),
 }
@@ -109,15 +112,15 @@ pub struct ModuleDeclaration {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct UseStatement {
-    pub items: Vec<UseItem>,
-    pub source: Option<StringLiteral>,
-    pub alias: Option<Identifier>,
+    pub path: String,  // The module path like "./utils" or "./math/calculator"
+    pub alias: Option<Identifier>,  // Optional alias like "as util"
 }
 
+// Module reference for dot notation calls like utils.Function()
 #[derive(Debug, Clone, PartialEq)]
-pub enum UseItem {
-    Single(Identifier),
-    Multiple(Vec<Identifier>),
+pub struct ModuleReference {
+    pub module_name: String,  // The resolved module name (last part of path)
+    pub original_path: String,  // The original import path
 }
 
 // Variable Declarations
@@ -437,6 +440,13 @@ pub struct RangeExpression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ModuleCallExpression {
+    pub module: Identifier,    // The module name (e.g., "utils")
+    pub function: Identifier,  // The function name (e.g., "Function")
+    pub arguments: Vec<Expression>, // Function arguments
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct GroupingExpression {
     pub expression: Box<Expression>,
 }
@@ -523,5 +533,11 @@ impl MethodCallExpression {
 impl SelfExpression {
     pub fn new() -> Self {
         SelfExpression
+    }
+}
+
+impl ModuleCallExpression {
+    pub fn new(module: Identifier, function: Identifier, arguments: Vec<Expression>) -> Self {
+        ModuleCallExpression { module, function, arguments }
     }
 }

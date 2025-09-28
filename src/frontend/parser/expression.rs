@@ -405,14 +405,14 @@ impl<'a> ExpressionParser<'a> {
                     arguments,
                 });
             } else if self.match_tokens(&[TokenKind::Dot]) {
-                // Member access or method call
+                // Member access, method call, or module call
                 let name = self.consume_identifier("Expected property name after '.'")?;
                 
-                // Check if this is a method call (followed by parentheses)
+                // Check if this is a function call (followed by parentheses)
                 if self.check(&TokenKind::LeftParen) {
                     self.advance(); // consume '('
                     
-                    // Parse method arguments
+                    // Parse function arguments
                     let mut arguments = Vec::new();
                     if !self.check(&TokenKind::RightParen) {
                         loop {
@@ -423,13 +423,24 @@ impl<'a> ExpressionParser<'a> {
                         }
                     }
                     
-                    self.consume(TokenKind::RightParen, "Expected ')' after method arguments")?;
+                    self.consume(TokenKind::RightParen, "Expected ')' after function arguments")?;
                     
-                    expr = Expression::MethodCallExpression(MethodCallExpression::new(
-                        Box::new(expr),
-                        Identifier::new(name),
-                        arguments,
-                    ));
+                    // Check if the left side is a simple identifier (potential module reference)
+                    if let Expression::Identifier(module_id) = &expr {
+                        // This could be a module call like utils.Function()
+                        expr = Expression::ModuleCallExpression(ModuleCallExpression::new(
+                            module_id.clone(),
+                            Identifier::new(name),
+                            arguments,
+                        ));
+                    } else {
+                        // This is a method call on an object
+                        expr = Expression::MethodCallExpression(MethodCallExpression::new(
+                            Box::new(expr),
+                            Identifier::new(name),
+                            arguments,
+                        ));
+                    }
                 } else {
                     // Regular member access
                     expr = Expression::MemberExpression(MemberExpression {

@@ -4,7 +4,8 @@
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use crate::frontend::parser::ast::{Program, Statement, Expression, InterpolatedString, InterpolationPart};
+use crate::frontend::parser::ast::{Program, Statement, Expression, InterpolatedString, InterpolationPart, UseStatement};
+use crate::frontend::parser::parse_source_with_name;
 use super::ir::IR;
 use super::runtime::Runtime;
 
@@ -91,6 +92,8 @@ pub struct Compiler {
     label_counter: usize,
     clean_output: bool,
     pub errors: Vec<String>,
+    current_file_path: Option<std::path::PathBuf>,
+    imported_modules: HashMap<String, String>, // module_name -> module_path
 }
 
 impl Compiler {
@@ -108,6 +111,8 @@ impl Compiler {
             label_counter: 0,
             clean_output: false,
             errors: Vec::new(),
+            current_file_path: None,
+            imported_modules: HashMap::new(),
         }
     }
 
@@ -125,6 +130,10 @@ impl Compiler {
 
     pub fn set_clean_output(&mut self, clean: bool) {
         self.clean_output = clean;
+    }
+
+    pub fn set_current_file(&mut self, file_path: std::path::PathBuf) {
+        self.current_file_path = Some(file_path);
     }
 
     fn generate_label(&mut self, prefix: &str) -> String {
@@ -184,7 +193,14 @@ impl Compiler {
             println!("Defined built-in functions");
         }
 
-        // First pass: register all functions
+        // First pass: process use statements and load imported modules
+        for stmt in &program.statements {
+            if let Statement::UseStatement(use_stmt) = stmt {
+                self.process_use_statement(use_stmt);
+            }
+        }
+
+        // Second pass: register all functions (including imported ones)
         let mut function_count = 0;
         for stmt in &program.statements {
             if let Statement::FunctionDeclaration(func_decl) = stmt {
@@ -200,7 +216,7 @@ impl Compiler {
             println!("Registered {} user functions", function_count);
         }
 
-        // Second pass: compile all statements
+        // Third pass: compile all statements
         if !self.clean_output {
             println!("Compiling statements...");
         }
@@ -219,6 +235,68 @@ impl Compiler {
         
         if !self.clean_output {
             println!("Compilation completed - generated {} IR instructions", self.ir.len());
+        }
+    }
+
+    fn process_use_statement(&mut self, use_stmt: &UseStatement) {
+        if let Some(ref current_file) = self.current_file_path {
+            let module_path = self.resolve_module_path(&use_stmt.path, current_file);
+            
+            if let Some(path) = module_path {
+                if let Ok(source) = fs::read_to_string(&path) {
+                    let (program, _diagnostics) = parse_source_with_name(&source, &path.to_string_lossy());
+                    
+                    if let Some(program) = program {
+                        // Extract module name from path or alias
+                        let module_name = if let Some(alias) = &use_stmt.alias {
+                            alias.name.clone()
+                        } else {
+                            path.file_stem()
+                                .and_then(|s| s.to_str())
+                                .unwrap_or("unknown")
+                                .to_string()
+                        };
+                        
+                        // Store the module mapping
+                        self.imported_modules.insert(module_name.clone(), path.to_string_lossy().to_string());
+                        
+                        // Compile functions from the imported module with qualified names
+                        for stmt in program.statements {
+                            if let Statement::FunctionDeclaration(func_decl) = stmt {
+                                // Check if function is public
+                                if func_decl.is_public {
+                                    let qualified_name = format!("{}.{}", module_name, func_decl.name.name);
+                                    let parameters: Vec<String> = func_decl.parameters.iter()
+                                        .map(|p| p.name.name.clone()).collect();
+                                    
+                                    // Compile the function with qualified name
+                                    self.compile_function_declaration(qualified_name.clone(), parameters, func_decl.body.statements);
+                                    
+                                    if !self.clean_output {
+                                        println!("Imported function: {} -> {}", func_decl.name.name, qualified_name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fn resolve_module_path(&self, module_path: &str, current_file: &std::path::Path) -> Option<std::path::PathBuf> {
+        let current_dir = current_file.parent()?;
+        let mut path = current_dir.join(module_path);
+        
+        // Try with .rzn extension
+        if !path.extension().is_some() {
+            path.set_extension("rzn");
+        }
+        
+        if path.exists() {
+            Some(path)
+        } else {
+            None
         }
     }
 
@@ -1013,6 +1091,18 @@ impl Compiler {
                 self.compile_expression(*member_expr.object);
                 self.emit(IR::PushString(member_expr.property.name));
                 self.emit(IR::GetKey); // Use map-like access for structs
+            },
+            Expression::ModuleCallExpression(module_call) => {
+                // Compile arguments
+                for arg in &module_call.arguments {
+                    self.compile_expression(arg.clone());
+                }
+                
+                // Create a qualified function name: module.function
+                let qualified_name = format!("{}.{}", module_call.module.name, module_call.function.name);
+                
+                // Call the function with the qualified name
+                self.emit(IR::Call(qualified_name, module_call.arguments.len()));
             },
             _ => {
                 // Handle other expression types as needed

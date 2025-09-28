@@ -28,8 +28,8 @@ pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     
-    // Parse the source code
-    let filename = file.to_string_lossy().to_string();
+    // Parse the source code with full file path context
+    let filename = file.canonicalize().unwrap_or(file.clone()).to_string_lossy().to_string();
     let (program, diagnostics) = parse_source_with_name(&source, &filename);
     
     if !diagnostics.is_empty() {
@@ -40,8 +40,9 @@ pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     }
     
     if let Some(program) = program {
-        // Run semantic analysis
-        let mut semantic_analyzer = SemanticAnalyzer::new();
+        // Run semantic analysis with module support
+        let base_dir = file.parent().unwrap_or_else(|| std::path::Path::new(".")).to_path_buf();
+        let mut semantic_analyzer = SemanticAnalyzer::with_module_support(base_dir, file.clone());
         let semantic_diagnostics = semantic_analyzer.analyze_with_source(&program, &source);
         
         if !semantic_diagnostics.is_empty() {
@@ -54,9 +55,10 @@ pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         
-        // Compile and execute
+        // Compile to IR
         let mut compiler = Compiler::new();
-        compiler.set_clean_output(true); // Always clean output like go run
+        compiler.set_clean_output(true); // Clean output for run command
+        compiler.set_current_file(file.clone());
         compiler.compile_program(program);
         
         if !compiler.errors.is_empty() {

@@ -77,64 +77,37 @@ impl<'a> StatementParser<'a> {
         }))
     }
 
-    /// Parse use statement: use item from "source" as alias
+    /// Parse use statement: use "./path/to/module" as alias
     fn parse_use_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Use, "Expected 'use'")?;
 
-        let mut items = Vec::new();
-        let mut source = None;
-        let mut alias = None;
-
-        // Parse use items
-        if self.match_tokens(&[TokenKind::LeftBrace]) {
-            // Multiple imports: use {item1, item2} from "source"
-            loop {
-                let item_name = self.consume_identifier("Expected identifier")?;
-                items.push(UseItem::Single(Identifier::new(item_name)));
-
-                if !self.match_tokens(&[TokenKind::Comma]) {
-                    break;
-                }
-            }
-            self.consume(TokenKind::RightBrace, "Expected '}'")?;
-            items = vec![UseItem::Multiple(
-                items
-                    .into_iter()
-                    .map(|item| match item {
-                        UseItem::Single(id) => id,
-                        _ => unreachable!(),
-                    })
-                    .collect(),
-            )];
-        } else {
-            // Single import
-            let item_name = self.consume_identifier("Expected identifier")?;
-            items.push(UseItem::Single(Identifier::new(item_name)));
-        }
-
-        // Check for 'from' clause
-        if self.match_tokens(&[TokenKind::From]) {
-            if let Some(token) = self.match_token_kind(&TokenKind::String("".to_string())) {
-                if let TokenKind::String(value) = &token.kind {
-                    source = Some(StringLiteral::new(value.clone()));
-                }
+        // Parse the module path (string literal)
+        let path = if let Some(token) = self.match_token_kind(&TokenKind::String("".to_string())) {
+            if let TokenKind::String(value) = &token.kind {
+                value.clone()
             } else {
                 return Err(ParseError::new(
-                    "Expected string literal after 'from'".to_string(),
+                    "Expected string literal for module path".to_string(),
                     self.peek().line,
                 ));
             }
-        }
+        } else {
+            return Err(ParseError::new(
+                "Expected string literal for module path".to_string(),
+                self.peek().line,
+            ));
+        };
 
-        // Check for 'as' clause
-        if self.match_tokens(&[TokenKind::As]) {
+        // Check for 'as' clause (optional alias)
+        let alias = if self.match_tokens(&[TokenKind::As]) {
             let alias_name = self.consume_identifier("Expected alias name")?;
-            alias = Some(Identifier::new(alias_name));
-        }
+            Some(Identifier::new(alias_name))
+        } else {
+            None
+        };
 
         Ok(Statement::UseStatement(UseStatement {
-            items,
-            source,
+            path,
             alias,
         }))
     }

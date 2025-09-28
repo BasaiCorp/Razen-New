@@ -1,16 +1,324 @@
-use math // used for to import the liraier built-in/downloaded but not implemented but add as placeholder
-use funcion1 from "my_utils/function" // here the path definig nd function calling and not need to specifly the .rzn
+// =============================================================================
+// RAZEN MODULE SYSTEM TEST - Go-Style Approach with MOD keyword
+// =============================================================================
 
-use { func1, func2, func3, varibles_by_pub } from "utils" // multiple import and in this razen
+// -----------------------------------------------------------------------------
+// 0. MODULE SYSTEM APPROACH (File-based, no mod declarations needed)
+// -----------------------------------------------------------------------------
 
-use "utilsfile" // import enitre file and all published functions/classes/modules
+// No need for "mod" declarations - file path determines module name
+// This file is automatically the "module-system" module
 
-// now the expoter side
+// -----------------------------------------------------------------------------
+// 1. IMPORT SYNTAX (Go-style clean imports)
+// -----------------------------------------------------------------------------
 
-pub fun func1() {...} // publish it properly
+// Standard library imports (built-in modules) (placeholder for now)
+use fmt        // Built-in formatting functions
+use math       // Built-in math operations  
+use io         // Built-in I/O operations
+use strings    // Built-in string utilities
+use discordRZN // Downloaded package
 
-pub struct {...} // pubish it properly
+// SIMPLE PROJECT IMPORTS (files in same directory)
+use "./utils"           // Import utils.rzn → call as utils.Function()
+use "./calculator"      // Import calculator.rzn → call as calculator.Add()
+use "./models"          // Import models.rzn → call as models.User()
 
-// speical case
+// COMPLEX PROJECT IMPORTS (files in different folders)
+use "./math/calculator" // Import math/calculator.rzn → call as calculator.Add()
+use "./math/geometry"   // Import math/geometry.rzn → call as geometry.Area()
+use "./data/models"     // Import data/models.rzn → call as models.User()
+use "./data/database"   // Import data/database.rzn → call as database.Connect()
+use "./utils/string"    // Import utils/string.rzn → call as string.ToUpper()
+use "./utils/file"      // Import utils/file.rzn → call as file.Read()
 
-mod utilfile // this will make the entire file as the module and publish the evtyhing here
+// Import with custom names (aliases) - works with any path!
+use "./utils" as util           // Simple file with alias → call as util.Function()
+use "./math/calculator" as calc // Folder file with alias → call as calc.Add()
+use "./utils/string" as str_util // Deep folder with alias → call as str_util.ToUpper()
+
+
+// -----------------------------------------------------------------------------
+// 2. EXPORT SYNTAX (Public declarations)
+// -----------------------------------------------------------------------------
+
+// Public functions (exported - Go-style capitalized naming)
+pub fun Add(a: int, b: int) -> int {
+    return a + b
+}
+
+pub fun Multiply(x: int, y: int) -> int {
+    return x * y
+}
+
+pub fun Greet(name: str) -> str {
+    return f"Hello, {name}!"
+}
+
+// Public constants (exported)
+pub const PI: float = 3.14159
+pub const APP_NAME: str = "Razen Calculator"
+pub const VERSION: str = "1.0.0"
+
+// Public variables (exported - mutable state)
+pub var counter: int = 0
+pub var debug_mode: bool = false
+
+// Public struct (exported data structure)
+pub struct Person {
+    name: str,
+    age: int,
+    email: str
+}
+
+// Public struct methods (exported)
+impl Person {
+    pub fun New(name: str, age: int, email: str) -> Person {
+        return Person { name: name, age: age, email: email }
+    }
+    
+    pub fun GetInfo(self) -> str {
+        return f"Name: {self.name}, Age: {self.age}"
+    }
+    
+    pub fun IsAdult(self) -> bool {
+        return self.age >= 18
+    }
+}
+
+// -----------------------------------------------------------------------------
+// 3. PRIVATE DECLARATIONS (Internal use only)
+// -----------------------------------------------------------------------------
+
+// Private functions (not exported - lowercase naming)
+fun helper_function() {
+    println("This is internal helper")
+}
+
+fun validate_input(input: str) -> bool {
+    return input.length() > 0
+}
+
+// Private constants
+const INTERNAL_LIMIT: int = 100
+const DEBUG_PREFIX: str = "[DEBUG]"
+
+// Private variables
+var internal_state: int = 0
+
+// -----------------------------------------------------------------------------
+// 4. USAGE EXAMPLES (How to use imported modules)
+// -----------------------------------------------------------------------------
+
+fun main() {
+    // Using standard library (simple calls)
+    fmt.println("Standard library usage")
+    var result = math.sqrt(16.0)
+    var text = strings.ToUpper("hello world")
+    
+    // SIMPLE PROJECT IMPORTS (no folders)
+    var calc_result = calculator.Add(5, 3)        // from "./calculator"
+    var clean_text = utils.Trim("  hello  ")     // from "./utils"
+    var person = models.User.New("Alice", 25)    // from "./models"
+    
+    // COMPLEX PROJECT IMPORTS (with folders) - SAME SIMPLE CALLS!
+    var math_result = calculator.Add(10, 5)      // from "./math/calculator"
+    var area = geometry.CircleArea(5.0)          // from "./math/geometry"
+    var user_data = models.User.New("Bob", 30)   // from "./data/models"
+    var connection = database.Connect("localhost") // from "./data/database"
+    var upper_text = string.ToUpper("hello")     // from "./utils/string"
+    var file_content = file.Read("config.txt")   // from "./utils/file"
+    
+    // Using aliases for shorter names
+    var util_result = util.ToUpper("hello")      // from "./utils" as util
+    var calc_result3 = calc.Divide(10, 2)       // from "./calculator" as calc
+    
+    // Using public exports from this module
+    var greeting = Greet("World")
+    counter = counter + 1
+    
+    // Using public struct
+    var user = Person.New("Bob", 30, "bob@email.com")
+    var info = user.GetInfo()
+    var is_adult = user.IsAdult()
+    
+    println(f"Greeting: {greeting}")
+    println(f"Counter: {counter}")
+    println(f"User Info: {info}")
+    println(f"Is Adult: {is_adult}")
+    println(f"Calculator result: {calc_result}")
+    println(f"Math area: {area}")
+    println(f"File content: {file_content}")
+}
+
+// -----------------------------------------------------------------------------
+// 5. MODULE ORGANIZATION EXAMPLES
+// -----------------------------------------------------------------------------
+
+/*
+COMPLETE SOLUTION: Handles both simple files AND folder structures easily!
+
+SIMPLE PROJECT (no folders):
+project/
+├── main.rzn                 // Entry point
+├── utils.rzn               // Import: use "./utils" → Call: utils.ToUpper()
+├── calculator.rzn          // Import: use "./calculator" → Call: calculator.Add()
+└── models.rzn              // Import: use "./models" → Call: models.User()
+
+COMPLEX PROJECT (with folders):
+project/
+├── main.rzn                 // Entry point
+├── math/
+│   ├── calculator.rzn      // Import: use "./math/calculator" → Call: calculator.Add()
+│   └── geometry.rzn        // Import: use "./math/geometry" → Call: geometry.Area()
+├── data/
+│   ├── models.rzn          // Import: use "./data/models" → Call: models.User()
+│   └── database.rzn        // Import: use "./data/database" → Call: database.Connect()
+└── utils/
+    ├── string.rzn          // Import: use "./utils/string" → Call: string.ToUpper()
+    └── file.rzn            // Import: use "./utils/file" → Call: file.Read()
+
+RULE: Last part of path becomes module name!
+- "./math/calculator" → calculator.Add()
+- "./utils/string" → string.ToUpper()
+- "./data/models" → models.User()
+
+NO mod keyword needed! Path determines everything automatically.
+*/
+
+// calculator.rzn (becomes "calculator" module automatically)
+// NO "mod" declaration needed - just write your functions!
+
+pub fun Add(a: int, b: int) -> int { return a + b }
+pub fun Sub(a: int, b: int) -> int { return a - b }
+pub fun Multiply(a: int, b: int) -> int { return a * b }
+pub fun Divide(a: int, b: int) -> float { return a / b }
+pub const PI: float = 3.14159
+pub const E: float = 2.71828
+
+// utils.rzn (becomes "utils" module automatically)
+// NO "mod" declaration needed - just write your functions!
+
+pub fun ToUpper(s: str) -> str { 
+    // Convert string to uppercase
+    return s.to_upper() 
+}
+pub fun ToLower(s: str) -> str { 
+    // Convert string to lowercase
+    return s.to_lower() 
+}
+pub fun Contains(s: str, substr: str) -> bool { 
+    // Check if string contains substring
+    return s.contains(substr) 
+}
+pub fun Trim(s: str) -> str {
+    // Remove whitespace from both ends
+    return s.trim()
+}
+
+// models.rzn (becomes "models" module automatically)
+// NO "mod" declaration needed - just write your structs!
+
+pub struct User { 
+    name: str, 
+    age: int, 
+    email: str 
+}
+
+pub struct Product { 
+    id: int, 
+    name: str, 
+    price: float,
+    category: str
+}
+
+pub struct Order {
+    id: int,
+    user: User,
+    products: [Product],
+    total: float
+}
+
+// -----------------------------------------------------------------------------
+// 6. COMPLETE EXAMPLES FOR DIFFERENT PROJECT STRUCTURES
+// -----------------------------------------------------------------------------
+
+/*
+EXAMPLE 1: SIMPLE PROJECT (all files in root)
+project/
+├── main.rzn
+├── calculator.rzn
+├── utils.rzn
+└── models.rzn
+
+// main.rzn
+use "./calculator"
+use "./utils"
+use "./models"
+
+fun main() {
+    var result = calculator.Add(5, 3)     // ✅ Simple!
+    var text = utils.ToUpper("hello")     // ✅ Easy!
+    var user = models.User.New("Alice")   // ✅ Clear!
+}
+
+EXAMPLE 2: ORGANIZED PROJECT (with folders)
+project/
+├── main.rzn
+├── math/
+│   ├── calculator.rzn
+│   └── geometry.rzn
+├── data/
+│   ├── models.rzn
+│   └── database.rzn
+└── utils/
+    ├── string.rzn
+    └── file.rzn
+
+// main.rzn
+use "./math/calculator"
+use "./math/geometry"
+use "./data/models"
+use "./data/database"
+use "./utils/string"
+use "./utils/file"
+
+fun main() {
+    var result = calculator.Add(5, 3)     // ✅ Same simple calls!
+    var area = geometry.CircleArea(5.0)   // ✅ No complex paths!
+    var user = models.User.New("Alice")   // ✅ Easy to understand!
+    var content = file.Read("data.txt")   // ✅ Clear and simple!
+}
+
+RULE: Last part of path = module name
+- "./math/calculator" → calculator.Add()
+- "./utils/string" → string.ToUpper()
+- "./data/models" → models.User()
+
+NO mod keyword needed! Path tells us everything!
+*/
+
+// -----------------------------------------------------------------------------
+// 7. ERROR HANDLING EXAMPLES
+// -----------------------------------------------------------------------------
+
+/*
+Common module system errors and solutions:
+
+1. Module not found:
+   Error: Module './missing' not found
+   Solution: Check file path and ensure file exists
+
+2. Symbol not exported:
+   Error: Function 'private_func' is not exported from module 'utils'
+   Solution: Add 'pub' keyword or use public alternative
+
+3. Circular imports:
+   Error: Circular dependency detected: A -> B -> A
+   Solution: Restructure modules or use interfaces
+
+4. Naming conflicts:
+   Error: Function 'Add' imported from multiple modules
+   Solution: Use aliases: use "./math/calculator" as math_calc
+*/

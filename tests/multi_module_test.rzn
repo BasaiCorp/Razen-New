@@ -1,0 +1,30 @@
+// tests/multi_module_test.rzn - Test multiple module imports
+
+use "./calculator"
+use "./utils_simple" as utils
+
+fun main() {
+    // Test calculator module
+    var sum = calculator.Add(10, 5)
+    var diff = calculator.Sub(10, 5)
+    var product = calculator.Multiply(10, 5)
+    const hello = "bro"
+    
+    println(f"Calculator tests:")
+    println(f"  10 + 5 = {sum}")
+    println(f"  10 - 5 = {diff}")
+    println(f"  10 * 5 = {product}")
+    println(hello)
+    
+    // Test utils module with alias
+    var text = "Hello World"
+    var upper = utils.ToUpper(text)
+    var lower = utils.ToLower(text)
+    
+    println(f"Utils tests:")
+    println(f"  Original: {text}")
+    println(f"  Upper: {upper}")
+    println(f"  Lower: {lower}")
+    
+    println("Multi-module test completed!")
+}

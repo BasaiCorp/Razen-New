@@ -37,8 +37,8 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     
     info_message(&format!("Source file loaded ({} bytes)", source.len()));
     
-    // Parse the source code
-    let filename = file.to_string_lossy().to_string();
+    // Parse the source code with full file path context
+    let filename = file.canonicalize().unwrap_or(file.clone()).to_string_lossy().to_string();
     println!("\n🔍 Phase 1: Parsing...");
     let (program, diagnostics) = parse_source_with_name(&source, &filename);
     
@@ -52,9 +52,10 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     success_message("Parsing completed successfully!");
     
     if let Some(program) = program {
-        // Run semantic analysis
+        // Run semantic analysis with module support
         println!("\n🔍 Phase 2: Semantic Analysis...");
-        let mut semantic_analyzer = SemanticAnalyzer::new();
+        let base_dir = file.parent().unwrap_or_else(|| std::path::Path::new(".")).to_path_buf();
+        let mut semantic_analyzer = SemanticAnalyzer::with_module_support(base_dir, file.clone());
         let semantic_diagnostics = semantic_analyzer.analyze_with_source(&program, &source);
         
         if !semantic_diagnostics.is_empty() {
@@ -63,16 +64,16 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
             eprintln!("{}", rendered);
             
             if semantic_diagnostics.has_errors() {
-                std::process::exit(1);
             }
         }
         
-        success_message("Semantic analysis completed successfully!");
+        success_message("semantic analysis completed successfully!");
         
-        // Compile and execute
-        println!("\n🔍 Phase 3: Compilation...");
+        // Compile to IR
+        println!("\n⚙️ Phase 3: IR Generation...");
         let mut compiler = Compiler::new();
-        compiler.set_clean_output(false); // Always show compiler messages in dev mode
+        compiler.set_clean_output(false); // Verbose output for dev mode
+        compiler.set_current_file(file.clone());
         compiler.compile_program(program);
         
         if !compiler.errors.is_empty() {
