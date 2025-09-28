@@ -1,0 +1,9 @@
+// tests/simple_const_test.rzn - Simple constant test
+
+use "./calculator"
+
+fun main() {
+    var result = calculator.Add(5, 3)
+    println(f"5 + 3 = {result}")
+    println("Simple test completed!")
+}

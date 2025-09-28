@@ -260,21 +260,76 @@ impl Compiler {
                         // Store the module mapping
                         self.imported_modules.insert(module_name.clone(), path.to_string_lossy().to_string());
                         
-                        // Compile functions from the imported module with qualified names
+                        // Compile all public items from the imported module with qualified names
                         for stmt in program.statements {
-                            if let Statement::FunctionDeclaration(func_decl) = stmt {
-                                // Check if function is public
-                                if func_decl.is_public {
-                                    let qualified_name = format!("{}.{}", module_name, func_decl.name.name);
-                                    let parameters: Vec<String> = func_decl.parameters.iter()
-                                        .map(|p| p.name.name.clone()).collect();
-                                    
-                                    // Compile the function with qualified name
-                                    self.compile_function_declaration(qualified_name.clone(), parameters, func_decl.body.statements);
-                                    
-                                    if !self.clean_output {
-                                        println!("Imported function: {} -> {}", func_decl.name.name, qualified_name);
+                            match stmt {
+                                Statement::FunctionDeclaration(func_decl) => {
+                                    // Check if function is public
+                                    if func_decl.is_public {
+                                        let qualified_name = format!("{}.{}", module_name, func_decl.name.name);
+                                        let parameters: Vec<String> = func_decl.parameters.iter()
+                                            .map(|p| p.name.name.clone()).collect();
+                                        
+                                        // Compile the function with qualified name
+                                        self.compile_function_declaration(qualified_name.clone(), parameters, func_decl.body.statements);
+                                        
+                                        if !self.clean_output {
+                                            println!("Imported function: {} -> {}", func_decl.name.name, qualified_name);
+                                        }
                                     }
+                                },
+                                Statement::ConstantDeclaration(const_decl) => {
+                                    // Check if constant is public
+                                    if const_decl.is_public {
+                                        let qualified_name = format!("{}.{}", module_name, const_decl.name.name);
+                                        
+                                        // Register the constant in symbol table
+                                        self.symbol_table.define(&qualified_name);
+                                        
+                                        // Compile the constant value and store it
+                                        self.compile_expression(const_decl.initializer);
+                                        self.emit(IR::StoreVar(qualified_name.clone()));
+                                        
+                                        if !self.clean_output {
+                                            println!("Imported constant: {} -> {}", const_decl.name.name, qualified_name);
+                                        }
+                                    }
+                                },
+                                Statement::VariableDeclaration(var_decl) => {
+                                    // Check if variable is public
+                                    if var_decl.is_public {
+                                        let qualified_name = format!("{}.{}", module_name, var_decl.name.name);
+                                        
+                                        // Register the variable in symbol table
+                                        self.symbol_table.define(&qualified_name);
+                                        
+                                        // Compile the variable value and store it
+                                        if let Some(expr) = var_decl.initializer {
+                                            self.compile_expression(expr);
+                                        } else {
+                                            self.emit(IR::PushNull);
+                                        }
+                                        self.emit(IR::StoreVar(qualified_name.clone()));
+                                        
+                                        if !self.clean_output {
+                                            println!("Imported variable: {} -> {}", var_decl.name.name, qualified_name);
+                                        }
+                                    }
+                                },
+                                Statement::StructDeclaration(struct_decl) => {
+                                    // Check if struct is public
+                                    if struct_decl.is_public {
+                                        let qualified_name = format!("{}.{}", module_name, struct_decl.name.name);
+                                        
+                                        // Register the struct type (for future struct instantiation)
+                                        // For now, just log it
+                                        if !self.clean_output {
+                                            println!("Imported struct: {} -> {}", struct_decl.name.name, qualified_name);
+                                        }
+                                    }
+                                },
+                                _ => {
+                                    // Skip other statement types
                                 }
                             }
                         }
@@ -1076,12 +1131,21 @@ impl Compiler {
                 self.emit(IR::LoadVar("self".to_string()));
             },
             Expression::MemberExpression(member_expr) => {
-                // Check if this is enum variant access (Type.Variant)
-                if let Expression::Identifier(type_ident) = &*member_expr.object {
+                // Check if this is module member access (module.constant or module.variable)
+                if let Expression::Identifier(module_ident) = &*member_expr.object {
+                    let qualified_name = format!("{}.{}", module_ident.name, member_expr.property.name);
+                    
+                    // Check if this qualified name exists in our symbol table (imported from module)
+                    if self.symbol_table.resolve(&qualified_name).is_some() {
+                        // This is a module member access: load the qualified variable/constant
+                        self.emit(IR::LoadVar(qualified_name));
+                        return;
+                    }
+                    
                     // Check if this looks like an enum type (starts with uppercase)
-                    if type_ident.name.chars().next().unwrap_or('a').is_uppercase() {
+                    if module_ident.name.chars().next().unwrap_or('a').is_uppercase() {
                         // This is likely enum variant access: EnumType.Variant
-                        let enum_variant = format!("{}::{}", type_ident.name, member_expr.property.name);
+                        let enum_variant = format!("{}::{}", module_ident.name, member_expr.property.name);
                         self.emit(IR::PushString(enum_variant));
                         return;
                     }

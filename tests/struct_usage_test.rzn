@@ -1,0 +1,24 @@
+// tests/struct_usage_test.rzn - Test actual struct usage from imports
+
+use "./math_types" as math
+
+fun main() {
+    println("Testing struct import and usage")
+    
+    // Try to create a Point struct instance
+    var point1 = math.Point { x: 10.5, y: 20.3 }
+    var point2 = math.Point { x: 5.0, y: 15.0 }
+    
+    println(f"Point 1: ({point1.x}, {point1.y})")
+    println(f"Point 2: ({point2.x}, {point2.y})")
+    
+    // Test imported constants and variables
+    println(f"Origin X (variable): {math.ORIGIN_X}")
+    println(f"Origin Y (constant): {math.ORIGIN_Y}")
+    
+    // Test imported function
+    var distance = math.Distance(point1, point2)
+    println(f"Distance: {distance}")
+    
+    println("Struct usage test completed!")
+}

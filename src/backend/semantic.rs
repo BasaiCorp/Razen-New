@@ -6,6 +6,7 @@ use crate::backend::type_checker::TypeChecker;
 use crate::frontend::diagnostics::{helpers, Diagnostic, Diagnostics, Position, Span};
 use crate::frontend::parser::ast::*;
 use crate::frontend::module_system::{ModuleResolver, VisibilityChecker, ModuleError};
+use crate::frontend::module_system::resolver::ResolvedModule;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -218,7 +219,7 @@ impl SemanticAnalyzer {
                     self.visibility_checker.register_module(&resolved_module);
                     
                     // Register the import
-                    let _module_name = if let Some(alias) = &use_stmt.alias {
+                    let module_name = if let Some(alias) = &use_stmt.alias {
                         alias.name.clone()
                     } else {
                         resolved_module.name.clone()
@@ -229,11 +230,93 @@ impl SemanticAnalyzer {
                         use_stmt.alias.as_ref().map(|a| a.name.as_str()),
                         &resolved_module.name,
                     );
+                    
+                    // Register imported symbols in the symbol table
+                    self.register_imported_symbols(&resolved_module, &module_name);
                 }
                 Err(module_error) => {
                     // Convert module error to diagnostic
                     let diagnostic = self.module_error_to_diagnostic(module_error);
                     self.diagnostics.add(diagnostic);
+                }
+            }
+        }
+    }
+
+    /// Register imported symbols from a resolved module
+    fn register_imported_symbols(&mut self, resolved_module: &ResolvedModule, module_name: &str) {
+        // Process each statement in the imported module
+        for stmt in &resolved_module.program.statements {
+            match stmt {
+                Statement::FunctionDeclaration(func_decl) => {
+                    if func_decl.is_public {
+                        let qualified_name = format!("{}.{}", module_name, func_decl.name.name);
+                        
+                        // Register the function in the symbol table
+                        let func_symbol = FunctionSymbol {
+                            _name: qualified_name.clone(),
+                            parameters: func_decl.parameters.iter().map(|p| p.name.name.clone()).collect(),
+                            return_type: func_decl.return_type.as_ref().map(|t| Self::get_type_name_from_type_annotation(t)),
+                            defined_at: Position::new(1, 1, 0),
+                        };
+                        
+                        self.symbol_table.functions.insert(qualified_name, func_symbol);
+                    }
+                },
+                Statement::ConstantDeclaration(const_decl) => {
+                    if const_decl.is_public {
+                        let qualified_name = format!("{}.{}", module_name, const_decl.name.name);
+                        
+                        // Register the constant as a variable in the symbol table
+                        let symbol = Symbol {
+                            _name: qualified_name.clone(),
+                            symbol_type: SymbolType::Variable("const".to_string()),
+                            defined_at: Position::new(1, 1, 0),
+                            used: false,
+                            mutable: false,
+                        };
+                        
+                        // Add to current scope
+                        if let Some(current_scope) = self.symbol_table.scopes.last_mut() {
+                            current_scope.insert(qualified_name, symbol);
+                        }
+                    }
+                },
+                Statement::VariableDeclaration(var_decl) => {
+                    if var_decl.is_public {
+                        let qualified_name = format!("{}.{}", module_name, var_decl.name.name);
+                        
+                        // Register the variable in the symbol table
+                        let symbol = Symbol {
+                            _name: qualified_name.clone(),
+                            symbol_type: SymbolType::Variable("var".to_string()),
+                            defined_at: Position::new(1, 1, 0),
+                            used: false,
+                            mutable: true,
+                        };
+                        
+                        // Add to current scope
+                        if let Some(current_scope) = self.symbol_table.scopes.last_mut() {
+                            current_scope.insert(qualified_name, symbol);
+                        }
+                    }
+                },
+                Statement::StructDeclaration(struct_decl) => {
+                    if struct_decl.is_public {
+                        let qualified_name = format!("{}.{}", module_name, struct_decl.name.name);
+                        
+                        // Register the struct type
+                        let struct_symbol = StructSymbol {
+                            _name: qualified_name.clone(),
+                            _fields: HashMap::new(), // TODO: populate with actual fields
+                            _defined_at: Position::new(1, 1, 0),
+                        };
+                        
+                        self.symbol_table.structs.insert(qualified_name, struct_symbol);
+                    }
+                },
+                _ => {
+                    // Skip other statement types
                 }
             }
         }
