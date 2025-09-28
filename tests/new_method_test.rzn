@@ -1,0 +1,14 @@
+// Test specifically the 'new' method name
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun new(x: int, y: int) {
+        println("New method")
+    }
+}
+
+fun main() {
+    println("Test")
+}

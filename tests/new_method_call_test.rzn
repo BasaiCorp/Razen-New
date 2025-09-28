@@ -1,0 +1,54 @@
+// Test .new() method calls specifically
+struct Car {
+    brand: str,
+    year: int
+}
+
+impl Car {
+    fun new(brand: str, year: int) {
+        println("Creating a new car!")
+        println("Brand and year set")
+    }
+    
+    fun start(self) {
+        println("Car is starting...")
+    }
+    
+    fun stop(self) {
+        println("Car stopped.")
+    }
+}
+
+struct Person {
+    name: str
+}
+
+impl Person {
+    fun new(name: str) {
+        println("Creating a new person!")
+    }
+    
+    fun greet(self) {
+        println("Hello!")
+    }
+}
+
+fun main() {
+    println("=== Testing .new() Method Calls ===")
+    
+    // Test Car.new()
+    Car.new("Toyota", 2023)
+    
+    // Test Person.new()
+    Person.new("Alice")
+    
+    // Test creating instances and calling methods
+    var car1 = Car { brand: "Honda", year: 2022 }
+    car1.start()
+    car1.stop()
+    
+    var person1 = Person { name: "Bob" }
+    person1.greet()
+    
+    println("=== All .new() tests completed! ===")
+}

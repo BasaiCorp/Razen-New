@@ -405,13 +405,39 @@ impl<'a> ExpressionParser<'a> {
                     arguments,
                 });
             } else if self.match_tokens(&[TokenKind::Dot]) {
-                // Member access
+                // Member access or method call
                 let name = self.consume_identifier("Expected property name after '.'")?;
-                expr = Expression::MemberExpression(MemberExpression {
-                    object: Box::new(expr),
-                    property: Identifier::new(name),
-                    computed: false,
-                });
+                
+                // Check if this is a method call (followed by parentheses)
+                if self.check(&TokenKind::LeftParen) {
+                    self.advance(); // consume '('
+                    
+                    // Parse method arguments
+                    let mut arguments = Vec::new();
+                    if !self.check(&TokenKind::RightParen) {
+                        loop {
+                            arguments.push(self.parse_expression()?);
+                            if !self.match_tokens(&[TokenKind::Comma]) {
+                                break;
+                            }
+                        }
+                    }
+                    
+                    self.consume(TokenKind::RightParen, "Expected ')' after method arguments")?;
+                    
+                    expr = Expression::MethodCallExpression(MethodCallExpression::new(
+                        Box::new(expr),
+                        Identifier::new(name),
+                        arguments,
+                    ));
+                } else {
+                    // Regular member access
+                    expr = Expression::MemberExpression(MemberExpression {
+                        object: Box::new(expr),
+                        property: Identifier::new(name),
+                        computed: false,
+                    });
+                }
             } else if self.match_tokens(&[TokenKind::LeftBracket]) {
                 // Array indexing
                 let index = self.parse_expression()?;
@@ -519,6 +545,13 @@ impl<'a> ExpressionParser<'a> {
             
             return Ok(Expression::Identifier(Identifier::new(name)));
         }
+
+        // Handle self expression
+        if self.match_tokens(&[TokenKind::Self_]) {
+            return Ok(Expression::SelfExpression(SelfExpression::new()));
+        }
+
+        // Note: 'new' is now handled as a regular identifier, not a special keyword
 
         // Handle built-in function identifiers
         if self.match_tokens(&[

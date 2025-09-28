@@ -1,0 +1,14 @@
+// Test parameters + return type combination
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun new(name: str, age: int) -> Test {
+        println("Creating")
+    }
+}
+
+fun main() {
+    println("Test")
+}

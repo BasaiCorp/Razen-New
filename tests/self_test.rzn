@@ -1,0 +1,14 @@
+// Test self parameter parsing
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun with_self(self) {
+        println("Has self")
+    }
+}
+
+fun main() {
+    println("Test")
+}

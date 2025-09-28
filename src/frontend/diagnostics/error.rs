@@ -129,9 +129,13 @@ pub enum DiagnosticKind {
     
     // Function-related errors
     WrongArgumentCount { expected: usize, found: usize },
+    ArgumentCountMismatch { expected: usize, found: usize },
     InvalidReturnType { expected: String, found: String },
     MissingReturn { function_name: String },
     InvalidFunctionCall { reason: String },
+    
+    // Method-related errors
+    UndefinedMethod { method: String, type_name: String },
     
     // Variable-related errors
     UninitializedVariable { name: String },
@@ -221,6 +225,11 @@ impl DiagnosticKind {
                        expected, if *expected == 1 { "" } else { "s" },
                        found, if *found == 1 { "was" } else { "were" })
             },
+            DiagnosticKind::ArgumentCountMismatch { expected, found } => {
+                format!("this method takes {} argument{} but {} {} supplied",
+                       expected, if *expected == 1 { "" } else { "s" },
+                       found, if *found == 1 { "was" } else { "were" })
+            },
             DiagnosticKind::InvalidReturnType { expected, found } => {
                 format!("mismatched return type: expected `{}`, found `{}`", expected, found)
             },
@@ -229,6 +238,11 @@ impl DiagnosticKind {
             },
             DiagnosticKind::InvalidFunctionCall { reason } => {
                 format!("invalid function call: {}", reason)
+            },
+            
+            // Method-related errors
+            DiagnosticKind::UndefinedMethod { method, type_name } => {
+                format!("no method named `{}` found for type `{}`", method, type_name)
             },
             
             // Variable-related errors
@@ -309,9 +323,11 @@ impl DiagnosticKind {
             | DiagnosticKind::DuplicateDefinition { .. }
             | DiagnosticKind::InvalidAssignment { .. }
             | DiagnosticKind::WrongArgumentCount { .. }
+            | DiagnosticKind::ArgumentCountMismatch { .. }
             | DiagnosticKind::InvalidReturnType { .. }
             | DiagnosticKind::MissingReturn { .. }
             | DiagnosticKind::InvalidFunctionCall { .. }
+            | DiagnosticKind::UndefinedMethod { .. }
             | DiagnosticKind::UninitializedVariable { .. }
             | DiagnosticKind::ImmutableAssignment { .. }
             | DiagnosticKind::BreakOutsideLoop

@@ -1,0 +1,33 @@
+// Test static method calls
+
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    fun create_default() -> Person {
+        return Person { name: "Unknown", age: 0 }
+    }
+    
+    fun hello() {
+        println("Hello from Person!")
+    }
+}
+
+fun main() {
+    println("=== Static Method Test ===")
+    
+    // Static method calls
+    Person.hello()
+    
+    var person1 = Person.new("Alice", 25)
+    var person2 = Person.create_default()
+    
+    println("Created persons successfully!")
+    println("=== Test Complete ===")
+}

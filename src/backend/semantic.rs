@@ -2,9 +2,9 @@
 //! Professional semantic analyzer for the Razen language
 //! Performs type checking, scope analysis, and semantic validation
 
-use crate::frontend::parser::ast::*;
-use crate::frontend::diagnostics::{Diagnostic, Diagnostics, helpers, Span, Position};
 use crate::backend::type_checker::TypeChecker;
+use crate::frontend::diagnostics::{helpers, Diagnostic, Diagnostics, Position, Span};
+use crate::frontend::parser::ast::*;
 use std::collections::HashMap;
 
 /// Semantic analyzer that validates the AST and reports errors
@@ -22,6 +22,8 @@ pub struct SemanticAnalyzer {
 struct SymbolTable {
     scopes: Vec<HashMap<String, Symbol>>,
     functions: HashMap<String, FunctionSymbol>,
+    structs: HashMap<String, StructSymbol>,
+    methods: HashMap<String, Vec<MethodSymbol>>, // type_name -> methods
 }
 
 #[derive(Debug, Clone)]
@@ -41,6 +43,22 @@ struct FunctionSymbol {
     defined_at: Position,
 }
 
+#[derive(Debug, Clone)]
+struct StructSymbol {
+    _name: String,
+    fields: HashMap<String, String>, // field_name -> type_name
+    defined_at: Position,
+}
+
+#[derive(Debug, Clone)]
+struct MethodSymbol {
+    _name: String,
+    parameters: Vec<String>,
+    return_type: Option<String>,
+    is_static: bool,
+    defined_at: Position,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 enum SymbolType {
     Variable(String), // type name
@@ -48,9 +66,61 @@ enum SymbolType {
     Function,
     #[allow(dead_code)]
     Builtin,
+    #[allow(dead_code)]
+    Struct,
+    #[allow(dead_code)]
+    Method,
 }
 
 impl SemanticAnalyzer {
+    fn get_type_name_from_annotation(annotation: &Option<TypeAnnotation>) -> String {
+        match annotation {
+            Some(TypeAnnotation::Int) => "int".to_string(),
+            Some(TypeAnnotation::Float) => "float".to_string(),
+            Some(TypeAnnotation::String) => "string".to_string(),
+            Some(TypeAnnotation::Bool) => "bool".to_string(),
+            Some(TypeAnnotation::Char) => "char".to_string(),
+            Some(TypeAnnotation::Array(inner)) => {
+                format!(
+                    "array<{}>",
+                    Self::get_type_name_from_annotation(&Some(*inner.clone()))
+                )
+            }
+            Some(TypeAnnotation::Map(key, value)) => {
+                format!(
+                    "map<{}, {}>",
+                    Self::get_type_name_from_annotation(&Some(*key.clone())),
+                    Self::get_type_name_from_annotation(&Some(*value.clone()))
+                )
+            }
+            Some(TypeAnnotation::Custom(ident)) => ident.name.clone(),
+            Some(TypeAnnotation::Any) => "any".to_string(),
+            None => "unknown".to_string(),
+        }
+    }
+
+    fn get_type_name_from_type_annotation(annotation: &TypeAnnotation) -> String {
+        match annotation {
+            TypeAnnotation::Int => "int".to_string(),
+            TypeAnnotation::Float => "float".to_string(),
+            TypeAnnotation::String => "string".to_string(),
+            TypeAnnotation::Bool => "bool".to_string(),
+            TypeAnnotation::Char => "char".to_string(),
+            TypeAnnotation::Array(inner) => {
+                format!("array<{}>", Self::get_type_name_from_type_annotation(inner))
+            }
+            TypeAnnotation::Map(key, value) => {
+                format!(
+                    "map<{}, {}>",
+                    Self::get_type_name_from_type_annotation(key),
+                    Self::get_type_name_from_type_annotation(value)
+                )
+            }
+            TypeAnnotation::Custom(ident) => ident.name.clone(),
+            TypeAnnotation::Any => "any".to_string(),
+        }
+    }
+
     pub fn new() -> Self {
         let mut analyzer = SemanticAnalyzer {
             diagnostics: Diagnostics::new(),
@@ -60,7 +130,7 @@ impl SemanticAnalyzer {
             in_loop: false,
             source_lines: Vec::new(),
         };
-        
+
         // Add built-in functions
         analyzer.add_builtins();
         analyzer
@@ -68,29 +138,32 @@ impl SemanticAnalyzer {
 
     pub fn analyze(&mut self, program: &Program) -> Diagnostics {
         self.diagnostics = Diagnostics::new();
-        
+
         // First pass: collect all function declarations
         for stmt in &program.statements {
             if let Statement::FunctionDeclaration(func_decl) = stmt {
                 self.declare_function(func_decl);
             }
         }
-        
+
         // Second pass: analyze function bodies and perform type checking
         for stmt in &program.statements {
             self.analyze_statement(stmt);
         }
-        
+
         // Third pass: comprehensive type checking
         let type_errors = self.type_checker.check_program(program);
         for error in type_errors {
-            let diagnostic = helpers::type_error(&error, Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)));
+            let diagnostic = helpers::type_error(
+                &error,
+                Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
+            );
             self.diagnostics.add(diagnostic);
         }
-        
+
         // Check for unused variables
         self.check_unused_variables();
-        
+
         self.diagnostics.clone()
     }
 
@@ -118,18 +191,21 @@ impl SemanticAnalyzer {
         ];
 
         for (name, params) in builtins {
-            self.symbol_table.functions.insert(name.to_string(), FunctionSymbol {
-                _name: name.to_string(),
-                parameters: params.into_iter().map(|s| s.to_string()).collect(),
-                return_type: None,
-                defined_at: Position::new(0, 0, 0),
-            });
+            self.symbol_table.functions.insert(
+                name.to_string(),
+                FunctionSymbol {
+                    _name: name.to_string(),
+                    parameters: params.into_iter().map(|s| s.to_string()).collect(),
+                    return_type: None,
+                    defined_at: Position::new(0, 0, 0),
+                },
+            );
         }
     }
 
     fn declare_function(&mut self, func_decl: &FunctionDeclaration) {
         let func_name = &func_decl.name.name;
-        
+
         // Check for duplicate function definitions
         if self.symbol_table.functions.contains_key(func_name) {
             let existing = &self.symbol_table.functions[func_name];
@@ -142,16 +218,24 @@ impl SemanticAnalyzer {
             return;
         }
 
-        let params: Vec<String> = func_decl.parameters.iter()
+        let params: Vec<String> = func_decl
+            .parameters
+            .iter()
             .map(|p| p.name.name.clone())
             .collect();
 
-        self.symbol_table.functions.insert(func_name.clone(), FunctionSymbol {
-            _name: func_name.clone(),
-            parameters: params,
-            return_type: func_decl.return_type.as_ref().map(|_| "unknown".to_string()),
-            defined_at: Position::new(1, 1, 0), // TODO: get actual position
-        });
+        self.symbol_table.functions.insert(
+            func_name.clone(),
+            FunctionSymbol {
+                _name: func_name.clone(),
+                parameters: params,
+                return_type: func_decl
+                    .return_type
+                    .as_ref()
+                    .map(|_| "unknown".to_string()),
+                defined_at: Position::new(1, 1, 0), // TODO: get actual position
+            },
+        );
     }
 
     fn analyze_statement(&mut self, stmt: &Statement) {
@@ -173,7 +257,7 @@ impl SemanticAnalyzer {
                     );
                     self.diagnostics.add(diagnostic);
                 }
-                
+
                 if let Some(ref expr) = ret_stmt.value {
                     self.analyze_expression(expr);
                 }
@@ -188,13 +272,13 @@ impl SemanticAnalyzer {
             Statement::IfStatement(if_stmt) => {
                 self.analyze_expression(&if_stmt.condition);
                 self.analyze_statement(&if_stmt.then_branch);
-                
+
                 // Analyze elif branches
                 for elif_branch in &if_stmt.elif_branches {
                     self.analyze_expression(&elif_branch.condition);
                     self.analyze_statement(&elif_branch.body);
                 }
-                
+
                 // Analyze else branch
                 if let Some(ref else_branch) = if_stmt.else_branch {
                     self.analyze_statement(else_branch);
@@ -210,16 +294,18 @@ impl SemanticAnalyzer {
             Statement::BreakStatement(_) => {
                 if !self.in_loop {
                     let diagnostic = Diagnostic::new(
-                        crate::frontend::diagnostics::DiagnosticKind::BreakOutsideLoop
-                    ).with_code("E0009");
+                        crate::frontend::diagnostics::DiagnosticKind::BreakOutsideLoop,
+                    )
+                    .with_code("E0009");
                     self.diagnostics.add(diagnostic);
                 }
             }
             Statement::ContinueStatement(_) => {
                 if !self.in_loop {
                     let diagnostic = Diagnostic::new(
-                        crate::frontend::diagnostics::DiagnosticKind::ContinueOutsideLoop
-                    ).with_code("E0010");
+                        crate::frontend::diagnostics::DiagnosticKind::ContinueOutsideLoop,
+                    )
+                    .with_code("E0010");
                     self.diagnostics.add(diagnostic);
                 }
             }
@@ -233,7 +319,7 @@ impl SemanticAnalyzer {
             Statement::ConstantDeclaration(const_decl) => {
                 // Similar to variable declaration but immutable
                 let const_name = &const_decl.name.name;
-                
+
                 if let Some(existing) = self.symbol_table.lookup_in_current_scope(const_name) {
                     let diagnostic = helpers::shadowed_variable(
                         const_name,
@@ -242,29 +328,38 @@ impl SemanticAnalyzer {
                     );
                     self.diagnostics.add(diagnostic);
                 }
-                
+
                 // Analyze initializer and infer type
-                let inferred_type = self.analyze_expression(&const_decl.initializer)
+                let inferred_type = self
+                    .analyze_expression(&const_decl.initializer)
                     .unwrap_or_else(|| "any".to_string());
-                
+
                 // Declare the constant with the inferred type (immutable)
                 self.declare_variable(const_name, &inferred_type, Position::new(1, 1, 0), false);
             }
             Statement::StructDeclaration(struct_decl) => {
                 // Register struct type in symbol table
-                self.declare_variable(&struct_decl.name.name, "type", Position::new(1, 1, 0), false);
-            },
+                self.declare_variable(
+                    &struct_decl.name.name,
+                    "type",
+                    Position::new(1, 1, 0),
+                    false,
+                );
+            }
             Statement::EnumDeclaration(enum_decl) => {
                 // Register enum type in symbol table
                 self.declare_variable(&enum_decl.name.name, "type", Position::new(1, 1, 0), false);
-            },
+            }
+            Statement::ImplBlock(impl_block) => {
+                self.analyze_impl_block(impl_block);
+            }
             Statement::ForStatement(for_stmt) => {
                 // Analyze iterable
                 self.analyze_expression(&for_stmt.iterable);
-                
+
                 // Create new scope for loop variable
                 self.symbol_table.push_scope();
-                
+
                 // Determine loop variable type based on iterable
                 let loop_var_type = match &for_stmt.iterable {
                     Expression::RangeExpression(_) => "int", // Range produces integers
@@ -276,22 +371,27 @@ impl SemanticAnalyzer {
                                 Expression::FloatLiteral(_) => "float",
                                 Expression::StringLiteral(_) => "str",
                                 Expression::BooleanLiteral(_) => "bool",
-                                _ => "var"
+                                _ => "var",
                             }
                         } else {
                             "var"
                         }
-                    },
-                    _ => "var" // Default to var for other types
+                    }
+                    _ => "var", // Default to var for other types
                 };
-                
-                self.declare_variable(&for_stmt.variable.name, loop_var_type, Position::new(1, 1, 0), true);
-                
+
+                self.declare_variable(
+                    &for_stmt.variable.name,
+                    loop_var_type,
+                    Position::new(1, 1, 0),
+                    true,
+                );
+
                 let was_in_loop = self.in_loop;
                 self.in_loop = true;
                 self.analyze_statement(&for_stmt.body);
                 self.in_loop = was_in_loop;
-                
+
                 self.symbol_table.pop_scope();
             }
             Statement::MatchStatement(match_stmt) => {
@@ -305,7 +405,12 @@ impl SemanticAnalyzer {
                 if let Some(ref catch_clause) = try_stmt.catch_clause {
                     self.symbol_table.push_scope();
                     if let Some(ref param) = catch_clause.parameter {
-                        self.declare_variable(&param.name, "exception", Position::new(1, 1, 0), true);
+                        self.declare_variable(
+                            &param.name,
+                            "exception",
+                            Position::new(1, 1, 0),
+                            true,
+                        );
                     }
                     self.analyze_statement(&Statement::BlockStatement(catch_clause.body.clone()));
                     self.symbol_table.pop_scope();
@@ -320,16 +425,16 @@ impl SemanticAnalyzer {
     fn analyze_function_declaration(&mut self, func_decl: &FunctionDeclaration) {
         let old_function = self.current_function.clone();
         self.current_function = Some(func_decl.name.name.clone());
-        
+
         // Create new scope for function
         self.symbol_table.push_scope();
-        
+
         // Add parameters to scope with their proper types
         for param in &func_decl.parameters {
             let param_type = if let Some(ref type_ann) = param.type_annotation {
                 match type_ann {
                     TypeAnnotation::Int => "int",
-                    TypeAnnotation::Float => "float", 
+                    TypeAnnotation::Float => "float",
                     TypeAnnotation::String => "str",
                     TypeAnnotation::Bool => "bool",
                     TypeAnnotation::Char => "char",
@@ -342,19 +447,19 @@ impl SemanticAnalyzer {
             };
             self.declare_variable(&param.name.name, param_type, Position::new(1, 1, 0), true);
         }
-        
+
         // Analyze function body
         for stmt in &func_decl.body.statements {
             self.analyze_statement(stmt);
         }
-        
+
         self.symbol_table.pop_scope();
         self.current_function = old_function;
     }
 
     fn analyze_variable_declaration(&mut self, var_decl: &VariableDeclaration) {
         let var_name = &var_decl.name.name;
-        
+
         // Check for variable shadowing
         if let Some(existing) = self.symbol_table.lookup_in_current_scope(var_name) {
             let diagnostic = helpers::shadowed_variable(
@@ -364,14 +469,15 @@ impl SemanticAnalyzer {
             );
             self.diagnostics.add(diagnostic);
         }
-        
+
         // Analyze initializer and infer type if present
         let inferred_type = if let Some(ref expr) = var_decl.initializer {
-            self.analyze_expression(expr).unwrap_or_else(|| "any".to_string())
+            self.analyze_expression(expr)
+                .unwrap_or_else(|| "any".to_string())
         } else {
             "any".to_string()
         };
-        
+
         // Use explicit type annotation if provided, otherwise use inferred type
         let var_type = if let Some(ref type_ann) = var_decl.type_annotation {
             let declared_type = match type_ann {
@@ -384,7 +490,7 @@ impl SemanticAnalyzer {
                 TypeAnnotation::Custom(id) => &id.name,
                 _ => "any",
             };
-            
+
             // Check type compatibility if both declared type and initializer exist
             if let Some(ref _expr) = var_decl.initializer {
                 if !self.types_compatible(&inferred_type, declared_type) {
@@ -396,12 +502,12 @@ impl SemanticAnalyzer {
                     self.diagnostics.add(diagnostic);
                 }
             }
-            
+
             declared_type
         } else {
             &inferred_type
         };
-        
+
         // Declare the variable
         self.declare_variable(
             var_name,
@@ -413,20 +519,21 @@ impl SemanticAnalyzer {
 
     fn analyze_expression(&mut self, expr: &Expression) -> Option<String> {
         match expr {
-            Expression::Identifier(ident) => {
-                self.analyze_identifier(ident)
-            }
+            Expression::Identifier(ident) => self.analyze_identifier(ident),
             Expression::IntegerLiteral(_) => Some("int".to_string()),
             Expression::StringLiteral(_) => Some("str".to_string()),
             Expression::BooleanLiteral(_) => Some("bool".to_string()),
             Expression::BinaryExpression(bin_expr) => {
                 let left_type = self.analyze_expression(&bin_expr.left);
                 let right_type = self.analyze_expression(&bin_expr.right);
-                
+
                 // Simple type checking for binary operations
                 match &bin_expr.operator {
-                    BinaryOperator::Add | BinaryOperator::Subtract | BinaryOperator::Multiply | 
-                    BinaryOperator::Divide | BinaryOperator::Modulo => {
+                    BinaryOperator::Add
+                    | BinaryOperator::Subtract
+                    | BinaryOperator::Multiply
+                    | BinaryOperator::Divide
+                    | BinaryOperator::Modulo => {
                         if let (Some(left), Some(right)) = (&left_type, &right_type) {
                             // Allow "any" type to be compatible with anything
                             if left == "any" || right == "any" {
@@ -450,10 +557,12 @@ impl SemanticAnalyzer {
                             None
                         }
                     }
-                    BinaryOperator::Equal | BinaryOperator::NotEqual | BinaryOperator::Less | 
-                    BinaryOperator::Greater | BinaryOperator::LessEqual | BinaryOperator::GreaterEqual => {
-                        Some("bool".to_string())
-                    }
+                    BinaryOperator::Equal
+                    | BinaryOperator::NotEqual
+                    | BinaryOperator::Less
+                    | BinaryOperator::Greater
+                    | BinaryOperator::LessEqual
+                    | BinaryOperator::GreaterEqual => Some("bool".to_string()),
                     BinaryOperator::And | BinaryOperator::Or => {
                         // Check that both operands are boolean
                         if let (Some(left), Some(right)) = (&left_type, &right_type) {
@@ -468,8 +577,11 @@ impl SemanticAnalyzer {
                         }
                         Some("bool".to_string())
                     }
-                    BinaryOperator::BitwiseAnd | BinaryOperator::BitwiseOr | BinaryOperator::BitwiseXor |
-                    BinaryOperator::LeftShift | BinaryOperator::RightShift => {
+                    BinaryOperator::BitwiseAnd
+                    | BinaryOperator::BitwiseOr
+                    | BinaryOperator::BitwiseXor
+                    | BinaryOperator::LeftShift
+                    | BinaryOperator::RightShift => {
                         // Check that both operands are integers
                         if let (Some(left), Some(right)) = (&left_type, &right_type) {
                             if left != "int" || right != "int" {
@@ -528,8 +640,10 @@ impl SemanticAnalyzer {
                         }
                         Some("int".to_string())
                     }
-                    UnaryOperator::PreIncrement | UnaryOperator::PostIncrement |
-                    UnaryOperator::PreDecrement | UnaryOperator::PostDecrement => {
+                    UnaryOperator::PreIncrement
+                    | UnaryOperator::PostIncrement
+                    | UnaryOperator::PreDecrement
+                    | UnaryOperator::PostDecrement => {
                         if let Some(ref op_type) = operand_type {
                             if op_type != "int" {
                                 let diagnostic = helpers::type_mismatch(
@@ -544,9 +658,7 @@ impl SemanticAnalyzer {
                     }
                 }
             }
-            Expression::CallExpression(call_expr) => {
-                self.analyze_call_expression(call_expr)
-            }
+            Expression::CallExpression(call_expr) => self.analyze_call_expression(call_expr),
             Expression::AssignmentExpression(assign_expr) => {
                 // Check if the target is a valid lvalue
                 if let Expression::Identifier(ident) = assign_expr.left.as_ref() {
@@ -554,9 +666,10 @@ impl SemanticAnalyzer {
                         if !symbol.mutable {
                             let diagnostic = Diagnostic::new(
                                 crate::frontend::diagnostics::DiagnosticKind::ImmutableAssignment {
-                                    name: ident.name.clone()
-                                }
-                            ).with_code("E0011");
+                                    name: ident.name.clone(),
+                                },
+                            )
+                            .with_code("E0011");
                             self.diagnostics.add(diagnostic);
                         }
                         true
@@ -568,13 +681,13 @@ impl SemanticAnalyzer {
                         self.diagnostics.add(diagnostic);
                         false
                     };
-                    
+
                     // Mark as used after borrowing is done
                     if is_mutable {
                         self.symbol_table.mark_used(&ident.name);
                     }
                 }
-                
+
                 self.analyze_expression(&assign_expr.right)
             }
             // Handle other expression types
@@ -583,6 +696,12 @@ impl SemanticAnalyzer {
             Expression::MemberExpression(member_expr) => {
                 self.analyze_expression(&member_expr.object);
                 // For now, assume member access returns the same type
+                None
+            }
+            Expression::MethodCallExpression(method_call) => self.analyze_method_call(method_call),
+            Expression::SelfExpression(_) => {
+                // Return the type of the current context (if we're in a method)
+                // For now, we'll return None and let the type checker handle it
                 None
             }
             Expression::IndexExpression(index_expr) => {
@@ -637,16 +756,16 @@ impl SemanticAnalyzer {
                 SymbolType::Variable(type_name) => Some(type_name.clone()),
                 SymbolType::Function => Some("function".to_string()),
                 SymbolType::Builtin => Some("builtin".to_string()),
+                SymbolType::Struct => Some("struct".to_string()),
+                SymbolType::Method => Some("method".to_string()),
             }
         } else {
-            let diagnostic = helpers::undefined_variable(
-                &ident.name,
-                self.create_span_from_identifier(ident),
-            );
+            let diagnostic =
+                helpers::undefined_variable(&ident.name, self.create_span_from_identifier(ident));
             self.diagnostics.add(diagnostic);
             None
         };
-        
+
         // Mark as used after borrowing is done
         self.symbol_table.mark_used(&ident.name);
         result
@@ -655,16 +774,20 @@ impl SemanticAnalyzer {
     fn analyze_call_expression(&mut self, call_expr: &CallExpression) -> Option<String> {
         if let Expression::Identifier(func_name) = call_expr.callee.as_ref() {
             // Check if function exists and get info
-            let func_info = if let Some(func_symbol) = self.symbol_table.functions.get(&func_name.name) {
-                Some((func_symbol.parameters.len(), func_symbol.return_type.clone()))
-            } else {
-                None
-            };
-            
+            let func_info =
+                if let Some(func_symbol) = self.symbol_table.functions.get(&func_name.name) {
+                    Some((
+                        func_symbol.parameters.len(),
+                        func_symbol.return_type.clone(),
+                    ))
+                } else {
+                    None
+                };
+
             if let Some((expected_args, return_type)) = func_info {
                 // Check argument count
                 let provided_args = call_expr.arguments.len();
-                
+
                 if expected_args != provided_args {
                     let diagnostic = helpers::wrong_argument_count(
                         expected_args,
@@ -673,12 +796,12 @@ impl SemanticAnalyzer {
                     );
                     self.diagnostics.add(diagnostic);
                 }
-                
+
                 // Analyze arguments
                 for arg in &call_expr.arguments {
                     self.analyze_expression(arg);
                 }
-                
+
                 return_type
             } else {
                 let diagnostic = helpers::undefined_function(
@@ -731,12 +854,13 @@ impl SemanticAnalyzer {
             // Find the actual position of the identifier in source
             let (line, column) = self.find_identifier_position(&ident.name);
             Span::new(
-                Position::new(line, column, 0), 
-                Position::new(line, column + ident.name.len(), ident.name.len())
-            ).with_source("source".to_string())
+                Position::new(line, column, 0),
+                Position::new(line, column + ident.name.len(), ident.name.len()),
+            )
+            .with_source("source".to_string())
         }
     }
-    
+
     #[allow(dead_code)]
     fn estimate_line_number(&self, identifier: &str) -> usize {
         // Search for the identifier in the source lines
@@ -756,7 +880,7 @@ impl SemanticAnalyzer {
             if trimmed.starts_with("//") {
                 continue;
             }
-            
+
             // Find the identifier, but prefer non-comment occurrences
             if let Some(col_idx) = line.find(identifier) {
                 // Check if this occurrence is in a comment
@@ -766,7 +890,7 @@ impl SemanticAnalyzer {
                 }
             }
         }
-        
+
         // Fallback: find any occurrence if no non-comment occurrence found
         for (line_idx, line) in self.source_lines.iter().enumerate() {
             if let Some(col_idx) = line.find(identifier) {
@@ -775,23 +899,137 @@ impl SemanticAnalyzer {
         }
         (1, 1) // Final fallback
     }
-    
+
     /// Check if two types are compatible for assignment
     fn types_compatible(&self, from_type: &str, to_type: &str) -> bool {
         match (from_type, to_type) {
             // Exact matches
             (a, b) if a == b => true,
-            
+
             // Any type is flexible
             ("any", _) | (_, "any") => true,
-            
+
             // Numeric coercions
             ("int", "float") | ("float", "int") => true,
-            
+
             // String concatenation flexibility (but not for explicit type declarations)
             // For explicit declarations, we want strict typing
             _ => false,
         }
+    }
+
+    /// Analyze impl block and register methods
+    fn analyze_impl_block(&mut self, impl_block: &ImplBlock) {
+        let type_name = &impl_block.target_type.name;
+
+        // Check if the target type exists
+        if !self.symbol_table.structs.contains_key(type_name) {
+            // For now, we'll allow impl blocks for any type (including built-in types)
+            // In a more complete implementation, we'd validate the type exists
+        }
+
+        let mut methods = Vec::new();
+
+        for method in &impl_block.methods {
+            // Analyze method parameters and body
+            self.symbol_table.push_scope();
+
+            // If not static, add 'self' parameter to scope
+            if !method.is_static {
+                self.declare_variable("self", type_name, Position::new(1, 1, 0), false);
+            }
+
+            // Add method parameters to scope
+            for param in &method.parameters {
+                if param.name.name != "self" {
+                    let type_name = Self::get_type_name_from_annotation(&param.type_annotation);
+                    self.declare_variable(
+                        &param.name.name,
+                        &type_name,
+                        Position::new(1, 1, 0),
+                        true,
+                    );
+                }
+            }
+
+            // Analyze method body
+            self.analyze_statement(&Statement::BlockStatement(method.body.clone()));
+
+            // Register method
+            let method_symbol = MethodSymbol {
+                _name: method.name.name.clone(),
+                parameters: method
+                    .parameters
+                    .iter()
+                    .map(|p| Self::get_type_name_from_annotation(&p.type_annotation))
+                    .collect(),
+                return_type: method
+                    .return_type
+                    .as_ref()
+                    .map(|t| Self::get_type_name_from_type_annotation(t)),
+                is_static: method.is_static,
+                defined_at: Position::new(1, 1, 0),
+            };
+
+            methods.push(method_symbol);
+            self.symbol_table.pop_scope();
+        }
+
+        // Register all methods for this type
+        self.symbol_table.methods.insert(type_name.clone(), methods);
+    }
+
+    /// Analyze method call expression
+    fn analyze_method_call(&mut self, method_call: &MethodCallExpression) -> Option<String> {
+        // Analyze the object being called on
+        let object_type = self.analyze_expression(&method_call.object);
+
+        // Analyze method arguments
+        for arg in &method_call.arguments {
+            self.analyze_expression(arg);
+        }
+
+        // Check if the method exists for this type
+        if let Some(object_type_name) = &object_type {
+            if let Some(methods) = self.symbol_table.methods.get(object_type_name) {
+                let method_name = &method_call.method.name;
+
+                // Find the method
+                if let Some(method) = methods.iter().find(|m| m._name == *method_name) {
+                    // Validate argument count (excluding self parameter for non-static methods)
+                    let expected_args = if method.is_static {
+                        method.parameters.len()
+                    } else {
+                        method.parameters.len().saturating_sub(1) // Subtract 1 for self
+                    };
+
+                    if method_call.arguments.len() != expected_args {
+                        let diagnostic = Diagnostic::new(
+                            crate::frontend::diagnostics::DiagnosticKind::ArgumentCountMismatch {
+                                expected: expected_args,
+                                found: method_call.arguments.len(),
+                            },
+                        )
+                        .with_code("E0012");
+                        self.diagnostics.add(diagnostic);
+                    }
+
+                    return method.return_type.clone();
+                } else {
+                    // Method not found
+                    let diagnostic = Diagnostic::new(
+                        crate::frontend::diagnostics::DiagnosticKind::UndefinedMethod {
+                            method: method_name.clone(),
+                            type_name: object_type_name.clone(),
+                        },
+                    )
+                    .with_code("E0013");
+                    self.diagnostics.add(diagnostic);
+                }
+            }
+        }
+
+        None
     }
 }
 
@@ -800,6 +1038,8 @@ impl SymbolTable {
         SymbolTable {
             scopes: vec![HashMap::new()], // Global scope
             functions: HashMap::new(),
+            structs: HashMap::new(),
+            methods: HashMap::new(),
         }
     }
 
@@ -848,26 +1088,24 @@ mod tests {
     #[test]
     fn test_undefined_variable() {
         let mut analyzer = SemanticAnalyzer::new();
-        
+
         // Create a simple program with undefined variable
         let program = Program {
-            statements: vec![
-                Statement::FunctionDeclaration(FunctionDeclaration {
-                    name: Identifier::new("main".to_string()),
-                    parameters: vec![],
-                    return_type: None,
-                    body: BlockStatement {
-                        statements: vec![
-                            Statement::ExpressionStatement(ExpressionStatement {
-                                expression: Expression::Identifier(Identifier::new("undefined_var".to_string())),
-                            })
-                        ],
-                    },
-                    is_public: false,
-                })
-            ],
+            statements: vec![Statement::FunctionDeclaration(FunctionDeclaration {
+                name: Identifier::new("main".to_string()),
+                parameters: vec![],
+                return_type: None,
+                body: BlockStatement {
+                    statements: vec![Statement::ExpressionStatement(ExpressionStatement {
+                        expression: Expression::Identifier(Identifier::new(
+                            "undefined_var".to_string(),
+                        )),
+                    })],
+                },
+                is_public: false,
+            })],
         };
-        
+
         let diagnostics = analyzer.analyze(&program);
         assert!(!diagnostics.is_empty());
         assert!(diagnostics.has_errors());
@@ -876,33 +1114,29 @@ mod tests {
     #[test]
     fn test_function_call_validation() {
         let mut analyzer = SemanticAnalyzer::new();
-        
+
         // Test calling println with correct arguments
         let program = Program {
-            statements: vec![
-                Statement::FunctionDeclaration(FunctionDeclaration {
-                    name: Identifier::new("main".to_string()),
-                    parameters: vec![],
-                    return_type: None,
-                    body: BlockStatement {
-                        statements: vec![
-                            Statement::ExpressionStatement(ExpressionStatement {
-                                expression: Expression::CallExpression(CallExpression {
-                                    callee: Box::new(Expression::Identifier(Identifier::new("println".to_string()))),
-                                    arguments: vec![
-                                        Expression::StringLiteral(StringLiteral {
-                                            value: "Hello, world!".to_string(),
-                                        })
-                                    ],
-                                }),
-                            })
-                        ],
-                    },
-                    is_public: false,
-                })
-            ],
+            statements: vec![Statement::FunctionDeclaration(FunctionDeclaration {
+                name: Identifier::new("main".to_string()),
+                parameters: vec![],
+                return_type: None,
+                body: BlockStatement {
+                    statements: vec![Statement::ExpressionStatement(ExpressionStatement {
+                        expression: Expression::CallExpression(CallExpression {
+                            callee: Box::new(Expression::Identifier(Identifier::new(
+                                "println".to_string(),
+                            ))),
+                            arguments: vec![Expression::StringLiteral(StringLiteral {
+                                value: "Hello, world!".to_string(),
+                            })],
+                        }),
+                    })],
+                },
+                is_public: false,
+            })],
         };
-        
+
         let diagnostics = analyzer.analyze(&program);
         // println should be recognized as a builtin
         assert!(!diagnostics.has_errors());

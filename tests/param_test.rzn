@@ -1,0 +1,14 @@
+// Test just parameters
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun test(x: int) {
+        println("Test")
+    }
+}
+
+fun main() {
+    println("Test")
+}

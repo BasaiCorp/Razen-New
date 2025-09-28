@@ -1,0 +1,84 @@
+// Test 3: Advanced methods with various parameter combinations
+// Jay Shree Ram! 🙏
+
+struct Calculator {
+    name: str
+}
+
+impl Calculator {
+    // Static method with no parameters
+    fun new() {
+        println("Creating calculator")
+    }
+    
+    // Static method with parameters
+    fun create_named(name: str) {
+        println("Creating named calculator")
+    }
+    
+    // Instance method with no parameters
+    fun reset(self) {
+        println("Calculator reset")
+    }
+    
+    // Instance method with one parameter
+    fun display_number(self, num: int) {
+        println("Displaying number on calculator")
+    }
+    
+    // Instance method with multiple parameters
+    fun calculate(self, a: int, b: int, operation: str) {
+        println("Performing calculation")
+        println("Calculation completed")
+    }
+}
+
+struct Database {
+    host: str
+}
+
+impl Database {
+    fun new(host: str) {
+        println("Connecting to database")
+    }
+    
+    fun connect(self) {
+        println("Database connected")
+    }
+    
+    fun query(self, sql: str) {
+        println("Executing query")
+    }
+    
+    fun insert(self, table: str, data: str) {
+        println("Inserting data")
+    }
+    
+    fun disconnect(self) {
+        println("Database disconnected")
+    }
+}
+
+fun main() {
+    println("=== Test 3: Advanced Methods ===")
+    
+    // Test Calculator methods
+    Calculator.new()
+    Calculator.create_named("Scientific")
+    
+    var calc = Calculator { name: "Basic" }
+    calc.reset()
+    calc.display_number(42)
+    calc.calculate(10, 5, "add")
+    
+    // Test Database methods
+    Database.new("localhost")
+    
+    var db = Database { host: "server.com" }
+    db.connect()
+    db.query("SELECT * FROM users")
+    db.insert("users", "John Doe")
+    db.disconnect()
+    
+    println("=== Test 3 PASSED! ===")
+}

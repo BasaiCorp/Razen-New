@@ -1,0 +1,16 @@
+use math // used for to import the liraier built-in/downloaded but not implemented but add as placeholder
+use funcion1 from "my_utils/function" // here the path definig nd function calling and not need to specifly the .rzn
+
+use { func1, func2, func3, varibles_by_pub } from "utils" // multiple import and in this razen
+
+use "utilsfile" // import enitre file and all published functions/classes/modules
+
+// now the expoter side
+
+pub fun func1() {...} // publish it properly
+
+pub struct {...} // pubish it properly
+
+// speical case
+
+mod utilfile // this will make the entire file as the module and publish the evtyhing here

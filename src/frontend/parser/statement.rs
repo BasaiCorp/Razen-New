@@ -39,6 +39,8 @@ impl<'a> StatementParser<'a> {
             self.parse_struct_declaration(is_public)
         } else if self.check(&TokenKind::Enum) {
             self.parse_enum_declaration(is_public)
+        } else if self.check(&TokenKind::Impl) {
+            self.parse_impl_block()
         } else if self.check(&TokenKind::If) {
             self.parse_if_statement()
         } else if self.check(&TokenKind::While) {
@@ -69,7 +71,7 @@ impl<'a> StatementParser<'a> {
     fn parse_module_declaration(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Mod, "Expected 'mod'")?;
         let name = self.consume_identifier("Expected module name")?;
-        
+
         Ok(Statement::ModuleDeclaration(ModuleDeclaration {
             name: Identifier::new(name),
         }))
@@ -78,7 +80,7 @@ impl<'a> StatementParser<'a> {
     /// Parse use statement: use item from "source" as alias
     fn parse_use_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Use, "Expected 'use'")?;
-        
+
         let mut items = Vec::new();
         let mut source = None;
         let mut alias = None;
@@ -89,18 +91,21 @@ impl<'a> StatementParser<'a> {
             loop {
                 let item_name = self.consume_identifier("Expected identifier")?;
                 items.push(UseItem::Single(Identifier::new(item_name)));
-                
+
                 if !self.match_tokens(&[TokenKind::Comma]) {
                     break;
                 }
             }
             self.consume(TokenKind::RightBrace, "Expected '}'")?;
-            items = vec![UseItem::Multiple(items.into_iter().map(|item| {
-                match item {
-                    UseItem::Single(id) => id,
-                    _ => unreachable!(),
-                }
-            }).collect())];
+            items = vec![UseItem::Multiple(
+                items
+                    .into_iter()
+                    .map(|item| match item {
+                        UseItem::Single(id) => id,
+                        _ => unreachable!(),
+                    })
+                    .collect(),
+            )];
         } else {
             // Single import
             let item_name = self.consume_identifier("Expected identifier")?;
@@ -138,7 +143,7 @@ impl<'a> StatementParser<'a> {
     fn parse_constant_declaration(&mut self, is_public: bool) -> ParseResult<Statement> {
         self.consume(TokenKind::Const, "Expected 'const'")?;
         let name = self.consume_identifier("Expected constant name")?;
-        
+
         let mut type_annotation = None;
         if self.match_tokens(&[TokenKind::Colon]) {
             type_annotation = Some(self.parse_type_annotation()?);
@@ -159,7 +164,7 @@ impl<'a> StatementParser<'a> {
     fn parse_variable_declaration(&mut self, is_public: bool) -> ParseResult<Statement> {
         self.consume(TokenKind::Var, "Expected 'var'")?;
         let name = self.consume_identifier("Expected variable name")?;
-        
+
         let mut type_annotation = None;
         if self.match_tokens(&[TokenKind::Colon]) {
             type_annotation = Some(self.parse_type_annotation()?);
@@ -184,12 +189,12 @@ impl<'a> StatementParser<'a> {
         let name = self.consume_identifier("Expected function name")?;
 
         self.consume(TokenKind::LeftParen, "Expected '(' after function name")?;
-        
+
         let mut parameters = Vec::new();
         if !self.check(&TokenKind::RightParen) {
             loop {
                 let param_name = self.consume_identifier("Expected parameter name")?;
-                
+
                 // Make type annotation optional (like old implementation)
                 let param_type = if self.match_tokens(&[TokenKind::Colon]) {
                     Some(self.parse_type_annotation()?)
@@ -197,7 +202,7 @@ impl<'a> StatementParser<'a> {
                     // No type annotation means flexible parameter
                     None
                 };
-                
+
                 parameters.push(Parameter {
                     name: Identifier::new(param_name),
                     type_annotation: param_type,
@@ -208,7 +213,7 @@ impl<'a> StatementParser<'a> {
                 }
             }
         }
-        
+
         self.consume(TokenKind::RightParen, "Expected ')' after parameters")?;
 
         let mut return_type = None;
@@ -240,13 +245,13 @@ impl<'a> StatementParser<'a> {
         let name = self.consume_identifier("Expected struct name")?;
 
         self.consume(TokenKind::LeftBrace, "Expected '{' after struct name")?;
-        
+
         let mut fields = Vec::new();
         while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
             let field_name = self.consume_identifier("Expected field name")?;
             self.consume(TokenKind::Colon, "Expected ':' after field name")?;
             let field_type = self.parse_type_annotation()?;
-            
+
             fields.push(StructField {
                 name: Identifier::new(field_name),
                 type_annotation: field_type,
@@ -271,30 +276,30 @@ impl<'a> StatementParser<'a> {
         let name = self.consume_identifier("Expected enum name")?;
 
         self.consume(TokenKind::LeftBrace, "Expected '{' after enum name")?;
-        
+
         let mut variants = Vec::new();
         while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
             let variant_name = self.consume_identifier("Expected variant name")?;
-            
+
             let mut fields = None;
-            
+
             // Check for tuple-style variant: Variant(type1, type2, ...)
             if self.match_tokens(&[TokenKind::LeftParen]) {
                 let mut variant_fields = Vec::new();
-                
+
                 while !self.check(&TokenKind::RightParen) && !self.is_at_end() {
                     let field_type = self.parse_type_annotation()?;
                     variant_fields.push(field_type);
-                    
+
                     if !self.check(&TokenKind::RightParen) {
                         self.consume(TokenKind::Comma, "Expected ',' between variant fields")?;
                     }
                 }
-                
+
                 self.consume(TokenKind::RightParen, "Expected ')' after variant fields")?;
                 fields = Some(variant_fields);
             }
-            
+
             variants.push(EnumVariant {
                 name: Identifier::new(variant_name),
                 fields,
@@ -311,6 +316,90 @@ impl<'a> StatementParser<'a> {
             variants,
             is_public,
         }))
+    }
+
+    /// Parse impl block: impl TypeName { methods }
+    fn parse_impl_block(&mut self) -> ParseResult<Statement> {
+        self.consume(TokenKind::Impl, "Expected 'impl'")?;
+        let target_type = self.consume_identifier("Expected type name after 'impl'")?;
+
+        self.consume(TokenKind::LeftBrace, "Expected '{' after impl type")?;
+
+        let mut methods = Vec::new();
+        while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
+            let method = self.parse_method_declaration()?;
+            methods.push(method);
+        }
+
+        self.consume(TokenKind::RightBrace, "Expected '}' after impl methods")?;
+
+        Ok(Statement::ImplBlock(ImplBlock::new(
+            Identifier::new(target_type),
+            methods,
+        )))
+    }
+
+    /// Parse method declaration within impl block
+    fn parse_method_declaration(&mut self) -> ParseResult<MethodDeclaration> {
+        self.consume(TokenKind::Fun, "Expected 'fun' for method declaration")?;
+        let method_name = self.consume_identifier("Expected method name")?;
+
+        self.consume(TokenKind::LeftParen, "Expected '(' after method name")?;
+
+        let mut parameters = Vec::new();
+        let mut is_static = true; // Assume static until we find 'self'
+
+        // Check for 'self' parameter first
+        if self.check(&TokenKind::Self_) {
+            self.advance(); // consume 'self'
+            is_static = false;
+
+            // Add self parameter
+            parameters.push(Parameter {
+                name: Identifier::new("self".to_string()),
+                type_annotation: Some(TypeAnnotation::Custom(Identifier::new("Self".to_string()))),
+            });
+
+            // Check for comma if there are more parameters
+            if self.check(&TokenKind::Comma) {
+                self.advance();
+            }
+        }
+
+        // Parse remaining parameters
+        while !self.check(&TokenKind::RightParen) && !self.is_at_end() {
+            let param_name = self.consume_identifier("Expected parameter name")?;
+            self.consume(TokenKind::Colon, "Expected ':' after parameter name")?;
+            let param_type = self.parse_type_annotation()?;
+
+            parameters.push(Parameter {
+                name: Identifier::new(param_name),
+                type_annotation: Some(param_type),
+            });
+
+            if !self.check(&TokenKind::RightParen) {
+                self.consume(TokenKind::Comma, "Expected ',' between parameters")?;
+            }
+        }
+
+        self.consume(TokenKind::RightParen, "Expected ')' after parameters")?;
+
+        // Parse optional return type
+        let mut return_type = None;
+        if self.match_tokens(&[TokenKind::Arrow]) {
+            return_type = Some(self.parse_type_annotation()?);
+        }
+
+        // Parse method body
+        let body = self.parse_block_statement()?;
+
+        Ok(MethodDeclaration::new(
+            Identifier::new(method_name),
+            parameters,
+            return_type,
+            BlockStatement::new(vec![body]),
+            is_static,
+        ))
     }
 
     /// Parse if statement: if condition { then } elif condition { then } else { else }
@@ -375,13 +464,13 @@ impl<'a> StatementParser<'a> {
         let expression = self.parse_expression()?;
 
         self.consume(TokenKind::LeftBrace, "Expected '{' after match expression")?;
-        
+
         let mut arms = Vec::new();
         while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
             let pattern = self.parse_pattern()?;
             self.consume(TokenKind::FatArrow, "Expected '=>' after match pattern")?;
             let body = self.parse_expression()?;
-            
+
             arms.push(MatchArm { pattern, body });
 
             // Optional comma
@@ -399,7 +488,7 @@ impl<'a> StatementParser<'a> {
     /// Parse try statement: try { body } catch e { handler }
     fn parse_try_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Try, "Expected 'try'")?;
-        
+
         let body = if let Statement::BlockStatement(block) = self.parse_block_statement()? {
             block
         } else {
@@ -413,17 +502,20 @@ impl<'a> StatementParser<'a> {
         if self.match_tokens(&[TokenKind::Catch]) {
             let mut parameter = None;
             if self.check(&TokenKind::Identifier) {
-                parameter = Some(Identifier::new(self.consume_identifier("Expected catch parameter")?));
+                parameter = Some(Identifier::new(
+                    self.consume_identifier("Expected catch parameter")?,
+                ));
             }
 
-            let catch_body = if let Statement::BlockStatement(block) = self.parse_block_statement()? {
-                block
-            } else {
-                return Err(ParseError::new(
-                    "Expected block statement for catch body".to_string(),
-                    self.peek().line,
-                ));
-            };
+            let catch_body =
+                if let Statement::BlockStatement(block) = self.parse_block_statement()? {
+                    block
+                } else {
+                    return Err(ParseError::new(
+                        "Expected block statement for catch body".to_string(),
+                        self.peek().line,
+                    ));
+                };
 
             catch_clause = Some(CatchClause {
                 parameter,
@@ -431,16 +523,13 @@ impl<'a> StatementParser<'a> {
             });
         }
 
-        Ok(Statement::TryStatement(TryStatement {
-            body,
-            catch_clause,
-        }))
+        Ok(Statement::TryStatement(TryStatement { body, catch_clause }))
     }
 
     /// Parse return statement: return expression?
     fn parse_return_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Return, "Expected 'return'")?;
-        
+
         let mut value = None;
         if !self.check(&TokenKind::Semicolon) && !self.is_at_end() {
             value = Some(self.parse_expression()?);
@@ -468,11 +557,10 @@ impl<'a> StatementParser<'a> {
         Ok(Statement::ThrowStatement(ThrowStatement { value }))
     }
 
-
     /// Parse block statement: { statements }
     fn parse_block_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::LeftBrace, "Expected '{'")?;
-        
+
         let mut statements = Vec::new();
         while !self.check(&TokenKind::RightBrace) && !self.is_at_end() {
             statements.push(self.parse_statement()?);
@@ -547,10 +635,10 @@ impl<'a> StatementParser<'a> {
     fn parse_expression(&mut self) -> ParseResult<Expression> {
         let mut expr_parser = ExpressionParser::new(&self.tokens[self.current..]);
         let result = expr_parser.parse_expression()?;
-        
+
         // Update current position based on expression parser's progress
         self.current += expr_parser.current;
-        
+
         Ok(result)
     }
 
@@ -604,10 +692,7 @@ impl<'a> StatementParser<'a> {
         if self.check(&token_type) {
             Ok(self.advance())
         } else {
-            Err(ParseError::new(
-                message.to_string(),
-                self.peek().line,
-            ))
+            Err(ParseError::new(message.to_string(), self.peek().line))
         }
     }
 
@@ -615,10 +700,7 @@ impl<'a> StatementParser<'a> {
         if self.check(&TokenKind::Identifier) {
             Ok(self.advance().lexeme.clone())
         } else {
-            Err(ParseError::new(
-                message.to_string(),
-                self.peek().line,
-            ))
+            Err(ParseError::new(message.to_string(), self.peek().line))
         }
     }
 }
@@ -644,13 +726,13 @@ mod tests {
         let lexer = Lexer::new();
         let tokens = lexer.lex("var x: int = 42");
         let mut parser = StatementParser::new(&tokens);
-        
+
         let result = parser.parse_statement().unwrap();
         match result {
             Statement::VariableDeclaration(var_decl) => {
                 assert_eq!(var_decl.name.name, "x");
                 assert!(var_decl.initializer.is_some());
-            },
+            }
             _ => panic!("Expected variable declaration"),
         }
     }
@@ -660,14 +742,14 @@ mod tests {
         let lexer = Lexer::new();
         let tokens = lexer.lex("fun add(a: int, b: int) -> int { return a + b }");
         let mut parser = StatementParser::new(&tokens);
-        
+
         let result = parser.parse_statement().unwrap();
         match result {
             Statement::FunctionDeclaration(func_decl) => {
                 assert_eq!(func_decl.name.name, "add");
                 assert_eq!(func_decl.parameters.len(), 2);
                 assert!(func_decl.return_type.is_some());
-            },
+            }
             _ => panic!("Expected function declaration"),
         }
     }
@@ -677,10 +759,10 @@ mod tests {
         let lexer = Lexer::new();
         let tokens = lexer.lex("if x > 0 { println(x) }");
         let mut parser = StatementParser::new(&tokens);
-        
+
         let result = parser.parse_statement().unwrap();
         match result {
-            Statement::IfStatement(_) => {},
+            Statement::IfStatement(_) => {}
             _ => panic!("Expected if statement"),
         }
     }

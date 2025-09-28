@@ -1,0 +1,14 @@
+// Simple test to debug impl parsing
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun simple() {
+        println("Hello")
+    }
+}
+
+fun main() {
+    println("Test")
+}

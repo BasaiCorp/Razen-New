@@ -24,6 +24,7 @@ impl Scanner {
         // Data Structures
         keywords.insert("struct".to_string(), TokenKind::Struct);
         keywords.insert("enum".to_string(), TokenKind::Enum);
+        keywords.insert("impl".to_string(), TokenKind::Impl);
 
         // Control Flow
         keywords.insert("if".to_string(), TokenKind::If);
@@ -61,6 +62,8 @@ impl Scanner {
         keywords.insert("true".to_string(), TokenKind::True);
         keywords.insert("false".to_string(), TokenKind::False);
         keywords.insert("null".to_string(), TokenKind::Null);
+        keywords.insert("self".to_string(), TokenKind::Self_);
+        // Note: 'new' is not a keyword in Razen, it's just a regular method name
 
         // I/O Functions
         keywords.insert("print".to_string(), TokenKind::Print);

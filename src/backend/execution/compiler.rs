@@ -308,6 +308,9 @@ impl Compiler {
             Statement::EnumDeclaration(enum_decl) => {
                 self.compile_enum_declaration(enum_decl);
             },
+            Statement::ImplBlock(impl_block) => {
+                self.compile_impl_block(impl_block);
+            },
             _ => {
                 // Handle other statement types as needed
                 if !self.clean_output {
@@ -691,6 +694,28 @@ impl Compiler {
         self.symbol_table.define(&format!("enum_{}", enum_name));
     }
 
+    fn compile_impl_block(&mut self, impl_block: crate::frontend::parser::ast::ImplBlock) {
+        let type_name = impl_block.target_type.name;
+        
+        if !self.clean_output {
+            println!("Compiling impl block for type: {}", type_name);
+        }
+        
+        // Compile each method in the impl block
+        for method in impl_block.methods {
+            let method_name = format!("{}::{}", type_name, method.name.name);
+            let mut parameters: Vec<String> = Vec::new();
+            
+            // Add parameters (including self if not static)
+            for param in &method.parameters {
+                parameters.push(param.name.name.clone());
+            }
+            
+            // Compile the method as a function
+            self.compile_function_declaration(method_name, parameters, method.body.statements);
+        }
+    }
+
     fn compile_expression(&mut self, expr: Expression) {
         match expr {
             Expression::Identifier(ident) => {
@@ -955,6 +980,22 @@ impl Compiler {
                 } else {
                     self.errors.push("Invalid assignment target".to_string());
                 }
+            },
+            Expression::MethodCallExpression(method_call) => {
+                // Compile the object being called on
+                self.compile_expression(*method_call.object);
+                
+                // Compile arguments
+                for arg in &method_call.arguments {
+                    self.compile_expression(arg.clone());
+                }
+                
+                // Call the method (object is already on stack as first argument)
+                self.emit(IR::MethodCall(method_call.method.name, method_call.arguments.len() + 1)); // +1 for self
+            },
+            Expression::SelfExpression(_) => {
+                // Load the 'self' variable from current scope
+                self.emit(IR::LoadVar("self".to_string()));
             },
             Expression::MemberExpression(member_expr) => {
                 // Check if this is enum variant access (Type.Variant)

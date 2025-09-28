@@ -6,7 +6,7 @@ pub enum TokenKind {
     Const, Var, Fun,
 
     // Data Structures
-    Struct, Enum,
+    Struct, Enum, Impl,
 
     // Control Flow
     If, Else, Elif, While, For, In, Return, Break, Continue, Match, Try, Catch, Throw,
@@ -18,7 +18,7 @@ pub enum TokenKind {
     Int, Str, Bool, Char, Array, Map, Any, FloatType, // Added FloatType
 
     // Literals
-    Identifier, String(String), FString(String), Integer(i64), Float(f64), True, False, Null,
+    Identifier, String(String), FString(String), Integer(i64), Float(f64), True, False, Null, Self_,
 
     // Arithmetic Operators
     Plus, Minus, Star, Slash, Percent, StarStar,

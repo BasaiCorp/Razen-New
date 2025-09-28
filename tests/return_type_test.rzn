@@ -1,0 +1,14 @@
+// Test return type
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun get_value() -> int {
+        return 42
+    }
+}
+
+fun main() {
+    println("Test")
+}

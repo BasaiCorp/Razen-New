@@ -23,6 +23,7 @@ pub enum Statement {
     // Data structures
     StructDeclaration(StructDeclaration),
     EnumDeclaration(EnumDeclaration),
+    ImplBlock(ImplBlock),
     
     // Control flow
     IfStatement(IfStatement),
@@ -71,6 +72,12 @@ pub enum Expression {
     
     // Member access
     MemberExpression(MemberExpression),
+    
+    // Method call
+    MethodCallExpression(MethodCallExpression),
+    
+    // Self reference
+    SelfExpression(SelfExpression),
     
     // Array access
     IndexExpression(IndexExpression),
@@ -171,6 +178,21 @@ pub struct EnumDeclaration {
 pub struct EnumVariant {
     pub name: Identifier,
     pub fields: Option<Vec<TypeAnnotation>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ImplBlock {
+    pub target_type: Identifier,
+    pub methods: Vec<MethodDeclaration>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MethodDeclaration {
+    pub name: Identifier,
+    pub parameters: Vec<Parameter>,
+    pub return_type: Option<TypeAnnotation>,
+    pub body: BlockStatement,
+    pub is_static: bool, // true for associated functions (no self), false for methods (with self)
 }
 
 // Control Flow
@@ -353,6 +375,16 @@ pub struct MemberExpression {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct MethodCallExpression {
+    pub object: Box<Expression>,
+    pub method: Identifier,
+    pub arguments: Vec<Expression>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SelfExpression;
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct IndexExpression {
     pub object: Box<Expression>,
     pub index: Box<Expression>,
@@ -467,5 +499,29 @@ impl BooleanLiteral {
 impl BlockStatement {
     pub fn new(statements: Vec<Statement>) -> Self {
         BlockStatement { statements }
+    }
+}
+
+impl ImplBlock {
+    pub fn new(target_type: Identifier, methods: Vec<MethodDeclaration>) -> Self {
+        ImplBlock { target_type, methods }
+    }
+}
+
+impl MethodDeclaration {
+    pub fn new(name: Identifier, parameters: Vec<Parameter>, return_type: Option<TypeAnnotation>, body: BlockStatement, is_static: bool) -> Self {
+        MethodDeclaration { name, parameters, return_type, body, is_static }
+    }
+}
+
+impl MethodCallExpression {
+    pub fn new(object: Box<Expression>, method: Identifier, arguments: Vec<Expression>) -> Self {
+        MethodCallExpression { object, method, arguments }
+    }
+}
+
+impl SelfExpression {
+    pub fn new() -> Self {
+        SelfExpression
     }
 }

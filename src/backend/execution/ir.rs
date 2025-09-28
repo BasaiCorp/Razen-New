@@ -62,6 +62,7 @@ pub enum IR {
     JumpIfFalse(usize),
     JumpIfTrue(usize),
     Call(String, usize),  // function name, arg count
+    MethodCall(String, usize),  // method name, arg count (including self)
     Return,
 
     // I/O operations
@@ -130,6 +131,7 @@ impl fmt::Display for IR {
             IR::JumpIfFalse(addr) => write!(f, "JIF {}", addr),
             IR::JumpIfTrue(addr) => write!(f, "JIT {}", addr),
             IR::Call(name, argc) => write!(f, "CALL {} {}", name, argc),
+            IR::MethodCall(name, argc) => write!(f, "METHOD_CALL {} {}", name, argc),
             IR::Return => write!(f, "RET"),
             IR::Print => write!(f, "PRINT"),
             IR::ReadInput => write!(f, "READ"),

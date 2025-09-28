@@ -1,0 +1,14 @@
+// Test multiple parameters
+struct Test {
+    value: int
+}
+
+impl Test {
+    fun test(x: int, y: str) {
+        println("Multiple params")
+    }
+}
+
+fun main() {
+    println("Test")
+}

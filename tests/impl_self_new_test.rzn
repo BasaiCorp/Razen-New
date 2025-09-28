@@ -1,0 +1,54 @@
+// Test file for impl, self, and new functionality
+// Jay Shree Ram! 🙏
+
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    // Static method (constructor-like)
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    // Instance method with self
+    fun greet(self) {
+        println(f"Hello, my name is {self.name}")
+    }
+    
+    // Instance method with self and parameters
+    fun introduce(self, to: str) {
+        println(f"Hi {to}, I'm {self.name} and I'm {self.age} years old")
+    }
+    
+    // Method that returns a value
+    fun get_info(self) -> str {
+        return f"{self.name} ({self.age})"
+    }
+}
+
+fun main() {
+    println("=== Razen impl/self/new Test ===")
+    
+    // Test struct instantiation
+    var person1 = Person { name: "Alice", age: 25 }
+    person1.greet()
+    
+    // Test static method (new)
+    var person2 = Person.new("Bob", 30)
+    person2.greet()
+    
+    // Test method with parameters
+    person1.introduce("Charlie")
+    person2.introduce("Diana")
+    
+    // Test method that returns value
+    var info1 = person1.get_info()
+    var info2 = person2.get_info()
+    
+    println(f"Person 1: {info1}")
+    println(f"Person 2: {info2}")
+    
+    println("=== All tests completed! ===")
+}
