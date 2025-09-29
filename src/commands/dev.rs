@@ -24,7 +24,7 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     }
     
     println!("=== Razen Development Mode ===");
-    println!("📁 File: {}", file.display());
+    println!("File: {}", file.display());
     println!();
     
     // Read source file
@@ -39,13 +39,13 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     
     // Parse the source code with full file path context and debug output
     let filename = file.canonicalize().unwrap_or(file.clone()).to_string_lossy().to_string();
-    println!("\n🔍 Phase 1: Parsing...");
+    println!("\nPhase 1: Parsing...");
     
     // Parse with debug output enabled (only shows in dev command)
     let (program, diagnostics) = parse_source_with_debug(&source, &filename, true);
     
     if !diagnostics.is_empty() {
-        eprintln!("❌ Parsing errors:");
+        eprintln!("Parsing errors:");
         let formatted_errors = format_parse_errors(&diagnostics, &source, &filename);
         eprintln!("{}", formatted_errors);
         std::process::exit(1);
@@ -55,7 +55,7 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     
     if let Some(program) = program {
         // Run semantic analysis with module support
-        println!("\n🔍 Phase 2: Semantic Analysis...");
+        println!("\nPhase 2: Semantic Analysis...");
         let base_dir = file.parent().unwrap_or_else(|| std::path::Path::new(".")).to_path_buf();
         let mut semantic_analyzer = SemanticAnalyzer::with_module_support(base_dir, file.clone());
         let semantic_diagnostics = semantic_analyzer.analyze_with_source(&program, &source);
@@ -69,10 +69,10 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
             }
         }
         
-        success_message("semantic analysis completed successfully!");
+        success_message("Semantic analysis completed successfully!");
         
         // Compile to IR
-        println!("\n⚙️ Phase 3: IR Generation...");
+        println!("\nPhase 3: IR Generation...");
         let mut compiler = Compiler::new();
         compiler.set_clean_output(false); // Verbose output for dev mode
         compiler.set_current_file(file.clone());
@@ -84,7 +84,7 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
         
         success_message("Compilation completed successfully!");
         
-        println!("\n🚀 Phase 4: Execution...");
+        println!("\nPhase 4: Execution...");
         println!("--- Program Output ---");
         
         match compiler.execute() {
@@ -92,11 +92,11 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
                 println!("--- End Output ---");
                 success_message("Program executed successfully!");
                 
-                println!("\n📊 Development Summary:");
-                println!("  ✓ Parsing: OK");
-                println!("  ✓ Semantic Analysis: OK");
-                println!("  ✓ Compilation: OK");
-                println!("  ✓ Execution: OK");
+                println!("\nDevelopment Summary:");
+                println!("  Parsing: OK");
+                println!("  Semantic Analysis: OK");
+                println!("  Compilation: OK");
+                println!("  Execution: OK");
             }
             Err(e) => {
                 println!("--- End Output ---");

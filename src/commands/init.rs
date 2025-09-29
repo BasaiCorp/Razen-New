@@ -45,16 +45,16 @@ pub fn execute(name: Option<String>, version: String) -> Result<(), Box<dyn std:
         println!("✓ Created .gitignore");
     }
 
-    println!("\n🎉 Initialized Razen project '{}'!", project_name);
-    println!("📁 Files created:");
-    println!("   ✓ razen.toml - Project configuration");
+    println!("\nInitialized Razen project '{}'!", project_name);
+    println!("Files created:");
+    println!("   razen.toml - Project configuration");
     if !Path::new("main.rzn").exists() {
-        println!("   ✓ main.rzn - Main source file");
+        println!("   main.rzn - Main source file");
     }
     if !Path::new(".gitignore").exists() {
-        println!("   ✓ .gitignore - Git ignore rules");
+        println!("   .gitignore - Git ignore rules");
     }
-    println!("\n🚀 Next steps:");
+    println!("\nNext steps:");
     println!("   razen run main.rzn");
 
     Ok(())
@@ -66,59 +66,17 @@ fn generate_razen_toml(name: &str, version: &str) -> String {
 name = "{}"
 version = "{}"
 description = "A Razen project"
-author = "Your Name <your.email@example.com>"
-license = "MIT"
 
 [build]
-target = "native"
+main = "main.rzn"
+src_dir = "src"
 optimization = 2
 debug = false
 
 [dependencies]
 # Add your dependencies here
 # example_lib = "1.0.0"
-
-[dev-dependencies]
-# Add your development dependencies here
-# test_framework = "0.5.0"
-
-[scripts]
-# Custom build scripts
-# build = "custom_build.rzn"
-# test = "run_tests.rzn"
-
-[features]
-# Feature flags
-default = []
-# web = ["http_server"]
-# cli = ["argument_parser"]
-
-[metadata]
-# Additional metadata
-keywords = ["razen", "programming"]
-categories = ["development-tools"]
-repository = "https://github.com/username/{}"
-documentation = "https://docs.rs/{}"
-homepage = "https://github.com/username/{}"
-
-# Razen-specific configuration
-[razen]
-# Language version compatibility
-min_version = "0.1.0"
-max_version = "1.0.0"
-
-# Compiler settings
-[razen.compiler]
-warnings_as_errors = false
-strict_mode = false
-unsafe_allowed = false
-
-# Runtime settings
-[razen.runtime]
-stack_size = "1MB"
-heap_size = "10MB"
-gc_enabled = true
-"#, name, version, name, name, name)
+"#, name, version)
 }
 
 /// Generate default main.rzn

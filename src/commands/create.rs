@@ -14,12 +14,12 @@ pub fn execute(name: String, template: String) -> Result<(), Box<dyn std::error:
 
     // Create project directory
     fs::create_dir(&name)?;
-    println!("✓ Created project directory: {}", name);
+    println!("Created project directory: {}", name);
 
     // Create razen.toml
     let toml_content = generate_razen_toml(&name, &template);
     fs::write(format!("{}/razen.toml", name), toml_content)?;
-    println!("✓ Created razen.toml configuration");
+    println!("Created razen.toml configuration");
 
     // Create main source file based on template
     let main_content = match template.as_str() {
@@ -31,7 +31,7 @@ pub fn execute(name: String, template: String) -> Result<(), Box<dyn std::error:
     };
 
     fs::write(format!("{}/main.rzn", name), main_content)?;
-    println!("✓ Created main.rzn with {} template", template);
+    println!("Created main.rzn with {} template", template);
 
     // Create additional files based on template
     match template.as_str() {
@@ -44,37 +44,32 @@ pub fn execute(name: String, template: String) -> Result<(), Box<dyn std::error:
     // Create README.md
     let readme_content = generate_readme(&name, &template);
     fs::write(format!("{}/README.md", name), readme_content)?;
-    println!("✓ Created README.md");
+    println!("Created README.md");
 
-    println!("\n🎉 Project '{}' created successfully!", name);
-    println!("📁 Next steps:");
+    println!("\nProject '{}' created successfully!", name);
+    println!("Next steps:");
     println!("   cd {}", name);
     println!("   razen run main.rzn");
 
     Ok(())
 }
 
-/// Generate razen.toml content
-fn generate_razen_toml(name: &str, template: &str) -> String {
+/// Generate razen.toml content (same as init command)
+fn generate_razen_toml(name: &str, _template: &str) -> String {
     format!(r#"[project]
 name = "{}"
 version = "0.1.0"
-description = "A new Razen project"
-author = "Your Name <your.email@example.com>"
-license = "MIT"
+description = "A Razen project"
 
 [build]
-target = "native"
+main = "main.rzn"
+src_dir = "src"
 optimization = 2
+debug = false
 
 [dependencies]
 # Add your dependencies here
-
-[dev-dependencies]
-# Add your development dependencies here
-
-# Template: {}
-"#, name, template)
+"#, name)
 }
 
 /// Generate basic main.rzn
@@ -87,13 +82,12 @@ fun main() {
 }
 "#.to_string()
 }
-
 /// Generate CLI main.rzn
 fn generate_cli_main() -> String {
     r#"// Razen CLI application
 
 fun main() {
-    println("🚀 Razen CLI Application")
+    println("Razen CLI Application")
     
     // For now, demonstrate with hardcoded command
     var command = "help"
@@ -125,13 +119,12 @@ fun show_version() {
 }
 "#.to_string()
 }
-
 /// Generate web main.rzn
 fn generate_web_main() -> String {
     r#"// Razen web application
 
 fun main() {
-    println("🌐 Starting Razen Web Server...")
+    println("Starting Razen Web Server...")
     
     var server = create_server()
     setup_routes(server)
@@ -190,7 +183,7 @@ fun greet(name: str) -> str {
 
 // Example usage
 fun main() {
-    println("📚 Razen Library Example")
+    println("Razen Library Example")
     
     var result1 = add(5, 3)
     var result2 = multiply(4, 7)
@@ -216,7 +209,7 @@ fun execute_example() {
 }
 "#;
     fs::write(format!("{}/commands/example.rzn", name), cmd_content)?;
-    println!("✓ Created commands/example.rzn");
+    println!("Created commands/example.rzn");
     
     Ok(())
 }
@@ -241,7 +234,7 @@ fn create_web_files(name: &str) -> Result<(), Box<dyn std::error::Error>> {
 </html>
 "#;
     fs::write(format!("{}/public/index.html", name), html_content)?;
-    println!("✓ Created public/index.html");
+    println!("Created public/index.html");
     
     Ok(())
 }
@@ -279,7 +272,7 @@ fun min(a: int, b: int) -> int {
 }
 "#;
     fs::write(format!("{}/lib/utils.rzn", name), utils_content)?;
-    println!("✓ Created lib/utils.rzn");
+    println!("Created lib/utils.rzn");
     
     Ok(())
 }

@@ -2,7 +2,7 @@
 
 Razen is a modern, efficient programming language designed for building reliable and performant software with clean, readable syntax.
 
-**Current Version: v0.1-beta.621**
+**Current Version: v0.1-beta.7**
 
 This is the main source code repository for Razen. It contains the compiler, standard library, and documentation.
 
@@ -82,7 +82,7 @@ fun main() {
 ```razen
 fun main() {
     var name = "Razen"
-    var version = "0.1-beta.621"
+    var version = "0.1-beta.7"
     
     // Colored output
     printlnc("Welcome to Razen!", "cyan")
@@ -142,6 +142,59 @@ fun main() {
     println(f"PI = {math.PI}")
 }
 ```
+
+## Project-Based Development
+
+Razen supports project-based development similar to Cargo and Go modules:
+
+### Creating a New Project
+```bash
+# Create a new project directory
+razen create my-app
+
+# Or initialize in existing directory
+razen init --name my-app
+```
+
+This creates a `razen.toml` configuration file:
+```toml
+[project]
+name = "my-app"
+version = "0.1.0"
+description = "A Razen project"
+
+[build]
+main = "main.rzn"
+src_dir = "src"
+optimization = 2
+debug = false
+
+[dependencies]
+# Add your dependencies here
+```
+
+### Building Projects
+```bash
+# Build the project (reads razen.toml)
+razen build
+
+# Build with maximum optimization
+razen build --release
+
+# Build with custom output name
+razen build -o my-executable
+
+# Build with specific optimization level
+razen build -O 3
+```
+
+The build command automatically:
+- Reads project configuration from `razen.toml`
+- Finds the main file and source directory
+- Scans and compiles all `.rzn` files
+- Creates a self-contained native executable
+- No external dependencies required (no GCC/Clang needed)
+
 ## Usage
 
 After installation, you can use Razen with the following commands:
@@ -149,6 +202,15 @@ After installation, you can use Razen with the following commands:
 ```bash
 # Compile and run immediately (like go run)
 razen run program.rzn
+
+# Build entire project to executable (like cargo build)
+razen build
+
+# Build with release optimizations
+razen build --release
+
+# Build with custom output name
+razen build -o my-executable
 
 # Development mode with detailed compiler output
 razen dev program.rzn
@@ -162,7 +224,7 @@ razen create my-project --template basic
 # Initialize razen.toml in existing directory
 razen init --name my-project
 
-# Compile to native executable
+# Compile single file to native executable
 razen compile program.rzn -o myprogram
 
 # Run test files

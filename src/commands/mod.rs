@@ -6,6 +6,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+pub mod build;
 pub mod compile;
 pub mod create;
 pub mod dev;
@@ -18,7 +19,7 @@ pub mod test;
 #[derive(Parser)]
 #[command(name = "razen")]
 #[command(about = "A professional programming language compiler and runtime")]
-#[command(version = "0.1-beta.621")]
+#[command(version = "0.1-beta.7")]
 #[command(author = "Prathmesh Barot (aka PrathmeshCodes)")]
 #[command(
     long_about = "Razen is a modern, efficient programming language with clean syntax and powerful features."
@@ -49,6 +50,26 @@ pub enum Commands {
         /// Watch for file changes and auto-reload
         #[arg(short, long)]
         watch: bool,
+    },
+
+    /// Build entire Razen project (reads razen.toml)
+    #[command(about = "Build the entire Razen project into executable binary")]
+    Build {
+        /// Output executable path (defaults to project name)
+        #[arg(short, long, value_name = "OUTPUT")]
+        output: Option<PathBuf>,
+
+        /// Optimization level (0-3, defaults to razen.toml setting)
+        #[arg(short = 'O', long, value_name = "LEVEL")]
+        optimization: Option<u8>,
+
+        /// Enable debug information (overrides razen.toml setting)
+        #[arg(short, long)]
+        debug: bool,
+
+        /// Release mode (enables optimizations)
+        #[arg(short, long)]
+        release: bool,
     },
 
     /// Compile to executable (AOT mode)
@@ -135,6 +156,12 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
     match cli.command {
         Commands::Run { file } => run::execute(file),
         Commands::Dev { file, watch } => dev::execute(file, watch),
+        Commands::Build {
+            output,
+            optimization,
+            debug,
+            release,
+        } => build::execute(output, optimization, debug, release),
         Commands::Compile {
             input,
             output,

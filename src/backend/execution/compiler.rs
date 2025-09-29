@@ -132,6 +132,11 @@ impl Compiler {
         self.clean_output = clean;
     }
 
+    /// Get the compiled IR instructions
+    pub fn get_ir(&self) -> &[IR] {
+        &self.ir
+    }
+
     pub fn set_current_file(&mut self, file_path: std::path::PathBuf) {
         self.current_file_path = Some(file_path);
     }
