@@ -238,6 +238,20 @@ impl SemanticAnalyzer {
 
     /// Register imported symbols from a resolved module
     fn register_imported_symbols(&mut self, resolved_module: &ResolvedModule, module_name: &str) {
+        // First, register the module alias itself as a symbol so it's recognized in expressions
+        let module_symbol = Symbol {
+            _name: module_name.to_string(),
+            symbol_type: SymbolType::Variable("module".to_string()),
+            defined_at: Position::new(1, 1, 0),
+            used: false,
+            mutable: false,
+        };
+        
+        // Add module alias to current scope
+        if let Some(current_scope) = self.symbol_table.scopes.last_mut() {
+            current_scope.insert(module_name.to_string(), module_symbol);
+        }
+        
         // Process each statement in the imported module
         for stmt in &resolved_module.program.statements {
             match stmt {

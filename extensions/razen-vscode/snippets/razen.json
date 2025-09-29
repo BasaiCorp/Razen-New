@@ -268,5 +268,132 @@
       "}"
     ],
     "description": "Create a Hello World program"
+  },
+  "Impl Block": {
+    "prefix": "impl",
+    "body": [
+      "impl ${1:StructName} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create an impl block"
+  },
+  "Constructor Method": {
+    "prefix": "new",
+    "body": [
+      "fun new(${1:parameters}) -> ${2:StructName} {",
+      "\treturn ${2:StructName} { ${3:fields} }",
+      "}"
+    ],
+    "description": "Create a constructor method"
+  },
+  "Instance Method": {
+    "prefix": "method",
+    "body": [
+      "fun ${1:methodName}(self${2:, parameters}) -> ${3:returnType} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create an instance method"
+  },
+  "Static Method": {
+    "prefix": "staticmethod",
+    "body": [
+      "fun ${1:methodName}(${2:parameters}) -> ${3:returnType} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create a static method"
+  },
+  "Method Call": {
+    "prefix": "call",
+    "body": [
+      "${1:object}.${2:method}(${3:arguments})"
+    ],
+    "description": "Call a method on an object"
+  },
+  "Static Method Call": {
+    "prefix": "staticcall",
+    "body": [
+      "${1:Type}::${2:method}(${3:arguments})"
+    ],
+    "description": "Call a static method"
+  },
+  "For Range Inclusive": {
+    "prefix": "forrangeinc",
+    "body": [
+      "for ${1:i} in ${2:0}..=${3:10} {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create a for loop with inclusive range"
+  },
+  "For Array": {
+    "prefix": "forarray",
+    "body": [
+      "for ${1:item} in [${2:1, 2, 3, 4, 5}] {",
+      "\t$0",
+      "}"
+    ],
+    "description": "Create a for loop over array literal"
+  },
+  "Colored Print": {
+    "prefix": "printc",
+    "body": [
+      "printc(${1:\"message\"}, ${2:\"color\"})"
+    ],
+    "description": "Print with color"
+  },
+  "Colored Println": {
+    "prefix": "printlnc",
+    "body": [
+      "printlnc(${1:\"message\"}, ${2:\"color\"})"
+    ],
+    "description": "Print with color and newline"
+  },
+  "Use Module": {
+    "prefix": "usemod",
+    "body": [
+      "use \"${1:./module}\""
+    ],
+    "description": "Import a module file"
+  },
+  "Use Module As": {
+    "prefix": "useas",
+    "body": [
+      "use \"${1:./module}\" as ${2:alias}"
+    ],
+    "description": "Import a module with alias"
+  },
+  "Public Constant": {
+    "prefix": "pubconst",
+    "body": [
+      "pub const ${1:CONSTANT_NAME}: ${2:type} = ${3:value}"
+    ],
+    "description": "Create a public constant"
+  },
+  "Public Struct": {
+    "prefix": "pubstruct",
+    "body": [
+      "pub struct ${1:StructName} {",
+      "\t${2:field1}: ${3:type1},",
+      "\t${4:field2}: ${5:type2}",
+      "}"
+    ],
+    "description": "Create a public struct"
+  },
+  "Self Reference": {
+    "prefix": "self",
+    "body": [
+      "self.${1:field}"
+    ],
+    "description": "Reference self field"
+  },
+  "F-String with Variable": {
+    "prefix": "fvar",
+    "body": [
+      "f\"${1:Hello}, {${2:name}}!\""
+    ],
+    "description": "Create f-string with variable interpolation"
   }
 }

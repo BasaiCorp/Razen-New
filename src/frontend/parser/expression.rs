@@ -431,16 +431,27 @@ impl<'a> ExpressionParser<'a> {
                     
                     self.consume(TokenKind::RightParen, "Expected ')' after function arguments")?;
                     
-                    // Check if the left side is a simple identifier (potential module reference)
-                    if let Expression::Identifier(module_id) = &expr {
-                        // This could be a module call like utils.Function()
+                    // Check if this is a builtin method call (like .toint(), .tostr(), etc.)
+                    let builtin_methods = ["toint", "tofloat", "tostr", "tobool", "len"];
+                    
+                    if builtin_methods.contains(&name.as_str()) {
+                        // This is definitely a method call on a variable/expression
+                        expr = Expression::MethodCallExpression(MethodCallExpression::new(
+                            Box::new(expr),
+                            Identifier::new(name),
+                            arguments,
+                        ));
+                    } else if let Expression::Identifier(module_id) = &expr {
+                        // Check if this identifier was imported as a module
+                        // For now, assume it's a module call if it's not a builtin method
+                        // TODO: Add proper module resolution check here
                         expr = Expression::ModuleCallExpression(ModuleCallExpression::new(
                             module_id.clone(),
                             Identifier::new(name),
                             arguments,
                         ));
                     } else {
-                        // This is a method call on an object
+                        // This is a method call on an object/expression
                         expr = Expression::MethodCallExpression(MethodCallExpression::new(
                             Box::new(expr),
                             Identifier::new(name),

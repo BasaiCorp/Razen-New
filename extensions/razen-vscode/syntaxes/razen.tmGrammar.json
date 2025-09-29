@@ -35,6 +35,12 @@
     },
     {
       "include": "#macros"
+    },
+    {
+      "include": "#structs"
+    },
+    {
+      "include": "#impl-blocks"
     }
   ],
   "repository": {
@@ -181,11 +187,11 @@
         },
         {
           "name": "keyword.declaration.razen",
-          "match": "\\b(const|var|fun|struct|enum|mod|use|pub|from|as)\\b"
+          "match": "\\b(const|var|fun|struct|enum|impl|mod|use|pub|from|as)\\b"
         },
         {
-          "name": "keyword.operator.razen",
-          "match": "\\b(sizeof|typeof)\\b"
+          "name": "keyword.other.razen",
+          "match": "\\b(self|new)\\b"
         },
         {
           "name": "constant.language.boolean.razen",
@@ -208,12 +214,20 @@
     "functions": {
       "patterns": [
         {
+          "name": "entity.name.function.method.razen",
+          "match": "(?<=\\.)([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        },
+        {
+          "name": "entity.name.function.static.razen",
+          "match": "(?<=::)([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
+        },
+        {
           "name": "entity.name.function.razen",
           "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()"
         },
         {
           "name": "support.function.builtin.razen",
-          "match": "\\b(print|println|input|read|write|open|close)\\b"
+          "match": "\\b(print|println|printc|printlnc|input|read|write|open|close)\\b"
         }
       ]
     },
@@ -225,7 +239,7 @@
         },
         {
           "name": "keyword.operator.assignment.razen",
-          "match": "(\\+=|\\-=|\\*=|/=|%=|=)"
+          "match": "(\\+=|\\-=|\\*=|/=|%=|&=|\\|=|\\^=|<<=|>>=|=)"
         },
         {
           "name": "keyword.operator.comparison.razen",
@@ -240,8 +254,12 @@
           "match": "(&|\\||\\^|~|<<|>>)"
         },
         {
+          "name": "keyword.operator.range.razen",
+          "match": "(\\.\\.\\.|\\.\\.|\\.\\.=)"
+        },
+        {
           "name": "keyword.operator.special.razen",
-          "match": "(\\?\\?|\\?|\\.\\.\\.|\\.\\.|=>)"
+          "match": "(\\?\\?|\\?|=>)"
         }
       ]
     },
@@ -359,6 +377,80 @@
             {
               "name": "entity.name.macro.razen",
               "match": "[a-zA-Z_][a-zA-Z0-9_]*"
+            }
+          ]
+        }
+      ]
+    },
+    "structs": {
+      "patterns": [
+        {
+          "name": "meta.struct.razen",
+          "begin": "\\b(struct)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.declaration.razen"
+            },
+            "2": {
+              "name": "entity.name.type.struct.razen"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comments"
+            },
+            {
+              "name": "meta.field.razen",
+              "match": "\\b([a-zA-Z_][a-zA-Z0-9_]*)\\s*:\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
+              "captures": {
+                "1": {
+                  "name": "variable.other.member.razen"
+                },
+                "2": {
+                  "name": "storage.type.razen"
+                }
+              }
+            },
+            {
+              "include": "#punctuation"
+            }
+          ]
+        }
+      ]
+    },
+    "impl-blocks": {
+      "patterns": [
+        {
+          "name": "meta.impl.razen",
+          "begin": "\\b(impl)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\{",
+          "end": "\\}",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.declaration.razen"
+            },
+            "2": {
+              "name": "entity.name.type.impl.razen"
+            }
+          },
+          "patterns": [
+            {
+              "include": "#comments"
+            },
+            {
+              "include": "#functions"
+            },
+            {
+              "include": "#keywords"
+            },
+            {
+              "include": "#types"
+            },
+            {
+              "include": "#operators"
+            },
+            {
+              "include": "#punctuation"
             }
           ]
         }

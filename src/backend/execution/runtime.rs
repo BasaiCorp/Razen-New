@@ -328,75 +328,81 @@ impl Runtime {
                     }
                 },
                 IR::MethodCall(method_name, arg_count) => {
-                    // Method calls are handled similarly to function calls
-                    // but the first argument is the 'self' object
-                    let mut args = Vec::new();
-                    for _ in 0..*arg_count {
-                        if let Some(arg) = self.stack.pop() {
-                            args.push(arg);
+                    // Check if this is a builtin method first
+                    if self.is_builtin(method_name) {
+                        // Handle builtin methods - the object is already on the stack as the first argument
+                        self.execute_builtin(method_name, *arg_count)?;
+                    } else {
+                        // Method calls are handled similarly to function calls
+                        // but the first argument is the 'self' object
+                        let mut args = Vec::new();
+                        for _ in 0..*arg_count {
+                            if let Some(arg) = self.stack.pop() {
+                                args.push(arg);
+                            }
                         }
-                    }
-                    args.reverse(); // Arguments are pushed in reverse order
-                    
-                    if args.is_empty() {
-                        return Err("Method call requires at least self argument".to_string());
-                    }
-                    
-                    let self_obj = &args[0];
-                    let method_args = &args[1..];
-                    
-                    // For now, we'll look for methods in the format "TypeName::method_name"
-                    // We need to infer the type from the variable name or object structure
-                    
-                    // Try to find the method by checking all available methods
-                    let mut full_method_name = format!("Object::{}", method_name);
-                    
-                    // Look for any method with this name in our functions
-                    for func_name in self.functions.keys() {
-                        if func_name.ends_with(&format!("::{}", method_name)) {
-                            full_method_name = func_name.clone();
-                            break;
+                        args.reverse(); // Arguments are pushed in reverse order
+                        
+                        if args.is_empty() {
+                            return Err("Method call requires at least self argument".to_string());
                         }
-                    }
-                    
-                    if !self.clean_output {
-                        println!("Looking for method '{}' (full name: '{}')", method_name, full_method_name);
-                    }
-                    
-                    if let Some(func_addr_str) = self.functions.get(&full_method_name) {
-                        if let Ok(func_addr) = func_addr_str.parse::<usize>() {
-                            // Create new method scope with self and parameters
-                            let mut func_variables = HashMap::new();
-                            func_variables.insert("self".to_string(), self_obj.clone());
-                            
-                            // Bind method parameters
-                            if let Some(param_names) = self.function_params.get(&full_method_name) {
-                                // Skip first parameter (self) if it exists in param_names
-                                let method_param_names = if param_names.first() == Some(&"self".to_string()) {
-                                    &param_names[1..]
-                                } else {
-                                    param_names
-                                };
+                        
+                        let self_obj = &args[0];
+                        let method_args = &args[1..];
+                        
+                        // For now, we'll look for methods in the format "TypeName::method_name"
+                        // We need to infer the type from the variable name or object structure
+                        
+                        // Try to find the method by checking all available methods
+                        let mut full_method_name = format!("Object::{}", method_name);
+                        
+                        // Look for any method with this name in our functions
+                        for func_name in self.functions.keys() {
+                            if func_name.ends_with(&format!("::{}", method_name)) {
+                                full_method_name = func_name.clone();
+                                break;
+                            }
+                        }
+                        
+                        if !self.clean_output {
+                            println!("Looking for method '{}' (full name: '{}')", method_name, full_method_name);
+                        }
+                        
+                        if let Some(func_addr_str) = self.functions.get(&full_method_name) {
+                            if let Ok(func_addr) = func_addr_str.parse::<usize>() {
+                                // Create new method scope with self and parameters
+                                let mut func_variables = HashMap::new();
+                                func_variables.insert("self".to_string(), self_obj.clone());
                                 
-                                for (i, param_name) in method_param_names.iter().enumerate() {
-                                    if i < method_args.len() {
-                                        func_variables.insert(param_name.clone(), method_args[i].clone());
+                                // Bind method parameters
+                                if let Some(param_names) = self.function_params.get(&full_method_name) {
+                                    // Skip first parameter (self) if it exists in param_names
+                                    let method_param_names = if param_names.first() == Some(&"self".to_string()) {
+                                        &param_names[1..]
                                     } else {
-                                        func_variables.insert(param_name.clone(), "null".to_string());
+                                        param_names
+                                    };
+                                    
+                                    for (i, param_name) in method_param_names.iter().enumerate() {
+                                        if i < method_args.len() {
+                                            func_variables.insert(param_name.clone(), method_args[i].clone());
+                                        } else {
+                                            func_variables.insert(param_name.clone(), "null".to_string());
+                                        }
                                     }
                                 }
+                                
+                                // Save current state and jump to method
+                                self.call_stack.push((pc + 1, self.variables.clone()));
+                                self.variables = func_variables;
+                                pc = func_addr;
+                                continue;
+                            } else {
+                                return Err(format!("Invalid method address for '{}'", full_method_name));
                             }
-                            
-                            // Save current state and jump to method
-                            self.call_stack.push((pc + 1, self.variables.clone()));
-                            self.variables = func_variables;
-                            pc = func_addr;
-                            continue;
                         } else {
-                            return Err(format!("Invalid method address for '{}'", full_method_name));
+                            return Err(format!("Method '{}' not found", full_method_name));
                         }
-                    } else {
-                        return Err(format!("Method '{}' not found", full_method_name));
                     }
                 },
                 IR::Return => {

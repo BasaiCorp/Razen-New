@@ -2,7 +2,7 @@
   "name": "razen-language-support",
   "displayName": "Razen Language Support",
   "description": "Comprehensive language support for the Razen programming language with syntax highlighting, snippets, and IntelliSense",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "razen-lang",
   "author": {
     "name": "Razen Language Team"
@@ -82,13 +82,18 @@
     ],
     "commands": [
       {
+        "command": "razen.build",
+        "title": "Build Project",
+        "category": "Razen"
+      },
+      {
         "command": "razen.compile",
-        "title": "Compile",
+        "title": "Compile File",
         "category": "Razen"
       },
       {
         "command": "razen.run",
-        "title": "Run",
+        "title": "Run File",
         "category": "Razen"
       },
       {
@@ -111,7 +116,7 @@
         },
         {
           "when": "resourceExtname == .rzn",
-          "command": "razen.compile",
+          "command": "razen.build",
           "group": "navigation"
         }
       ],
@@ -124,6 +129,11 @@
         {
           "when": "resourceExtname == .rzn",
           "command": "razen.compile",
+          "group": "razen"
+        },
+        {
+          "when": "resourceExtname == .rzn",
+          "command": "razen.build",
           "group": "razen"
         }
       ]

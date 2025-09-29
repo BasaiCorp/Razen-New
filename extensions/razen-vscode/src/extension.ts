@@ -39,6 +39,9 @@ export function activate(context: vscode.ExtensionContext) {
                     { name: 'fun', detail: 'Declare function', kind: vscode.CompletionItemKind.Keyword },
                     { name: 'struct', detail: 'Define structure', kind: vscode.CompletionItemKind.Keyword },
                     { name: 'enum', detail: 'Define enumeration', kind: vscode.CompletionItemKind.Keyword },
+                    { name: 'impl', detail: 'Implementation block', kind: vscode.CompletionItemKind.Keyword },
+                    { name: 'self', detail: 'Self reference', kind: vscode.CompletionItemKind.Keyword },
+                    { name: 'new', detail: 'Constructor method', kind: vscode.CompletionItemKind.Method },
                     { name: 'if', detail: 'Conditional statement', kind: vscode.CompletionItemKind.Keyword },
                     { name: 'else', detail: 'Alternative condition', kind: vscode.CompletionItemKind.Keyword },
                     { name: 'elif', detail: 'Else if condition', kind: vscode.CompletionItemKind.Keyword },
@@ -78,6 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
                 const builtins = [
                     { name: 'print', detail: 'Print without newline', params: '(value: any)' },
                     { name: 'println', detail: 'Print with newline', params: '(value: any)' },
+                    { name: 'printc', detail: 'Print with color', params: '(value: any, color: str)' },
+                    { name: 'printlnc', detail: 'Print with color and newline', params: '(value: any, color: str)' },
                     { name: 'input', detail: 'Get user input', params: '(prompt?: str) -> str' },
                     { name: 'read', detail: 'Read file contents', params: '(filename: str) -> str' },
                     { name: 'write', detail: 'Write to file', params: '(filename: str, content: str) -> bool' },
@@ -112,6 +117,11 @@ export function activate(context: vscode.ExtensionContext) {
                 'const': 'Declares an immutable constant',
                 'struct': 'Defines a structured data type',
                 'enum': 'Defines an enumeration type',
+                'impl': 'Implementation block for methods',
+                'self': 'Reference to current instance',
+                'new': 'Constructor method',
+                'pub': 'Public visibility modifier',
+                'use': 'Import module or library',
                 'if': 'Conditional statement',
                 'while': 'Loop statement',
                 'for': 'Iteration statement',
@@ -119,12 +129,17 @@ export function activate(context: vscode.ExtensionContext) {
                 'try': 'Exception handling block',
                 'println': 'Built-in function to print with newline',
                 'print': 'Built-in function to print without newline',
+                'printc': 'Built-in function to print with color',
+                'printlnc': 'Built-in function to print with color and newline',
                 'input': 'Built-in function to get user input',
                 'int': 'Integer type',
                 'str': 'String type',
                 'bool': 'Boolean type',
+                'char': 'Character type',
+                'float': 'Floating point number type',
                 'array': 'Array/list type',
-                'map': 'Hash map/dictionary type'
+                'map': 'Hash map/dictionary type',
+                'any': 'Any type (accepts all values)'
             };
 
             if (hoverInfo[word]) {
@@ -302,6 +317,24 @@ export function activate(context: vscode.ExtensionContext) {
         });
     });
 
+    const buildCommand = vscode.commands.registerCommand('razen.build', () => {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open. Build requires a Razen project with razen.toml');
+            return;
+        }
+
+        // Check if razen.toml exists
+        const razenTomlPath = vscode.Uri.joinPath(workspaceFolder.uri, 'razen.toml');
+        vscode.workspace.fs.stat(razenTomlPath).then(() => {
+            const terminal = vscode.window.createTerminal('Razen Builder');
+            terminal.show();
+            terminal.sendText(`cd "${workspaceFolder.uri.fsPath}" && razen build`);
+        }, () => {
+            vscode.window.showErrorMessage('No razen.toml found. Use "razen init" to create a new project or open a Razen project directory.');
+        });
+    });
+
     // Register additional commands
     const createSampleCommand = vscode.commands.registerCommand('razen.createSample', createSampleFile);
     const showDocumentationCommand = vscode.commands.registerCommand('razen.showDocumentation', () => {
@@ -315,6 +348,7 @@ export function activate(context: vscode.ExtensionContext) {
         formattingProvider,
         compileCommand,
         runCommand,
+        buildCommand,
         createSampleCommand,
         showDocumentationCommand
     );
@@ -342,47 +376,100 @@ export function activate(context: vscode.ExtensionContext) {
 
 // Helper function to create a sample Razen file
 async function createSampleFile() {
-    const sampleContent = `// Welcome to Razen Programming Language
-// This is a sample file to get you started
+    const sampleContent = `// Welcome to Razen Programming Language v0.1-beta.7
+// This is a comprehensive sample file showcasing Razen features
 
-mod main
+// Struct definition with fields
+struct Person {
+    name: str,
+    age: int
+}
 
-/// Main function - entry point of the program
-fun main() {
-    println("Hello, Razen World!")
-    
-    // Variable declarations
-    var name: str = "Developer"
-    const version: float = 1.0
-    
-    // String interpolation
-    println(f"Welcome {name} to Razen v{version}")
-    
-    // Function call
-    var result = add(10, 20)
-    println(f"10 + 20 = {result}")
-    
-    // Control flow
-    if result > 25 {
-        println("Result is greater than 25!")
+// Implementation block with methods
+impl Person {
+    // Constructor method
+    fun new(name: str, age: int) {
+        return Person { name: name, age: age }
     }
-    
-    // Loop example
-    for i in 1..5 {
-        println(f"Count: {i}")
+
+    // Instance method with self parameter
+    fun greet(self) {
+        printlnc(f"Hello, I'm {self.name}!", "green")
+    }
+
+    // Method with parameters
+    fun introduce(self, to: str) {
+        printlnc(f"Hi {to}, I'm {self.name} and I'm {self.age} years old.", "cyan")
     }
 }
 
+/// Main function - entry point of the program
+fun main() {
+    // Colored output demonstration
+    printlnc("=== Razen Language Demo ===", "yellow")
+
+    // Variable declarations with type inference
+    var name = "Developer"
+    const version = "0.1-beta.7"
+
+    // F-string interpolation
+    println(f"Welcome {name} to Razen v{version}")
+
+    // Object-oriented programming demonstration
+    var person = Person.new("Alice", 25)
+    person.greet()
+    person.introduce("Bob")
+
+    // Function calls
+    var result = add(10, 20)
+    printlnc(f"10 + 20 = {result}", "blue")
+
+    // Control flow
+    if result > 25 {
+        printlnc("Result is greater than 25!", "green")
+    }
+
+    // Different loop types
+    printlnc("Range loops:", "magenta")
+    for i in 1..4 {
+        print(f"{i} ")
+    }
+    println("")
+
+    // Inclusive range
+    printlnc("Inclusive range (1..=3):", "magenta")
+    for i in 1..=3 {
+        print(f"{i} ")
+    }
+    println("")
+
+    // Array iteration
+    printlnc("Array iteration:", "magenta")
+    for item in [10, 20, 30] {
+        print(f"{item} ")
+    }
+    println("")
+
+    // String array iteration
+    for person_name in ["Alice", "Bob", "Charlie"] {
+        printlnc(f"Hello, {person_name}!", "cyan")
+    }
+
+    printlnc("=== Demo Complete! ===", "yellow")
+}
+
 /// Add two numbers together
-fun add(a: int, b: int) -> int {
+fun add(a: int, b: int) {
     return a + b
 }
 
 // Try these features:
 // 1. Type 'main' + Tab for main function snippet
-// 2. Type 'fun' + Tab for function snippet  
-// 3. Use Ctrl+Shift+P and search for "Razen" commands
-// 4. Hover over keywords for documentation
+// 2. Type 'impl' + Tab for implementation block
+// 3. Type 'struct' + Tab for struct definition
+// 4. Use Ctrl+Shift+P and search for "Razen" commands
+// 5. Hover over keywords for documentation
+// 6. Right-click for context menu commands
 `;
 
     try {
