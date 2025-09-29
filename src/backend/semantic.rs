@@ -646,6 +646,9 @@ impl SemanticAnalyzer {
             self.analyze_statement(stmt);
         }
 
+        // Check for unused variables in this function scope before popping
+        self.check_unused_variables_in_current_scope();
+
         self.symbol_table.pop_scope();
         self.current_function = old_function;
     }
@@ -1032,6 +1035,30 @@ impl SemanticAnalyzer {
         for scope in &self.symbol_table.scopes {
             for (name, symbol) in scope {
                 if !symbol.used && matches!(symbol.symbol_type, SymbolType::Variable(_)) {
+                    // Skip unused variable warnings for names starting with underscore
+                    if name.starts_with('_') {
+                        continue;
+                    }
+                    
+                    let diagnostic = helpers::unused_variable(
+                        name,
+                        Span::new(symbol.defined_at, symbol.defined_at),
+                    );
+                    self.diagnostics.add(diagnostic);
+                }
+            }
+        }
+    }
+
+    fn check_unused_variables_in_current_scope(&mut self) {
+        if let Some(current_scope) = self.symbol_table.scopes.last() {
+            for (name, symbol) in current_scope {
+                if !symbol.used && matches!(symbol.symbol_type, SymbolType::Variable(_)) {
+                    // Skip unused variable warnings for names starting with underscore
+                    if name.starts_with('_') {
+                        continue;
+                    }
+                    
                     let diagnostic = helpers::unused_variable(
                         name,
                         Span::new(symbol.defined_at, symbol.defined_at),
