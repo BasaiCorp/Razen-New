@@ -1,0 +1,51 @@
+pub struct Userdata {
+    username: str,
+    firstname: str,
+    lastname: str, 
+    age: int, 
+    email: str, 
+    password: str, 
+    confirm_password: str
+}
+
+pub fun register() {
+    println("Register form")
+    print("Enter Username: ")
+    var username = input()
+    print("Enter Firstname: ")
+    var firstname = input()
+    print("Enter Lastname: ")
+    var lastname = input()
+    print("Enter Age: ")
+    var age = input()
+    print("Enter E-mail: ")
+    var email = input()
+    print("Enter Password: ")
+    var password = input()
+    var confirm_password 
+
+    while true {
+        print("Enter Confirm Password: ")
+        confirm_password = input()
+
+        if confirm_password == password {
+            break
+        } else {
+            println("Something went wrong!")
+        }
+    }
+
+    var user = Userdata {
+        username: username,
+        firstname: firstname,
+        lastname: lastname, 
+        age: age, 
+        email: email, 
+        password: password,
+        confirm_password: confirm_password
+    }
+
+    
+}
+
+register()

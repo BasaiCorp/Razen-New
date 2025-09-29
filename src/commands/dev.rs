@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 use std::fs;
-use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
+use crate::frontend::parser::{parse_source_with_debug, format_parse_errors};
 use crate::backend::execution::Compiler;
 use crate::backend::SemanticAnalyzer;
 use crate::frontend::diagnostics::display::render_diagnostics;
@@ -37,10 +37,12 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
     
     info_message(&format!("Source file loaded ({} bytes)", source.len()));
     
-    // Parse the source code with full file path context
+    // Parse the source code with full file path context and debug output
     let filename = file.canonicalize().unwrap_or(file.clone()).to_string_lossy().to_string();
     println!("\n🔍 Phase 1: Parsing...");
-    let (program, diagnostics) = parse_source_with_name(&source, &filename);
+    
+    // Parse with debug output enabled (only shows in dev command)
+    let (program, diagnostics) = parse_source_with_debug(&source, &filename, true);
     
     if !diagnostics.is_empty() {
         eprintln!("❌ Parsing errors:");

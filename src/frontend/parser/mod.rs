@@ -16,6 +16,7 @@ pub struct Parser {
     tokens: Vec<Token>,
     current: usize,
     errors: Vec<ParseError>,
+    debug: bool,
 }
 
 impl Parser {
@@ -25,7 +26,13 @@ impl Parser {
             tokens,
             current: 0,
             errors: Vec::new(),
+            debug: false,
         }
+    }
+    
+    /// Set debug mode for detailed parsing output
+    pub fn set_debug(&mut self, debug: bool) {
+        self.debug = debug;
     }
 
     /// Parses the tokens into a Program AST node.
@@ -62,6 +69,7 @@ impl Parser {
     /// Parse a single statement using the statement parser
     fn parse_statement(&mut self) -> ParseResult<Statement> {
         let mut stmt_parser = StatementParser::new(&self.tokens[self.current..]);
+        stmt_parser.set_debug(self.debug);
         let result = stmt_parser.parse_statement()?;
         
         // Update current position based on statement parser's progress
@@ -168,11 +176,26 @@ pub fn parse_source(source: &str) -> (Option<Program>, Diagnostics) {
 
 /// Parse source code with a specific file name for better error reporting
 pub fn parse_source_with_name(source: &str, filename: &str) -> (Option<Program>, Diagnostics) {
+    parse_source_with_debug(source, filename, false)
+}
+
+/// Parse source code with debug output enabled (for dev command)
+pub fn parse_source_with_debug(source: &str, filename: &str, debug: bool) -> (Option<Program>, Diagnostics) {
     use crate::frontend::lexer::Lexer;
     
     let lexer = Lexer::new();
     let tokens = lexer.lex(source);
+    
+    if debug {
+        println!("🔧 Debug: Generated {} tokens", tokens.len());
+        // Show first few tokens for debugging
+        for (i, token) in tokens.iter().take(20).enumerate() {
+            println!("🔧 Token {}: {:?} at line {}", i, token.kind, token.line);
+        }
+    }
+    
     let mut parser = Parser::new(tokens);
+    parser.set_debug(debug);
     let (program, mut diagnostics) = parser.parse();
     
     // Add source information to diagnostics

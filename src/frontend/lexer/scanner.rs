@@ -65,14 +65,8 @@ impl Scanner {
         keywords.insert("self".to_string(), TokenKind::Self_);
         // Note: 'new' is not a keyword in Razen, it's just a regular method name
 
-        // I/O Functions
-        keywords.insert("print".to_string(), TokenKind::Print);
-        keywords.insert("println".to_string(), TokenKind::Println);
-        keywords.insert("input".to_string(), TokenKind::Input);
-        keywords.insert("read".to_string(), TokenKind::Read);
-        keywords.insert("write".to_string(), TokenKind::Write);
-        keywords.insert("open".to_string(), TokenKind::Open);
-        keywords.insert("close".to_string(), TokenKind::Close);
+        // Note: I/O functions like print, println, input, etc. are treated as regular identifiers
+        // They are registered as builtin functions in the semantic analyzer, not as keywords
 
         Scanner {
             source: source.chars().collect(),

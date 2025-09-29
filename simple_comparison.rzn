@@ -1,7 +1,8 @@
 fun main() {
-    var x = 5
-    var y = 5
-    if x == y {
-        println("equal")
-    }
+    println("THis is working")
+    var name = input()
+    println(f"Hello, {name}")
+    var result = 1 + 10
+
+    // this type msot work and some not means msotly done but suddenly the error reposritng sytem is failed and givign the unexpected errors and giving the all this is breaking my razen alng brother.
 }

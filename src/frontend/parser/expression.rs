@@ -44,11 +44,17 @@ pub type ParseResult<T> = Result<T, ParseError>;
 pub struct ExpressionParser<'a> {
     tokens: &'a [Token],
     pub current: usize,
+    debug: bool,
 }
 
 impl<'a> ExpressionParser<'a> {
     pub fn new(tokens: &'a [Token]) -> Self {
-        ExpressionParser { tokens, current: 0 }
+        ExpressionParser { tokens, current: 0, debug: false }
+    }
+    
+    /// Set debug mode for detailed parsing output
+    pub fn set_debug(&mut self, debug: bool) {
+        self.debug = debug;
     }
 
     /// Parse an expression with operator precedence
@@ -521,8 +527,16 @@ impl<'a> ExpressionParser<'a> {
         if self.match_tokens(&[TokenKind::Identifier]) {
             let name = self.previous().lexeme.clone();
             
+            if self.debug {
+                println!("🔧 Debug: Found identifier '{}' in primary parsing", name);
+            }
+            
             // Check if this is a struct instantiation: TypeName { ... }
-            if self.check(&TokenKind::LeftBrace) {
+            // Only parse as struct if we're not in a context where { starts a block
+            if self.check(&TokenKind::LeftBrace) && self.is_likely_struct_initialization() {
+                if self.debug {
+                    println!("🔧 Debug: Found LeftBrace after identifier, parsing as struct");
+                }
                 self.advance(); // consume '{'
                 
                 let mut fields = Vec::new();
@@ -553,7 +567,9 @@ impl<'a> ExpressionParser<'a> {
             }
             
             // f-strings are now handled by the FString token type above
-            
+            if self.debug {
+                println!("🔧 Debug: Returning identifier '{}' as simple identifier", name);
+            }
             return Ok(Expression::Identifier(Identifier::new(name)));
         }
 
@@ -564,19 +580,7 @@ impl<'a> ExpressionParser<'a> {
 
         // Note: 'new' is now handled as a regular identifier, not a special keyword
 
-        // Handle built-in function identifiers
-        if self.match_tokens(&[
-            TokenKind::Print,
-            TokenKind::Println,
-            TokenKind::Input,
-            TokenKind::Read,
-            TokenKind::Write,
-            TokenKind::Open,
-            TokenKind::Close,
-        ]) {
-            let name = self.previous().lexeme.clone();
-            return Ok(Expression::Identifier(Identifier::new(name)));
-        }
+        // Note: Built-in functions are now handled as regular identifiers above
 
         if self.match_tokens(&[TokenKind::LeftParen]) {
             let expr = self.parse_expression()?;
@@ -850,6 +854,27 @@ impl<'a> ExpressionParser<'a> {
         }
         
         Err(ParseError::new(format!("Invalid expression in f-string: '{}'", trimmed), 0))
+    }
+    
+    /// Check if a LeftBrace after an identifier is likely struct initialization
+    /// vs a block statement (like in if/while/function bodies)
+    fn is_likely_struct_initialization(&self) -> bool {
+        // Look ahead to see if this looks like struct field syntax: identifier : value
+        if let Some(next_token) = self.tokens.get(self.current + 1) {
+            // If the next token after { is an identifier, it might be a struct field
+            if matches!(next_token.kind, TokenKind::Identifier) {
+                // Look for the pattern: identifier : (which indicates struct field)
+                if let Some(after_id) = self.tokens.get(self.current + 2) {
+                    return matches!(after_id.kind, TokenKind::Colon);
+                }
+            }
+            // If next token is } it's an empty struct
+            if matches!(next_token.kind, TokenKind::RightBrace) {
+                return true;
+            }
+        }
+        // Default to false - assume it's a block statement
+        false
     }
 }
 

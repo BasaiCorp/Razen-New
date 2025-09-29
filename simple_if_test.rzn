@@ -1,8 +1,8 @@
 fun test() {
-    if true {
-        println("yes")
-    } else {
-        println("no")
+    var x = 1
+    var y = 1
+    if x == y {
+        println("Good")
     }
 }
 

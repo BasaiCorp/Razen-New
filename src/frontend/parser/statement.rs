@@ -8,11 +8,22 @@ use crate::frontend::parser::expression::{ExpressionParser, ParseError, ParseRes
 pub struct StatementParser<'a> {
     tokens: &'a [Token],
     current: usize,
+    debug: bool,
 }
 
 impl<'a> StatementParser<'a> {
     pub fn new(tokens: &'a [Token]) -> Self {
-        StatementParser { tokens, current: 0 }
+        StatementParser { tokens, current: 0, debug: false }
+    }
+    
+    /// Set debug mode for detailed parsing output
+    pub fn set_debug(&mut self, debug: bool) {
+        self.debug = debug;
+    }
+    
+    /// Get current position for updating parent parser
+    pub fn current_position(&self) -> usize {
+        self.current
     }
 
     /// Parse a statement
@@ -606,7 +617,19 @@ impl<'a> StatementParser<'a> {
 
     /// Parse expression using expression parser
     fn parse_expression(&mut self) -> ParseResult<Expression> {
+        // Debug: Show tokens being parsed (only in dev mode)
+        if self.debug {
+            println!("🔧 Debug: Parsing expression starting at token {}", self.current);
+            if self.current < self.tokens.len() {
+                println!("🔧 Debug: Current token: {:?}", self.tokens[self.current].kind);
+                if self.current + 1 < self.tokens.len() {
+                    println!("🔧 Debug: Next token: {:?}", self.tokens[self.current + 1].kind);
+                }
+            }
+        }
+        
         let mut expr_parser = ExpressionParser::new(&self.tokens[self.current..]);
+        expr_parser.set_debug(self.debug);
         let result = expr_parser.parse_expression()?;
 
         // Update current position based on expression parser's progress
@@ -678,12 +701,8 @@ impl<'a> StatementParser<'a> {
     }
 }
 
-// Make current field public for expression parser integration
+// Additional methods for expression parser integration
 impl<'a> StatementParser<'a> {
-    pub fn current_position(&self) -> usize {
-        self.current
-    }
-
     pub fn set_current_position(&mut self, position: usize) {
         self.current = position;
     }
