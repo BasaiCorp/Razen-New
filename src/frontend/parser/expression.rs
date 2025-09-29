@@ -780,81 +780,24 @@ impl<'a> ExpressionParser<'a> {
         // Create a mini lexer and parser for the expression content
         let trimmed = expr_content.trim();
         
-        // Handle simple identifiers first
-        if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') && !trimmed.is_empty() {
-            return Ok(Expression::Identifier(Identifier::new(trimmed.to_string())));
+        // Use proper lexer and parser for f-string expressions
+        use crate::frontend::lexer::Lexer;
+        let lexer = Lexer::new();
+        let tokens = lexer.lex(trimmed);
+        
+        if tokens.is_empty() {
+            return Err(ParseError::new("Empty expression in f-string".to_string(), 0));
         }
         
-        // Parse arithmetic expressions
-        if let Ok(expr) = self.parse_arithmetic_expression(trimmed) {
-            return Ok(expr);
-        }
+        // Create a new expression parser for the tokens
+        let mut expr_parser = ExpressionParser::new(&tokens);
+        expr_parser.set_debug(self.debug);
         
-        // Fallback: treat as identifier
-        Ok(Expression::Identifier(Identifier::new(trimmed.to_string())))
+        // Parse the full expression (supports dot notation, all operators, etc.)
+        expr_parser.parse_expression()
     }
     
-    /// Parse arithmetic expressions in f-strings
-    fn parse_arithmetic_expression(&mut self, expr_str: &str) -> ParseResult<Expression> {
-        // Handle binary operations: +, -, *, /
-        let operators = [" + ", " - ", " * ", " / "];
-        let binary_ops = [BinaryOperator::Add, BinaryOperator::Subtract, BinaryOperator::Multiply, BinaryOperator::Divide];
-        
-        for (i, op_str) in operators.iter().enumerate() {
-            if let Some(op_pos) = expr_str.find(op_str) {
-                let left_part = expr_str[..op_pos].trim();
-                let right_part = expr_str[op_pos + op_str.len()..].trim();
-                
-                let left_expr = self.parse_simple_expression(left_part)?;
-                let right_expr = self.parse_simple_expression(right_part)?;
-                
-                return Ok(Expression::BinaryExpression(BinaryExpression {
-                    left: Box::new(left_expr),
-                    operator: binary_ops[i].clone(),
-                    right: Box::new(right_expr),
-                }));
-            }
-        }
-        
-        // No binary operator found, parse as simple expression
-        self.parse_simple_expression(expr_str)
-    }
-    
-    /// Parse simple expressions (identifiers, numbers, strings)
-    fn parse_simple_expression(&mut self, expr_str: &str) -> ParseResult<Expression> {
-        let trimmed = expr_str.trim();
-        
-        // Handle string literals
-        if trimmed.starts_with('"') && trimmed.ends_with('"') {
-            let string_content = trimmed[1..trimmed.len()-1].to_string();
-            return Ok(Expression::StringLiteral(StringLiteral::new(string_content)));
-        }
-        
-        // Handle numeric literals
-        if let Ok(int_val) = trimmed.parse::<i64>() {
-            return Ok(Expression::IntegerLiteral(IntegerLiteral::new(int_val)));
-        }
-        
-        if let Ok(float_val) = trimmed.parse::<f64>() {
-            return Ok(Expression::FloatLiteral(FloatLiteral::new(float_val)));
-        }
-        
-        // Handle boolean literals
-        if trimmed == "true" {
-            return Ok(Expression::BooleanLiteral(BooleanLiteral::new(true)));
-        }
-        
-        if trimmed == "false" {
-            return Ok(Expression::BooleanLiteral(BooleanLiteral::new(false)));
-        }
-        
-        // Handle identifiers
-        if trimmed.chars().all(|c| c.is_alphanumeric() || c == '_') && !trimmed.is_empty() {
-            return Ok(Expression::Identifier(Identifier::new(trimmed.to_string())));
-        }
-        
-        Err(ParseError::new(format!("Invalid expression in f-string: '{}'", trimmed), 0))
-    }
+    // Note: Old arithmetic parsing methods removed - now using proper lexer/parser
     
     /// Check if a LeftBrace after an identifier is likely struct initialization
     /// vs a block statement (like in if/while/function bodies)

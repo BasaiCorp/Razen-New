@@ -1,0 +1,24 @@
+struct User {
+    username: str,
+    age: int
+}
+
+fun main() {
+    var user = User {
+        username: "Prathmesh",
+        age: 25
+    }
+    
+    // Test different f-string expressions
+    println(f"Username: {user.username}")        // Dot notation
+    println(f"Age: {user.age}")                  // Dot notation with number
+    println(f"Age in 5 years: {user.age + 5}")   // Math with dot notation
+    println(f"Modulo test: {user.age % 3}")      // Modulo operator
+    println(f"Complex: {user.age * 2 + 1}")      // Multiple operations
+    
+    var x = 10
+    var y = 3
+    println(f"Division: {x / y}")                // Division
+    println(f"Remainder: {x % y}")               // Modulo
+    println(f"Power-like: {x * x}")              // Multiplication
+}
