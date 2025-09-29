@@ -18,7 +18,7 @@ pub mod test;
 #[derive(Parser)]
 #[command(name = "razen")]
 #[command(about = "A professional programming language compiler and runtime")]
-#[command(version = "0.1-beta.62")]
+#[command(version = "0.1-beta.621")]
 #[command(author = "Prathmesh Barot (aka PrathmeshCodes)")]
 #[command(
     long_about = "Razen is a modern, efficient programming language with clean syntax and powerful features."

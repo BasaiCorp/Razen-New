@@ -583,8 +583,64 @@ impl Runtime {
         Ok(())
     }
 
+    /// Apply color formatting to text based on color name or hex code
+    fn apply_color_formatting(&self, color_spec: &str) -> String {
+        let spec = color_spec.trim();
+        
+        // Handle hex codes (e.g., "#FF0000", "#ff0000")
+        if spec.starts_with('#') && spec.len() == 7 {
+            if let Ok(rgb) = self.hex_to_rgb(&spec[1..]) {
+                return format!("\x1b[38;2;{};{};{}m", rgb.0, rgb.1, rgb.2);
+            }
+        }
+        
+        // Handle 16 standard color names
+        match spec.to_lowercase().as_str() {
+            // Standard 16 colors (4-bit)
+            "black" => "\x1b[30m".to_string(),
+            "red" => "\x1b[31m".to_string(),
+            "green" => "\x1b[32m".to_string(),
+            "yellow" => "\x1b[33m".to_string(),
+            "blue" => "\x1b[34m".to_string(),
+            "magenta" | "purple" => "\x1b[35m".to_string(),
+            "cyan" => "\x1b[36m".to_string(),
+            "white" => "\x1b[37m".to_string(),
+            // Bright colors
+            "gray" | "grey" => "\x1b[90m".to_string(),
+            "bright_red" | "lightred" => "\x1b[91m".to_string(),
+            "bright_green" | "lightgreen" => "\x1b[92m".to_string(),
+            "bright_yellow" | "lightyellow" => "\x1b[93m".to_string(),
+            "bright_blue" | "lightblue" => "\x1b[94m".to_string(),
+            "bright_magenta" | "lightmagenta" | "pink" => "\x1b[95m".to_string(),
+            "bright_cyan" | "lightcyan" => "\x1b[96m".to_string(),
+            "bright_white" | "lightwhite" => "\x1b[97m".to_string(),
+            // Special colors
+            "orange" => "\x1b[38;5;208m".to_string(), // 8-bit orange
+            "brown" => "\x1b[38;5;94m".to_string(),  // 8-bit brown
+            // Reset
+            "reset" | "none" | "default" => "\x1b[0m".to_string(),
+            _ => {
+                // Invalid color, return reset
+                "\x1b[0m".to_string()
+            }
+        }
+    }
+    
+    /// Convert hex string to RGB tuple
+    fn hex_to_rgb(&self, hex: &str) -> Result<(u8, u8, u8), ()> {
+        if hex.len() != 6 {
+            return Err(());
+        }
+        
+        let r = u8::from_str_radix(&hex[0..2], 16).map_err(|_| ())?;
+        let g = u8::from_str_radix(&hex[2..4], 16).map_err(|_| ())?;
+        let b = u8::from_str_radix(&hex[4..6], 16).map_err(|_| ())?;
+        
+        Ok((r, g, b))
+    }
+
     fn is_builtin(&self, name: &str) -> bool {
-        matches!(name, "print" | "println" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
+        matches!(name, "print" | "println" | "printc" | "printlnc" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
     }
 
     fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
@@ -602,6 +658,39 @@ impl Runtime {
                     println!("{}", value);
                 } else {
                     println!();
+                }
+                // Push null as return value
+                self.stack.push("null".to_string());
+            },
+            "printc" => {
+                // Colored print: printc(text, color)
+                if arg_count >= 2 {
+                    let color_spec = self.stack.pop().unwrap_or("reset".to_string());
+                    let text = self.stack.pop().unwrap_or("".to_string());
+                    
+                    let color_code = self.apply_color_formatting(&color_spec);
+                    let reset_code = "\x1b[0m";
+                    
+                    print!("{}{}{}", color_code, text, reset_code);
+                    io::stdout().flush().unwrap();
+                } else {
+                    return Err("printc() requires 2 arguments: text and color".to_string());
+                }
+                // Push null as return value
+                self.stack.push("null".to_string());
+            },
+            "printlnc" => {
+                // Colored println: printlnc(text, color)
+                if arg_count >= 2 {
+                    let color_spec = self.stack.pop().unwrap_or("reset".to_string());
+                    let text = self.stack.pop().unwrap_or("".to_string());
+                    
+                    let color_code = self.apply_color_formatting(&color_spec);
+                    let reset_code = "\x1b[0m";
+                    
+                    println!("{}{}{}", color_code, text, reset_code);
+                } else {
+                    return Err("printlnc() requires 2 arguments: text and color".to_string());
                 }
                 // Push null as return value
                 self.stack.push("null".to_string());

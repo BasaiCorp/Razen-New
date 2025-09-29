@@ -36,6 +36,8 @@ impl TypeContext {
         // I/O functions
         self.functions.insert("print".to_string(), (vec![Type::Any], Type::Null));
         self.functions.insert("println".to_string(), (vec![Type::Any], Type::Null));
+        self.functions.insert("printc".to_string(), (vec![Type::Any, Type::String], Type::Null)); // Colored print
+        self.functions.insert("printlnc".to_string(), (vec![Type::Any, Type::String], Type::Null)); // Colored println
         self.functions.insert("input".to_string(), (vec![], Type::String));
         self.functions.insert("read".to_string(), (vec![Type::String], Type::String));
         self.functions.insert("write".to_string(), (vec![Type::String, Type::String], Type::Bool));

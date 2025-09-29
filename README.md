@@ -2,7 +2,7 @@
 
 Razen is a modern, efficient programming language designed for building reliable and performant software with clean, readable syntax.
 
-**Current Version: v0.1-beta.62**
+**Current Version: v0.1-beta.621**
 
 This is the main source code repository for Razen. It contains the compiler, standard library, and documentation.
 
@@ -51,6 +51,96 @@ fun main() {
 Run your program:
 ```bash
 razen run hello.rzn
+```
+
+### More Examples
+
+#### Object-Oriented Programming
+```razen
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    fun greet(self) {
+        printlnc(f"Hello, I'm {self.name}!", "green")
+    }
+}
+
+fun main() {
+    var person = Person.new("Alice", 25)
+    person.greet()
+}
+```
+
+#### Colored Output & F-Strings
+```razen
+fun main() {
+    var name = "Razen"
+    var version = "0.1-beta.621"
+    
+    // Colored output
+    printlnc("Welcome to Razen!", "cyan")
+    printc("Language: ", "yellow")
+    printlnc(name, "bright_green")
+    
+    // F-string interpolation
+    println(f"Version: {version}")
+    printlnc(f"Hello from {name} v{version}!", "#FF6600")
+}
+```
+
+#### Loops & Iteration
+```razen
+fun main() {
+    // Range iteration
+    for i in 1..=5 {
+        printlnc(f"Count: {i}", "blue")
+    }
+    
+    // Array iteration
+    for name in ["Alice", "Bob", "Charlie"] {
+        printlnc(f"Hello, {name}!", "green")
+    }
+    
+    // While loops with break/continue
+    var i = 1
+    while i <= 10 {
+        if i == 5 {
+            i = i + 1
+            continue
+        }
+        if i == 8 {
+            break
+        }
+        println(f"Number: {i}")
+        i = i + 1
+    }
+}
+```
+
+#### Module System
+```razen
+// math.rzn
+pub fun add(a: int, b: int) -> int {
+    return a + b
+}
+
+pub const PI = 3.14159
+
+// main.rzn
+use "./math.rzn"
+
+fun main() {
+    var result = math.add(5, 3)
+    println(f"5 + 3 = {result}")
+    println(f"PI = {math.PI}")
+}
 ```
 ## Usage
 
@@ -125,16 +215,54 @@ rm -rf ~/.razen
 
 ## Language Features
 
-- **Modern Syntax**: Clean, readable code structure with intuitive keywords
-- **Complete Operator Support**: All modern operators including increment/decrement, compound assignment, and bitwise operations
-- **Static Typing**: Compile-time type checking with intelligent type inference
-- **Data Structures**: Built-in support for structs, enums, arrays, and maps
-- **Control Flow**: Comprehensive conditional statements, loops, and pattern matching
-- **String Processing**: F-string interpolation and powerful string operations
-- **Memory Safety**: Automatic memory management with predictable performance
-- **Cross-Platform**: Runs on Linux, macOS, and Windows
-- **Fast Compilation**: Quick build times for rapid development cycles
-- **Professional Tooling**: Comprehensive CLI with project management and helpful diagnostics
+### Core Language
+- **Modern Syntax**: Clean, readable code structure with intuitive keywords and professional design
+- **Static Typing**: Compile-time type checking with intelligent type inference and flexible typing modes
+- **Memory Safety**: Automatic memory management with predictable performance characteristics
+
+### Data Types & Structures
+- **Primitive Types**: Integers, floats, strings, booleans, characters, and null values
+- **Complex Types**: Arrays, maps, and custom data structures with full type safety
+- **Structs & Enums**: User-defined types with field access and pattern matching support
+- **Type Conversion**: Built-in conversion functions (`toint()`, `tostr()`, `tofloat()`, `tobool()`)
+
+### Object-Oriented Programming
+- **Impl Blocks**: Rust-like implementation blocks for methods and associated functions
+- **Method Calls**: Dot notation for method invocation with proper `self` parameter handling
+- **Static Methods**: Associated functions without `self` for constructor patterns
+- **Member Access**: Direct field access and method chaining support
+
+### Control Flow & Loops
+- **Conditional Statements**: `if`, `elif`, `else` with proper scoping and type checking
+- **Loop Constructs**: `while` loops and `for` loops with comprehensive iteration support
+- **Range Iteration**: Both exclusive (`1..10`) and inclusive (`1..=10`) range syntax
+- **Array Iteration**: Direct iteration over array literals and collections
+- **Break & Continue**: Full support for loop control with proper nested loop handling
+
+### String Processing
+- **F-String Interpolation**: Python-style string formatting with `f"Hello, {name}!"` syntax
+- **Expression Support**: Full expression evaluation within f-string braces including dot notation
+- **String Operations**: Concatenation, length calculation, and manipulation functions
+- **Color Output**: Built-in colored printing with `printc()` and `printlnc()` functions supporting 16+ colors and hex codes
+
+### Module System
+- **Module Imports**: `use` statements for importing external modules and libraries
+- **Namespace Management**: Clean module organization with proper scoping and visibility
+- **File-Based Modules**: Each `.rzn` file can be imported as a module
+- **Visibility Control**: `pub` keyword for public declarations and controlled access
+
+### Advanced Features
+- **Pattern Matching**: `match` statements with comprehensive pattern support
+- **Exception Handling**: `try`/`catch` blocks for robust error management
+- **Operator Overloading**: Complete operator support including increment/decrement and compound assignment
+- **Method Chaining**: Fluent interfaces with dot notation method calls
+- **Type Inference**: Smart type detection while maintaining compile-time safety
+
+### Development Experience
+- **Professional Error Messages**: Clear, helpful diagnostics with suggestions and context
+- **Debug Mode**: Comprehensive development mode with detailed compiler output
+- **Fast Compilation**: Quick build times optimized for rapid development cycles
+- **Cross-Platform**: Native support for Linux, macOS, and Windows
 
 ## Getting Help
 

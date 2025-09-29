@@ -1,0 +1,41 @@
+fun main() {
+    // Test basic color names with printlnc
+    printlnc("This text is RED!", "red")
+    printlnc("This text is GREEN!", "green")
+    printlnc("This text is BLUE!", "blue")
+    printlnc("This text is YELLOW!", "yellow")
+    printlnc("This text is MAGENTA!", "magenta")
+    printlnc("This text is CYAN!", "cyan")
+    
+    // Test bright colors
+    printlnc("This is BRIGHT RED!", "bright_red")
+    printlnc("This is PINK!", "pink")
+    printlnc("This is ORANGE!", "orange")
+    
+    // Test hex codes
+    printlnc("This is HEX RED (#FF0000)", "#FF0000")
+    printlnc("This is HEX GREEN (#00FF00)", "#00FF00")
+    printlnc("This is HEX BLUE (#0000FF)", "#0000FF")
+    printlnc("This is HEX ORANGE (#FF6600)", "#FF6600")
+    
+    // Test with printc (no newline)
+    printc("RED ", "red")
+    printc("GREEN ", "green")
+    printc("BLUE ", "blue")
+    println("NORMAL")
+    
+    // Test with variables
+    var message = "This message is in purple!"
+    var color_name = "purple"
+    printlnc(message, color_name)
+    
+    // Test with f-strings
+    var user_color = "cyan"
+    var greeting = f"Welcome to Razen with colors!"
+    printlnc(greeting, user_color)
+    
+    // Test mixed usage
+    println("Normal text")
+    printlnc("Colored text", "red")
+    println("Back to normal")
+}

@@ -354,6 +354,8 @@ impl SemanticAnalyzer {
         let builtins = vec![
             ("print", vec!["value"]),
             ("println", vec!["value"]),
+            ("printc", vec!["text", "color"]), // Colored print
+            ("printlnc", vec!["text", "color"]), // Colored println
             ("input", vec![]), // input() can take 0 or 1 parameters
             ("read", vec!["filename"]),
             ("write", vec!["filename", "content"]),

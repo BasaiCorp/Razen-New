@@ -173,6 +173,8 @@ impl Compiler {
         // Define built-in functions
         self.symbol_table.define("print");
         self.symbol_table.define("println");
+        self.symbol_table.define("printc");   // Colored print
+        self.symbol_table.define("printlnc"); // Colored println
         self.symbol_table.define("input");
         self.symbol_table.define("read");
         self.symbol_table.define("write");
