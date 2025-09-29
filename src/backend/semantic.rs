@@ -14,7 +14,7 @@ use std::path::PathBuf;
 pub struct SemanticAnalyzer {
     diagnostics: Diagnostics,
     symbol_table: SymbolTable,
-    type_checker: TypeChecker,
+    _type_checker: TypeChecker, // Reserved for future type checking integration
     current_function: Option<String>,
     in_loop: bool,
     source_lines: Vec<String>,
@@ -131,7 +131,7 @@ impl SemanticAnalyzer {
         let mut analyzer = SemanticAnalyzer {
             diagnostics: Diagnostics::new(),
             symbol_table: SymbolTable::new(),
-            type_checker: TypeChecker::new(),
+            _type_checker: TypeChecker::new(), // Reserved for future integration
             current_function: None,
             in_loop: false,
             source_lines: Vec::new(),

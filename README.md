@@ -2,7 +2,7 @@
 
 Razen is a modern, efficient programming language designed for building reliable and performant software with clean, readable syntax.
 
-**Current Version: v0.1-beta.5**
+**Current Version: v0.1-beta.62**
 
 This is the main source code repository for Razen. It contains the compiler, standard library, and documentation.
 
