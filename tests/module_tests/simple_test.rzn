@@ -1,0 +1,71 @@
+// Simple module test
+use "./utils/math"
+use "./utils/string_helpers"
+use "./models/user"
+
+fun main() {
+    printlnc("=== Simple Module Test ===", "blue")
+    
+    // Test 1: Math function calls
+    println("")
+    printlnc("Test 1: Math Operations", "green")
+    var sum = math.add(10, 20)
+    println("math.add(10, 20) = " + sum.tostr())
+    
+    var product = math.multiply(7, 8)
+    println("math.multiply(7, 8) = " + product.tostr())
+    
+    var result = math.add(100, 50)
+    println("math.add(100, 50) = " + result.tostr())
+    
+    // Test 2: String operations
+    println("")
+    printlnc("Test 2: String Operations", "green")
+    var greeting = string_helpers.concat("Hello", " World")
+    println("concat('Hello', ' World') = " + greeting)
+    
+    var stars = string_helpers.repeat("*", 10)
+    println("repeat('*', 10) = " + stars)
+    
+    var text = string_helpers.concat("Razen", " Language")
+    println("concat('Razen', ' Language') = " + text)
+    
+    // Test 3: Struct instantiation
+    println("")
+    printlnc("Test 3: Struct Instantiation", "green")
+    var alice = user.User {
+        id: 1,
+        name: "Alice",
+        email: "alice@example.com",
+        age: 25
+    }
+    println("Created user: Alice")
+    
+    var bob = user.User {
+        id: 2,
+        name: "Bob",
+        email: "bob@example.com",
+        age: 30
+    }
+    println("Created user: Bob")
+    
+    // Test 4: Factory functions
+    println("")
+    printlnc("Test 4: Factory Functions", "green")
+    var charlie = user.create_user(3, "Charlie", "charlie@example.com", 28)
+    println("Created user via factory: Charlie")
+    user.display_user(charlie)
+    
+    // Test 5: Complex operations
+    println("")
+    printlnc("Test 5: Complex Operations", "green")
+    var a = 15
+    var b = 25
+    var sum_result = math.add(a, b)
+    var mult_result = math.multiply(sum_result, 2)
+    println("a = " + a.tostr() + ", b = " + b.tostr())
+    println("(a + b) * 2 = " + mult_result.tostr())
+    
+    println("")
+    printlnc("=== All Tests Passed! ===", "blue")
+}

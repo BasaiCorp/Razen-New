@@ -1,0 +1,28 @@
+// Module: utils/math.rzn
+// Tests: Public functions, constants, and variables
+
+pub const PI = 3.14159
+pub const E = 2.71828
+
+pub var counter = 0
+
+pub fun add(a: int, b: int) -> int {
+    return a + b
+}
+
+pub fun multiply(a: int, b: int) -> int {
+    return a * b
+}
+
+pub fun increment_counter() {
+    counter = counter + 1
+}
+
+pub fun get_counter() -> int {
+    return counter
+}
+
+// Private function (should not be accessible)
+fun private_helper() {
+    println("This is private")
+}

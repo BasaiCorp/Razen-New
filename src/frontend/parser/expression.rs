@@ -465,6 +465,42 @@ impl<'a> ExpressionParser<'a> {
                         property: Identifier::new(name),
                         computed: false,
                     });
+                    
+                    // Check if this is followed by a struct instantiation: module.Type { ... }
+                    if self.check(&TokenKind::LeftBrace) && self.is_likely_struct_initialization() {
+                        if self.debug {
+                            println!("🔧 Debug: Found LeftBrace after member expression, parsing as qualified struct instantiation");
+                        }
+                        self.advance(); // consume '{'
+                        
+                        let mut fields = Vec::new();
+                        
+                        if !self.check(&TokenKind::RightBrace) {
+                            loop {
+                                let field_name = self.consume_identifier("Expected field name")?;
+                                self.consume(TokenKind::Colon, "Expected ':' after field name")?;
+                                let field_value = self.parse_expression()?;
+                                
+                                fields.push(StructFieldInit {
+                                    name: Identifier::new(field_name),
+                                    value: field_value,
+                                });
+                                
+                                if !self.match_tokens(&[TokenKind::Comma]) {
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        self.consume(TokenKind::RightBrace, "Expected '}' after struct fields")?;
+                        
+                        // Create a qualified struct instantiation with the member expression
+                        // We'll use the member expression to represent the qualified type name
+                        expr = Expression::QualifiedStructInstantiation(QualifiedStructInstantiation {
+                            qualified_name: Box::new(expr),
+                            fields,
+                        });
+                    }
                 }
             } else if self.match_tokens(&[TokenKind::LeftBracket]) {
                 // Array indexing

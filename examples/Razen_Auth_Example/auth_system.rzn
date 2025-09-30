@@ -1,0 +1,164 @@
+// Authentication system module - handles user database and auth operations
+
+use "./user" as user_mod
+
+pub struct AuthSystem {
+    users: array,
+    max_login_attempts: int,
+    current_user: str
+}
+
+pub fun create_auth_system() -> AuthSystem {
+    return AuthSystem {
+        users: [],
+        max_login_attempts: 3,
+        current_user: ""
+    }
+}
+
+pub fun register_user(auth_system: AuthSystem, username: str, email: str, password: str) -> bool {
+    // Validate input
+    if username.len() < 3 {
+        println("Error: Username must be at least 3 characters long")
+        return false
+    }
+    
+    if !user_mod.validate_email(email) {
+        println("Error: Invalid email format")
+        return false
+    }
+    
+    if !user_mod.validate_password(password) {
+        println("Error: Password must be at least 6 characters long")
+        return false
+    }
+    
+    // Check if username already exists
+    if find_user_by_username(auth_system, username) != null {
+        println("Error: Username already exists")
+        return false
+    }
+    
+    // Check if email already exists
+    if find_user_by_email(auth_system, email) != null {
+        println("Error: Email already registered")
+        return false
+    }
+    
+    // Create new user
+    var new_user = user_mod.create_user(username, email, password)
+    auth_system.users.push(new_user)
+    
+    println(f"✓ User '{username}' registered successfully!")
+    return true
+}
+
+pub fun login_user(auth_system: AuthSystem, username: str, password: str) -> bool {
+    var user = find_user_by_username(auth_system, username)
+    
+    if user == null {
+        println("Error: User not found")
+        return false
+    }
+    
+    if !user.is_active {
+        println("Error: Account is deactivated")
+        return false
+    }
+    
+    if user.login_attempts >= auth_system.max_login_attempts {
+        println("Error: Account locked due to too many failed attempts")
+        return false
+    }
+    
+    if user_mod.verify_password(password, user.password_hash) {
+        // Reset login attempts on successful login
+        user.login_attempts = 0
+        auth_system.current_user = username
+        println(f"✓ Welcome back, {username}!")
+        return true
+    } else {
+        user.login_attempts = user.login_attempts + 1
+        var remaining = auth_system.max_login_attempts - user.login_attempts
+        
+        if remaining > 0 {
+            println(f"Error: Invalid password. {remaining} attempts remaining")
+        } else {
+            println("Error: Account locked due to too many failed attempts")
+        }
+        return false
+    }
+}
+
+pub fun logout_user(auth_system: AuthSystem) {
+    if auth_system.current_user == "" {
+        println("No user is currently logged in")
+    } else {
+        println(f"✓ {auth_system.current_user} logged out successfully")
+        auth_system.current_user = ""
+    }
+}
+
+pub fun is_logged_in(auth_system: AuthSystem) -> bool {
+    return auth_system.current_user != ""
+}
+
+pub fun get_current_user(auth_system: AuthSystem) -> str {
+    return auth_system.current_user
+}
+
+pub fun list_all_users(auth_system: AuthSystem) {
+    if auth_system.users.len() == 0 {
+        println("No users registered")
+        return
+    }
+    
+    println("=== Registered Users ===")
+    for i in 0..auth_system.users.len() {
+        var user = auth_system.users[i]
+        var status = user.is_active ? "Active" : "Inactive"
+        println(f"{i + 1}. {user.username} ({user.email}) - {status}")
+    }
+}
+
+pub fun get_user_stats(auth_system: AuthSystem) {
+    var total_users = auth_system.users.len()
+    var active_users = 0
+    var locked_users = 0
+    
+    for i in 0..total_users {
+        var user = auth_system.users[i]
+        if user.is_active {
+            active_users = active_users + 1
+        }
+        if user.login_attempts >= auth_system.max_login_attempts {
+            locked_users = locked_users + 1
+        }
+    }
+    
+    println("=== System Statistics ===")
+    println(f"Total Users: {total_users}")
+    println(f"Active Users: {active_users}")
+    println(f"Locked Users: {locked_users}")
+    println(f"Max Login Attempts: {auth_system.max_login_attempts}")
+}
+
+fun find_user_by_username(auth_system: AuthSystem, username: str) -> User {
+    for i in 0..auth_system.users.len() {
+        var user = auth_system.users[i]
+        if user.username == username {
+            return user
+        }
+    }
+    return null
+}
+
+fun find_user_by_email(auth_system: AuthSystem, email: str) -> User {
+    for i in 0..auth_system.users.len() {
+        var user = auth_system.users[i]
+        if user.email == email {
+            return user
+        }
+    }
+    return null
+}

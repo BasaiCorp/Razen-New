@@ -1,0 +1,128 @@
+// Main test file for module system
+// Tests all import/export functionality
+
+use "./utils/math"
+use "./utils/string_helpers"
+use "./models/user"
+use "./models/product"
+use "./config"
+
+fun main() {
+    printlnc("=== Module System Tests ===", "blue")
+    println("")
+    
+    // Test 1: Import and use constants
+    printlnc("Test 1: Constants", "green")
+    println("PI = " + math.PI.tostr())
+    println("E = " + math.E.tostr())
+    println("App Name = " + config.APP_NAME)
+    println("Version = " + config.VERSION)
+    println("Tax Rate = " + product.TAX_RATE.tostr())
+    println("")
+    
+    // Test 2: Import and use public variables
+    printlnc("Test 2: Public Variables", "green")
+    println("Initial counter = " + math.counter.tostr())
+    println("Max connections = " + config.max_connections.tostr())
+    println("Total products = " + product.total_products.tostr())
+    println("")
+    
+    // Test 3: Call public functions
+    printlnc("Test 3: Function Calls", "green")
+    var sum = math.add(10, 20)
+    println("10 + 20 = " + sum.tostr())
+    
+    var product_result = math.multiply(5, 7)
+    println("5 * 7 = " + product_result.tostr())
+    
+    var text = string_helpers.concat("Hello", " World")
+    println("Concatenated: " + text)
+    
+    var repeated = string_helpers.repeat("*", 5)
+    println("Repeated: " + repeated)
+    println("")
+    
+    // Test 4: Modify public variables through functions
+    printlnc("Test 4: Variable Modification", "green")
+    math.increment_counter()
+    math.increment_counter()
+    math.increment_counter()
+    var new_counter = math.get_counter()
+    println("Counter after 3 increments = " + new_counter.tostr())
+    
+    config.update_max_connections(200)
+    println("Updated max_connections = " + config.max_connections.tostr())
+    println("")
+    
+    // Test 5: Struct instantiation with qualified names
+    printlnc("Test 5: Struct Instantiation", "green")
+    var user1 = user.User {
+        id: 1,
+        name: "Alice",
+        email: "alice@example.com",
+        age: 25
+    }
+    println("Created user1")
+    
+    var user2 = user.User {
+        id: 2,
+        name: "Bob",
+        email: "bob@example.com",
+        age: 30
+    }
+    println("Created user2")
+    
+    var address1 = user.Address {
+        street: "123 Main St",
+        city: "New York",
+        zipcode: "10001"
+    }
+    println("Created address1")
+    println("")
+    
+    // Test 6: Create structs through functions
+    printlnc("Test 6: Struct Creation via Functions", "green")
+    var user3 = user.create_user(3, "Charlie", "charlie@example.com", 28)
+    println("Created user3 via function")
+    user.display_user(user3)
+    println("")
+    
+    var prod1 = product.create_product(101, "Laptop", 999.99)
+    println("Created product: Laptop")
+    println("Total products now = " + product.total_products.tostr())
+    
+    var prod2 = product.create_product(102, "Mouse", 29.99)
+    println("Created product: Mouse")
+    println("Total products now = " + product.total_products.tostr())
+    println("")
+    
+    // Test 7: Use constants in calculations
+    printlnc("Test 7: Calculations with Constants", "green")
+    var base_price = 100.0
+    var final_price = product.calculate_price_with_tax(base_price)
+    println("Base price: " + base_price.tostr())
+    println("Price with tax: " + final_price.tostr())
+    println("")
+    
+    // Test 8: Multiple struct types from same module
+    printlnc("Test 8: Multiple Structs", "green")
+    var category1 = product.Category {
+        id: 1,
+        name: "Electronics"
+    }
+    println("Created category: Electronics")
+    
+    var category2 = product.Category {
+        id: 2,
+        name: "Accessories"
+    }
+    println("Created category: Accessories")
+    println("")
+    
+    // Test 9: Config module functions
+    printlnc("Test 9: Config Functions", "green")
+    config.get_config_info()
+    println("")
+    
+    printlnc("=== All Module Tests Completed! ===", "blue")
+}

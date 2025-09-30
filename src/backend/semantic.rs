@@ -927,6 +927,16 @@ impl SemanticAnalyzer {
                 // Return the struct type name
                 Some(struct_inst.name.name.clone())
             }
+            Expression::QualifiedStructInstantiation(qualified_struct_inst) => {
+                // Analyze all field values
+                for field in &qualified_struct_inst.fields {
+                    self.analyze_expression(&field.value);
+                }
+                // Analyze the qualified name expression
+                self.analyze_expression(&qualified_struct_inst.qualified_name);
+                // Return a generic struct type for now
+                Some("struct".to_string())
+            }
             Expression::InterpolatedString(interp_str) => {
                 for part in &interp_str.parts {
                     if let InterpolationPart::Expression(expr) = part {
@@ -1040,6 +1050,18 @@ impl SemanticAnalyzer {
                         continue;
                     }
                     
+                    // Skip module imports and qualified names (e.g., module.symbol)
+                    if name.contains('.') {
+                        continue;
+                    }
+                    
+                    // Skip module type symbols
+                    if let SymbolType::Variable(type_name) = &symbol.symbol_type {
+                        if type_name == "module" {
+                            continue;
+                        }
+                    }
+                    
                     let diagnostic = helpers::unused_variable(
                         name,
                         Span::new(symbol.defined_at, symbol.defined_at),
@@ -1057,6 +1079,18 @@ impl SemanticAnalyzer {
                     // Skip unused variable warnings for names starting with underscore
                     if name.starts_with('_') {
                         continue;
+                    }
+                    
+                    // Skip module imports and qualified names (e.g., module.symbol)
+                    if name.contains('.') {
+                        continue;
+                    }
+                    
+                    // Skip module type symbols
+                    if let SymbolType::Variable(type_name) = &symbol.symbol_type {
+                        if type_name == "module" {
+                            continue;
+                        }
                     }
                     
                     let diagnostic = helpers::unused_variable(

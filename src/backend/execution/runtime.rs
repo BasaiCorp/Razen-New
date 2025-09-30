@@ -48,10 +48,14 @@ impl Runtime {
 
         // Pre-pass: register function addresses and extract parameter info from compiler
         let mut function_count = 0;
+        let mut first_function_addr = None;
         for (i, instruction) in ir.iter().enumerate() {
             if let IR::DefineFunction(name, actual_addr) = instruction {
                 // Use the actual function address, not the DefineFunction instruction address
                 self.functions.insert(name.clone(), actual_addr.to_string());
+                if first_function_addr.is_none() {
+                    first_function_addr = Some(*actual_addr);
+                }
                 function_count += 1;
                 if !self.clean_output {
                     println!("Registered function '{}' at address {} (instruction at {})", name, actual_addr, i);
@@ -62,7 +66,57 @@ impl Runtime {
         if !self.clean_output && function_count > 0 {
             println!("Registered {} functions", function_count);
         }
+        
+        // Pre-execute ALL module initialization code (constants and variables)
+        // This scans the entire IR and executes all StoreVar instructions that happen
+        // before function bodies (these are module-level initializations)
+        let mut init_count = 0;
+        for (i, instruction) in ir.iter().enumerate() {
+            match instruction {
+                IR::PushNumber(n) => self.stack.push(n.to_string()),
+                IR::PushString(s) => self.stack.push(s.clone()),
+                IR::PushBoolean(b) => self.stack.push(b.to_string()),
+                IR::PushNull => self.stack.push("null".to_string()),
+                IR::StoreVar(name) => {
+                    // Only initialize if this is before any function body
+                    // Check if we're in the initialization phase (before first Call instruction)
+                    let is_init_phase = !ir[..i].iter().any(|inst| matches!(inst, IR::Call(_, _)));
+                    
+                    if is_init_phase {
+                        if let Some(value) = self.stack.pop() {
+                            self.variables.insert(name.clone(), value);
+                            init_count += 1;
+                            if !self.clean_output {
+                                println!("Initialized: {} = {}", name, self.variables.get(name).unwrap_or(&"?".to_string()));
+                            }
+                        }
+                    } else {
+                        // Put the value back if we're not in init phase
+                        if let Some(value) = self.stack.last() {
+                            self.stack.push(value.clone());
+                        }
+                    }
+                },
+                IR::DefineFunction(_, _) | IR::Label(_) | IR::Return => {
+                    // These don't affect initialization
+                },
+                _ => {
+                    // Clear stack for other instructions during scan
+                    if matches!(instruction, IR::Call(_, _)) {
+                        break; // Stop scanning at first Call
+                    }
+                }
+            }
+        }
+        
+        if !self.clean_output && init_count > 0 {
+            println!("Initialized {} module variables/constants", init_count);
+        }
+        
+        // Clear the stack after initialization
+        self.stack.clear();
 
+        // Start normal execution from beginning
         let mut pc = 0;
         while pc < ir.len() {
             let instruction = &ir[pc];

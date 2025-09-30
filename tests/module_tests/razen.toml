@@ -1,0 +1,7 @@
+[package]
+name = "module_tests"
+version = "1.0.0"
+authors = ["Razen Team"]
+description = "Comprehensive module system tests"
+
+[dependencies]

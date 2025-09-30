@@ -1037,6 +1037,34 @@ impl Compiler {
                 // Create struct with the specified number of fields
                 self.emit(IR::CreateMap(struct_inst.fields.len() + 1)); // +1 for type name
             },
+            Expression::QualifiedStructInstantiation(qualified_struct_inst) => {
+                // Compile qualified struct instantiation (e.g., module.Type { ... })
+                // Extract the type name from the qualified name
+                let type_name = if let Expression::MemberExpression(member_expr) = &*qualified_struct_inst.qualified_name {
+                    format!("{}.{}", 
+                        if let Expression::Identifier(id) = &*member_expr.object {
+                            id.name.clone()
+                        } else {
+                            "unknown".to_string()
+                        },
+                        member_expr.property.name.clone()
+                    )
+                } else {
+                    "unknown".to_string()
+                };
+                
+                // Push struct type name first
+                self.emit(IR::PushString(type_name));
+                
+                // Compile all field values
+                for field in &qualified_struct_inst.fields {
+                    self.emit(IR::PushString(field.name.name.clone())); // field name
+                    self.compile_expression(field.value.clone()); // field value
+                }
+                
+                // Create struct with the specified number of fields
+                self.emit(IR::CreateMap(qualified_struct_inst.fields.len() + 1)); // +1 for type name
+            },
             Expression::AssignmentExpression(assign_expr) => {
                 // Handle assignment to identifier
                 if let Expression::Identifier(ident) = *assign_expr.left {

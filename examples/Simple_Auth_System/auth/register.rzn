@@ -1,0 +1,37 @@
+use "./users"
+
+var username
+var firstname
+var lastname
+var age
+var email
+var password
+var confirm_password
+
+
+pub fun register() {
+    printlnc("Register Form", "blue")
+    print("Enter Username: ")
+    username = input()
+    print("Enter Firstname: ")
+    firstname = input()
+    print("Enter Lastname: ")
+    lastname = input()
+    print("Enter Age: ")
+    age = input()
+    print("Enter E-mail: ")
+    email = input()
+    print("Enter Password: ")
+    password = input()
+    print("Enter Confirm Password: ")
+    username = input()
+}
+
+pub var user = users.Userdata {
+    username: username,
+    firstname: firstname,
+    lastname: lastname,
+    age: age,
+    email: email,
+    password: password
+}

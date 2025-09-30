@@ -1,0 +1,13 @@
+pub struct Userdata {
+    username: str,
+    firstname: str,
+    lastname: str, 
+    age: int,
+    email: str,
+    password: str
+}
+
+fun users() {
+    
+}
+

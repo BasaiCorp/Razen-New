@@ -91,6 +91,9 @@ pub enum Expression {
     // Struct instantiation
     StructInstantiation(StructInstantiation),
     
+    // Qualified struct instantiation (e.g., module.Type { ... })
+    QualifiedStructInstantiation(QualifiedStructInstantiation),
+    
     // String interpolation
     InterpolatedString(InterpolatedString),
     
@@ -419,6 +422,12 @@ pub struct StructInstantiation {
 pub struct StructFieldInit {
     pub name: Identifier,
     pub value: Expression,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct QualifiedStructInstantiation {
+    pub qualified_name: Box<Expression>,  // The qualified type name (e.g., module.Type as MemberExpression)
+    pub fields: Vec<StructFieldInit>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

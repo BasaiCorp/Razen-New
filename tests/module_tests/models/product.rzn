@@ -1,0 +1,33 @@
+// Module: models/product.rzn
+// Tests: Multiple struct types and constants
+
+pub const TAX_RATE = 0.15
+pub const DISCOUNT_THRESHOLD = 100
+
+pub struct Product {
+    id: int,
+    name: str,
+    price: float,
+    in_stock: bool
+}
+
+pub struct Category {
+    id: int,
+    name: str
+}
+
+pub var total_products = 0
+
+pub fun create_product(id: int, name: str, price: float) -> Product {
+    total_products = total_products + 1
+    return Product {
+        id: id,
+        name: name,
+        price: price,
+        in_stock: true
+    }
+}
+
+pub fun calculate_price_with_tax(price: float) -> float {
+    return price + (price * TAX_RATE)
+}

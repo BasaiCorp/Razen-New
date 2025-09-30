@@ -1,0 +1,18 @@
+// Module: config.rzn
+// Tests: Configuration constants and variables
+
+pub const APP_NAME = "Razen Test App"
+pub const VERSION = "1.0.0"
+pub const DEBUG_MODE = true
+
+pub var max_connections = 100
+pub var timeout = 30
+
+pub fun get_config_info() {
+    println("Application: " + APP_NAME)
+    println("Version: " + VERSION)
+}
+
+pub fun update_max_connections(new_value: int) {
+    max_connections = new_value
+}

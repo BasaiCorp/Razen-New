@@ -1,0 +1,30 @@
+// Module: models/user.rzn
+// Tests: Public struct definitions and struct instantiation
+
+pub struct User {
+    id: int,
+    name: str,
+    email: str,
+    age: int
+}
+
+pub struct Address {
+    street: str,
+    city: str,
+    zipcode: str
+}
+
+pub fun create_user(id: int, name: str, email: str, age: int) -> User {
+    return User {
+        id: id,
+        name: name,
+        email: email,
+        age: age
+    }
+}
+
+pub fun display_user(user: User) {
+    println("User Information:")
+    // Note: Struct field access might not be fully implemented yet
+    println("Created user")
+}

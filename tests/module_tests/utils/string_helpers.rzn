@@ -1,0 +1,21 @@
+// Module: utils/string_helpers.rzn
+// Tests: String manipulation functions
+
+pub fun uppercase(text: str) -> str {
+    // For now, just return the text as-is since we don't have string methods yet
+    return text
+}
+
+pub fun concat(a: str, b: str) -> str {
+    return a + b
+}
+
+pub fun repeat(text: str, times: int) -> str {
+    var result = ""
+    var i = 0
+    while i < times {
+        result = result + text
+        i = i + 1
+    }
+    return result
+}

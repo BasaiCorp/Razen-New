@@ -1,0 +1,7 @@
+// Razen project main file
+
+use "./auth/register"
+
+fun main() {
+    register.register()
+}

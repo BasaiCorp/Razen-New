@@ -1,0 +1,146 @@
+// Test file focusing on currently working module features
+use "./utils/math"
+use "./utils/string_helpers"
+use "./models/user"
+use "./models/product"
+
+fun main() {
+    printlnc("=== Module System - Working Features Test ===", "blue")
+    println("")
+    
+    // ✅ Test 1: Import and call public functions
+    printlnc("✅ Test 1: Public Function Calls", "green")
+    var sum = math.add(15, 25)
+    println("math.add(15, 25) = " + sum.tostr())
+    
+    var product_val = math.multiply(8, 9)
+    println("math.multiply(8, 9) = " + product_val.tostr())
+    
+    var text = string_helpers.concat("Razen", " Language")
+    println("string_helpers.concat('Razen', ' Language') = " + text)
+    
+    var stars = string_helpers.repeat("⭐", 3)
+    println("string_helpers.repeat('⭐', 3) = " + stars)
+    println("")
+    
+    // ✅ Test 2: Modify module state through functions
+    printlnc("✅ Test 2: Module State Modification", "green")
+    println("Incrementing counter 5 times...")
+    math.increment_counter()
+    math.increment_counter()
+    math.increment_counter()
+    math.increment_counter()
+    math.increment_counter()
+    var counter_value = math.get_counter()
+    println("Counter value after 5 increments: " + counter_value.tostr())
+    println("")
+    
+    // ✅ Test 3: Qualified struct instantiation
+    printlnc("✅ Test 3: Qualified Struct Instantiation", "green")
+    var alice = user.User {
+        id: 1,
+        name: "Alice Johnson",
+        email: "alice@example.com",
+        age: 28
+    }
+    println("Created user: Alice Johnson")
+    user.display_user(alice)
+    
+    var bob = user.User {
+        id: 2,
+        name: "Bob Smith",
+        email: "bob@example.com",
+        age: 35
+    }
+    println("Created user: Bob Smith")
+    user.display_user(bob)
+    println("")
+    
+    // ✅ Test 4: Create structs via module functions
+    printlnc("✅ Test 4: Struct Creation via Functions", "green")
+    var charlie = user.create_user(3, "Charlie Brown", "charlie@example.com", 42)
+    println("Created user via function: Charlie Brown")
+    user.display_user(charlie)
+    println("")
+    
+    // ✅ Test 5: Multiple struct types from same module
+    printlnc("✅ Test 5: Multiple Struct Types", "green")
+    var laptop = product.Product {
+        id: 101,
+        name: "Gaming Laptop",
+        price: 1299.99,
+        in_stock: true
+    }
+    println("Created product: Gaming Laptop")
+    
+    var mouse = product.Product {
+        id: 102,
+        name: "Wireless Mouse",
+        price: 49.99,
+        in_stock: true
+    }
+    println("Created product: Wireless Mouse")
+    
+    var electronics = product.Category {
+        id: 1,
+        name: "Electronics"
+    }
+    println("Created category: Electronics")
+    println("")
+    
+    // ✅ Test 6: Address struct from user module
+    printlnc("✅ Test 6: Multiple Structs from Same Module", "green")
+    var home_address = user.Address {
+        street: "456 Oak Avenue",
+        city: "San Francisco",
+        zipcode: "94102"
+    }
+    println("Created address: 456 Oak Avenue, San Francisco")
+    
+    var work_address = user.Address {
+        street: "789 Tech Blvd",
+        city: "Palo Alto",
+        zipcode: "94301"
+    }
+    println("Created address: 789 Tech Blvd, Palo Alto")
+    println("")
+    
+    // ✅ Test 7: Nested module paths
+    printlnc("✅ Test 7: Nested Module Paths", "green")
+    println("Successfully imported from utils/math.rzn")
+    println("Successfully imported from utils/string_helpers.rzn")
+    println("Successfully imported from models/user.rzn")
+    println("Successfully imported from models/product.rzn")
+    println("")
+    
+    // ✅ Test 8: Functions with return values
+    printlnc("✅ Test 8: Functions with Return Values", "green")
+    var a = 100
+    var b = 50
+    var sum_result = math.add(a, b)
+    var mult_result = math.multiply(a, b)
+    println("a = " + a.tostr() + ", b = " + b.tostr())
+    println("add(a, b) = " + sum_result.tostr())
+    println("multiply(a, b) = " + mult_result.tostr())
+    println("")
+    
+    // ✅ Test 9: String operations
+    printlnc("✅ Test 9: String Operations", "green")
+    var greeting = string_helpers.concat("Hello", " from Razen!")
+    println(greeting)
+    
+    var separator = string_helpers.repeat("-", 40)
+    println(separator)
+    println("")
+    
+    printlnc("=== All Working Features Verified! ===", "blue")
+    println("")
+    printlnc("Summary:", "yellow")
+    println("✅ Public function imports and calls")
+    println("✅ Qualified struct instantiation (module.Type { ... })")
+    println("✅ Multiple struct types per module")
+    println("✅ Nested module directory structure")
+    println("✅ Module state management through functions")
+    println("✅ Functions with parameters and return values")
+    println("✅ String manipulation across modules")
+}

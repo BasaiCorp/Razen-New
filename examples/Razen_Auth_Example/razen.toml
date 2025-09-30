@@ -1,0 +1,14 @@
+[project]
+name = "Razen_Auth_Example"
+version = "0.1.0"
+description = "A Razen project"
+
+[build]
+main = "main.rzn"
+src_dir = "src"
+optimization = 2
+debug = false
+
+[dependencies]
+# Add your dependencies here
+# example_lib = "1.0.0"

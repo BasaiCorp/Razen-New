@@ -1,0 +1,210 @@
+// Razen User Authentication System
+// Demonstrates: structs, loops, imports, functions, arrays, and more
+
+use "./auth_system" as auth
+use "./user" as user_mod
+use "./utils" as utils
+
+fun main() {
+    var auth_system = auth.create_auth_system()
+    
+    utils.clear_screen()
+    utils.print_header("RAZEN USER AUTHENTICATION SYSTEM")
+    println("Welcome to the Razen Auth Demo!")
+    println("This program demonstrates various Razen language features:")
+    println("• Structs and custom types")
+    println("• Module imports and exports")
+    println("• Loops and conditionals")
+    println("• Arrays and data manipulation")
+    println("• Function composition")
+    println("")
+    
+    // Main application loop
+    var running = true
+    while running {
+        if auth.is_logged_in(auth_system) {
+            running = show_user_menu(auth_system)
+        } else {
+            running = show_main_menu(auth_system)
+        }
+    }
+    
+    utils.print_success("Thank you for using Razen Auth System!")
+}
+
+fun show_main_menu(auth_system: auth.AuthSystem) -> bool {
+    println("")
+    utils.print_header("MAIN MENU")
+    utils.print_menu_option(1, "Register New User")
+    utils.print_menu_option(2, "Login")
+    utils.print_menu_option(3, "View All Users")
+    utils.print_menu_option(4, "System Statistics")
+    utils.print_menu_option(5, "Exit")
+    println("")
+    
+    var choice = utils.get_user_input("Enter your choice")
+    
+    match choice {
+        "1" => {
+            register_new_user(auth_system)
+            return true
+        },
+        "2" => {
+            login_user(auth_system)
+            return true
+        },
+        "3" => {
+            auth.list_all_users(auth_system)
+            utils.wait_for_enter()
+            return true
+        },
+        "4" => {
+            auth.get_user_stats(auth_system)
+            utils.wait_for_enter()
+            return true
+        },
+        "5" => {
+            if utils.confirm_action("Are you sure you want to exit?") {
+                return false
+            }
+            return true
+        },
+        _ => {
+            utils.print_error("Invalid choice. Please try again.")
+            utils.wait_for_enter()
+            return true
+        }
+    }
+}
+
+fun show_user_menu(auth_system: auth.AuthSystem) -> bool {
+    var current_user = auth.get_current_user(auth_system)
+    
+    println("")
+    utils.print_header(f"USER DASHBOARD - {current_user}")
+    utils.print_menu_option(1, "View Profile")
+    utils.print_menu_option(2, "Change Password")
+    utils.print_menu_option(3, "View All Users")
+    utils.print_menu_option(4, "System Statistics")
+    utils.print_menu_option(5, "Logout")
+    println("")
+    
+    var choice = utils.get_user_input("Enter your choice")
+    
+    match choice {
+        "1" => {
+            show_user_profile(auth_system, current_user)
+            return true
+        },
+        "2" => {
+            change_password(auth_system, current_user)
+            return true
+        },
+        "3" => {
+            auth.list_all_users(auth_system)
+            utils.wait_for_enter()
+            return true
+        },
+        "4" => {
+            auth.get_user_stats(auth_system)
+            utils.wait_for_enter()
+            return true
+        },
+        "5" => {
+            auth.logout_user(auth_system)
+            utils.wait_for_enter()
+            return true
+        },
+        _ => {
+            utils.print_error("Invalid choice. Please try again.")
+            utils.wait_for_enter()
+            return true
+        }
+    }
+}
+
+fun register_new_user(auth_system: auth.AuthSystem) {
+    utils.print_header("USER REGISTRATION")
+    
+    var username = utils.get_user_input("Enter username (min 3 chars)")
+    var email = utils.get_user_input("Enter email")
+    var password = utils.get_password_input("Enter password (min 6 chars)")
+    var confirm_password = utils.get_password_input("Confirm password")
+    
+    if password != confirm_password {
+        utils.print_error("Passwords do not match!")
+        utils.wait_for_enter()
+        return
+    }
+    
+    var success = auth.register_user(auth_system, username, email, password)
+    if success {
+        utils.print_info("You can now login with your credentials")
+    }
+    
+    utils.wait_for_enter()
+}
+
+fun login_user(auth_system: auth.AuthSystem) {
+    utils.print_header("USER LOGIN")
+    
+    var username = utils.get_user_input("Enter username")
+    var password = utils.get_password_input("Enter password")
+    
+    var success = auth.login_user(auth_system, username, password)
+    if !success {
+        utils.wait_for_enter()
+    }
+}
+
+fun show_user_profile(auth_system: auth.AuthSystem, username: str) {
+    utils.print_header(f"USER PROFILE - {username}")
+    
+    // Find and display user information
+    for i in 0..auth_system.users.len() {
+        var user = auth_system.users[i]
+        if user.username == username {
+            user_mod.display_user_info(user)
+            break
+        }
+    }
+    
+    utils.wait_for_enter()
+}
+
+fun change_password(auth_system: auth.AuthSystem, username: str) {
+    utils.print_header("CHANGE PASSWORD")
+    
+    var current_password = utils.get_password_input("Enter current password")
+    
+    // Find user and verify current password
+    var user_found = false
+    for i in 0..auth_system.users.len() {
+        var user = auth_system.users[i]
+        if user.username == username {
+            user_found = true
+            if user_mod.verify_password(current_password, user.password_hash) {
+                var new_password = utils.get_password_input("Enter new password (min 6 chars)")
+                var confirm_password = utils.get_password_input("Confirm new password")
+                
+                if new_password != confirm_password {
+                    utils.print_error("Passwords do not match!")
+                } else if !user_mod.validate_password(new_password) {
+                    utils.print_error("Password must be at least 6 characters long")
+                } else {
+                    user.password_hash = user_mod.hash_password(new_password)
+                    utils.print_success("Password changed successfully!")
+                }
+            } else {
+                utils.print_error("Current password is incorrect")
+            }
+            break
+        }
+    }
+    
+    if !user_found {
+        utils.print_error("User not found")
+    }
+    
+    utils.wait_for_enter()
+}

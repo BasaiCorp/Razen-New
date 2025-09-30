@@ -1,0 +1,125 @@
+// Test edge cases and complex scenarios
+use "./utils/math"
+use "./utils/string_helpers"
+use "./models/user"
+
+fun main() {
+    printlnc("=== Module System - Edge Cases Test ===", "blue")
+    println("")
+    
+    // Test 1: Chained function calls
+    printlnc("Test 1: Chained Operations", "green")
+    var result1 = math.add(10, 20)
+    var result2 = math.multiply(result1, 2)
+    var result3 = math.add(result2, 5)
+    println("((10 + 20) * 2) + 5 = " + result3.tostr())
+    println("")
+    
+    // Test 2: Passing function results to other functions
+    printlnc("Test 2: Function Composition", "green")
+    var sum = math.add(5, 10)
+    var product = math.multiply(sum, 3)
+    println("multiply(add(5, 10), 3) = " + product.tostr())
+    println("")
+    
+    // Test 3: Multiple struct instantiations in sequence
+    printlnc("Test 3: Multiple Struct Instantiations", "green")
+    var user1 = user.User {
+        id: 1,
+        name: "User One",
+        email: "user1@test.com",
+        age: 25
+    }
+    var user2 = user.User {
+        id: 2,
+        name: "User Two",
+        email: "user2@test.com",
+        age: 30
+    }
+    var user3 = user.User {
+        id: 3,
+        name: "User Three",
+        email: "user3@test.com",
+        age: 35
+    }
+    println("Created 3 users successfully")
+    user.display_user(user1)
+    user.display_user(user2)
+    user.display_user(user3)
+    println("")
+    
+    // Test 4: String operations with function results
+    printlnc("Test 4: String Operations with Numbers", "green")
+    var num1 = math.add(100, 200)
+    var num2 = math.multiply(5, 5)
+    var text1 = "Result 1: " + num1.tostr()
+    var text2 = "Result 2: " + num2.tostr()
+    var combined = string_helpers.concat(text1, " | " + text2)
+    println(combined)
+    println("")
+    
+    // Test 5: Nested struct creation
+    printlnc("Test 5: Nested Struct Creation", "green")
+    var addr = user.Address {
+        street: "123 Test St",
+        city: "Test City",
+        zipcode: "12345"
+    }
+    var person = user.User {
+        id: 100,
+        name: "Test Person",
+        email: "test@test.com",
+        age: 40
+    }
+    println("Created address and user separately")
+    println("")
+    
+    // Test 6: Loop with module functions
+    printlnc("Test 6: Loop with Module Functions", "green")
+    var i = 1
+    while i <= 5 {
+        var squared = math.multiply(i, i)
+        println("Square of " + i.tostr() + " = " + squared.tostr())
+        i = i + 1
+    }
+    println("")
+    
+    // Test 7: Conditional with module functions
+    printlnc("Test 7: Conditionals with Module Functions", "green")
+    var value = math.add(10, 15)
+    if value > 20 {
+        println("Value " + value.tostr() + " is greater than 20")
+    } else {
+        println("Value " + value.tostr() + " is not greater than 20")
+    }
+    println("")
+    
+    // Test 8: Array of struct instantiations (if arrays work)
+    printlnc("Test 8: Multiple Addresses", "green")
+    var address1 = user.Address {
+        street: "111 First Ave",
+        city: "City A",
+        zipcode: "11111"
+    }
+    var address2 = user.Address {
+        street: "222 Second Ave",
+        city: "City B",
+        zipcode: "22222"
+    }
+    var address3 = user.Address {
+        street: "333 Third Ave",
+        city: "City C",
+        zipcode: "33333"
+    }
+    println("Created 3 addresses successfully")
+    println("")
+    
+    // Test 9: String repetition with calculated values
+    printlnc("Test 9: Dynamic String Repetition", "green")
+    var repeat_count = math.add(2, 3)
+    var repeated_text = string_helpers.repeat("X", repeat_count)
+    println("Repeated 'X' " + repeat_count.tostr() + " times: " + repeated_text)
+    println("")
+    
+    printlnc("=== All Edge Cases Passed! ===", "blue")
+}

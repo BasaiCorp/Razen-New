@@ -1,0 +1,42 @@
+# Razen build artifacts
+target/
+*.o
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Razen cache
+.razen/
+.cache/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build outputs
+dist/
+build/
+out/
