@@ -11,7 +11,6 @@
   "use"
   "pub"
   "as"
-  "from"
   "mod"
   "if"
   "else"
