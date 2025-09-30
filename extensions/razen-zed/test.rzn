@@ -1,0 +1,180 @@
+// Test file for Razen syntax highlighting
+
+// Import modules
+use "./utils"
+use "./calculator" as calc
+
+// Constants
+const VERSION = "1.0.0"
+const PI = 3.14159
+
+// Variable declarations
+var name = "Razen"
+var age: int = 25
+var score: float = 95.5
+
+// Function declaration
+fun greet(name: str) -> str {
+    return f"Hello, {name}!"
+}
+
+// Struct definition
+struct Person {
+    name: str,
+    age: int,
+    email: str
+}
+
+// Impl block
+impl Person {
+    fun new(name: str, age: int, email: str) -> Person {
+        return Person {
+            name: name,
+            age: age,
+            email: email
+        }
+    }
+    
+    fun greet(self) {
+        println(f"Hi, I'm {self.name} and I'm {self.age} years old")
+    }
+    
+    fun is_adult(self) -> bool {
+        return self.age >= 18
+    }
+}
+
+// Enum definition
+enum Status {
+    Active,
+    Inactive,
+    Pending
+}
+
+// Control flow examples
+fun control_flow_demo() {
+    // If-else
+    if age >= 18 {
+        println("Adult")
+    } elif age >= 13 {
+        println("Teenager")
+    } else {
+        println("Child")
+    }
+    
+    // While loop
+    var i = 0
+    while i < 5 {
+        println(f"Count: {i}")
+        i = i + 1
+    }
+    
+    // For loop with range
+    for i in 1..=10 {
+        println(f"Number: {i}")
+    }
+    
+    // For loop with array
+    for item in [1, 2, 3, 4, 5] {
+        println(f"Item: {item}")
+    }
+    
+    // Match statement
+    var status = "active"
+    match status {
+        "active" => println("Status is active"),
+        "inactive" => println("Status is inactive"),
+        _ => println("Unknown status")
+    }
+}
+
+// Array and map examples
+fun collections_demo() {
+    // Arrays
+    var numbers = [1, 2, 3, 4, 5]
+    var names = ["Alice", "Bob", "Charlie"]
+    
+    // Maps
+    var scores = {
+        "Alice": 95,
+        "Bob": 87,
+        "Charlie": 92
+    }
+    
+    // Array access
+    var first = numbers[0]
+    var second = names[1]
+    
+    // Map access
+    var alice_score = scores["Alice"]
+}
+
+// Operators
+fun operators_demo() {
+    // Arithmetic
+    var sum = 10 + 5
+    var diff = 10 - 5
+    var prod = 10 * 5
+    var quot = 10 / 5
+    var modu = 10 % 3
+    var pow = 2 ** 8
+    
+    // Comparison
+    var eq = 10 == 10
+    var neq = 10 != 5
+    var lt = 5 < 10
+    var gt = 10 > 5
+    var lte = 5 <= 10
+    var gte = 10 >= 5
+    
+    // Logical
+    var and_result = true && false
+    var or_result = true || false
+    var not_result = !true
+    
+    // Bitwise
+    var bit_and = 5 & 3
+    var bit_or = 5 | 3
+    var bit_xor = 5 ^ 3
+    var bit_not = ~5
+    var left_shift = 5 << 2
+    var right_shift = 5 >> 2
+    
+    // Assignment
+    var x = 10
+    x += 5
+    x -= 3
+    x *= 2
+    x /= 4
+}
+
+// String interpolation
+fun string_demo() {
+    var name = "World"
+    var greeting = f"Hello, {name}!"
+    var complex = f"Sum of 2 + 3 = {2 + 3}"
+    
+    println(greeting)
+    println(complex)
+}
+
+// Main function
+fun main() {
+    println("=== Razen Language Test ===")
+    
+    // Create person
+    var person = Person.new("Alice", 25, "alice@example.com")
+    person.greet()
+    
+    if person.is_adult() {
+        println("Person is an adult")
+    }
+    
+    // Call demos
+    control_flow_demo()
+    collections_demo()
+    operators_demo()
+    string_demo()
+    
+    println("=== Test Complete ===")
+}

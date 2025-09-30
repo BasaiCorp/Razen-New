@@ -1,0 +1,5 @@
+// Simple Razen test file
+fun main() {
+    var name = "Razen"
+    println(f"Hello, {name}!")
+}

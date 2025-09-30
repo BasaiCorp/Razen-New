@@ -1,0 +1,25 @@
+# Tree-sitter generated files
+tree-sitter-razen/src/
+tree-sitter-razen/node_modules/
+tree-sitter-razen/target/
+tree-sitter-razen/bindings/
+
+# Build artifacts
+*.o
+*.so
+*.dylib
+*.wasm
+
+# Package manager
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

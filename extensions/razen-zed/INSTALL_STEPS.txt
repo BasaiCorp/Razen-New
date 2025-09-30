@@ -1,0 +1,33 @@
+RAZEN ZED EXTENSION - INSTALLATION STEPS
+=========================================
+
+The grammar is now fixed and working! Follow these steps:
+
+1. OPEN ZED:
+   $ zed
+
+2. INSTALL EXTENSION:
+   - Press: Ctrl+Shift+P (or Cmd+Shift+P on Mac)
+   - Type: "install dev extension"
+   - Select: /home/prathmeshbro/Desktop/razen project/razen-lang-new/extensions/razen-zed
+   - Click: Open
+
+3. VERIFY:
+   - Check if "Razen" appears in Extensions list
+   - No errors should appear
+
+4. TEST:
+   - Open: simple.rzn (in the razen-zed folder)
+   - You should see syntax highlighting!
+
+5. IF IT STILL FAILS:
+   - Check Zed logs: Ctrl+Shift+P → "Open Log"
+   - Look for "razen" errors
+   - Share the error message
+
+WHAT WAS FIXED:
+- Changed extension.toml to use local grammar path
+- Grammar files are generated in tree-sitter-razen/src/
+- Parser is working (tested with bunx tree-sitter parse)
+
+TRY IT NOW!
