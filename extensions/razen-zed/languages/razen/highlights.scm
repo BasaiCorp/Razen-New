@@ -51,6 +51,12 @@
 (string_content) @string
 (interpolation) @embedded
 
+; Keywords as statements
+(break_statement) @keyword
+(continue_statement) @keyword
+(return_statement) @keyword
+
+; Keywords as string literals (anonymous tokens)
 [
  "var"
  "const"
@@ -68,9 +74,6 @@
  "for"
  "in"
  "match"
- "return"
- "break"
- "continue"
  "try"
  "catch"
  "throw"
