@@ -1,43 +1,7 @@
 ; Razen syntax highlighting
 
-; Keywords
-[
-  "var"
-  "const"
-  "fun"
-  "struct"
-  "enum"
-  "impl"
-  "use"
-  "pub"
-  "as"
-  "if"
-  "else"
-  "elif"
-  "while"
-  "for"
-  "in"
-  "match"
-  "return"
-  "break"
-  "continue"
-  "try"
-  "catch"
-  "throw"
-] @keyword
-
-; Types
-[
-  "int"
-  "float"
-  "str"
-  "bool"
-  "char"
-  "any"
-] @type.builtin
-
-; Special
-(self) @variable.special
+; Comments
+(comment) @comment
 
 ; Literals
 (integer) @number
@@ -45,9 +9,6 @@
 (string) @string
 (boolean) @boolean
 (null) @constant.builtin
-
-; Comments
-(comment) @comment
 
 ; String interpolation
 (interpolated_string) @string
@@ -101,6 +62,25 @@
 
 (parameter
   name: (identifier) @variable.parameter)
+
+; Special
+(self) @variable.special
+
+; Keywords - using regex match for identifiers
+((identifier) @keyword
+ (#match? @keyword "^(var|const|fun|struct|enum|impl|use|pub|as|mod|if|else|elif|while|for|in|match|return|break|continue|try|catch|throw|from)$"))
+
+; Type keywords
+((identifier) @type.builtin
+ (#match? @type.builtin "^(int|float|str|bool|char|any|array|map)$"))
+
+; Boolean literals
+((identifier) @boolean
+ (#match? @boolean "^(true|false)$"))
+
+; Null literal
+((identifier) @constant.builtin
+ (#match? @constant.builtin "^null$"))
 
 ; Operators
 [
