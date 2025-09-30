@@ -4,6 +4,9 @@
 (function_declaration
   name: (identifier) @name) @item
 
+(function_declaration
+  name: (identifier) @name) @item
+
 ; Methods
 (method_declaration
   name: (identifier) @name) @item

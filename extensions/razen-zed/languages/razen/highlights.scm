@@ -50,7 +50,6 @@
 (interpolated_string) @string
 (string_content) @string
 (interpolation) @embedded
-(escape_sequence) @string.escape
 
 [
  "var"
