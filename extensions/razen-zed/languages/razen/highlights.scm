@@ -89,35 +89,18 @@
   "*"
   "/"
   "%"
-  "**"
   "="
-  "+="
-  "-="
-  "*="
-  "/="
-  "%="
   "=="
   "!="
   "<"
   ">"
   "<="
   ">="
-  "&&"
-  "||"
   "!"
   "&"
   "|"
   "^"
   "~"
-  "<<"
-  ">>"
-  "++"
-  "--"
-  "?"
-  "??"
-  ".."
-  "..="
-  "..."
 ] @operator
 
 ; Punctuation
@@ -134,14 +117,8 @@
   ","
   "."
   ":"
-  "::"
   ";"
 ] @punctuation.delimiter
-
-[
-  "->"
-  "=>"
-] @punctuation.special
 
 ; Identifiers (fallback)
 (identifier) @variable
