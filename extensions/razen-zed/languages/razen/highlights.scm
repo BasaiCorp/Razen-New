@@ -61,8 +61,6 @@
  "use"
  "pub"
  "as"
- "mod"
- "from"
  "if"
  "else"
  "elif"
