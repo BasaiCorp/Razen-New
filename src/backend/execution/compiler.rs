@@ -94,6 +94,8 @@ pub struct Compiler {
     pub errors: Vec<String>,
     current_file_path: Option<std::path::PathBuf>,
     imported_modules: HashMap<String, String>, // module_name -> module_path
+    current_module_name: Option<String>, // Track current module being compiled
+    module_level_vars: HashMap<String, Vec<String>>, // module_name -> [var1, var2, ...]
 }
 
 impl Compiler {
@@ -113,6 +115,8 @@ impl Compiler {
             errors: Vec::new(),
             current_file_path: None,
             imported_modules: HashMap::new(),
+            current_module_name: None,
+            module_level_vars: HashMap::new(),
         }
     }
 
@@ -267,6 +271,28 @@ impl Compiler {
                         // Store the module mapping
                         self.imported_modules.insert(module_name.clone(), path.to_string_lossy().to_string());
                         
+                        // First pass: collect all module-level variables and constants
+                        let mut module_vars = Vec::new();
+                        for stmt in &program.statements {
+                            match stmt {
+                                Statement::ConstantDeclaration(const_decl) if const_decl.is_public => {
+                                    module_vars.push(const_decl.name.name.clone());
+                                },
+                                Statement::VariableDeclaration(var_decl) if var_decl.is_public => {
+                                    module_vars.push(var_decl.name.name.clone());
+                                },
+                                _ => {}
+                            }
+                        }
+                        
+                        // Store module variables for qualification
+                        if !module_vars.is_empty() {
+                            self.module_level_vars.insert(module_name.clone(), module_vars.clone());
+                            if !self.clean_output {
+                                println!("Module {} has variables: {:?}", module_name, module_vars);
+                            }
+                        }
+                        
                         // Compile all public items from the imported module with qualified names
                         for stmt in program.statements {
                             match stmt {
@@ -277,11 +303,24 @@ impl Compiler {
                                         let parameters: Vec<String> = func_decl.parameters.iter()
                                             .map(|p| p.name.name.clone()).collect();
                                         
+                                        // Set module context before compiling function
+                                        self.current_module_name = Some(module_name.clone());
+                                        
                                         // Compile the function with qualified name
+                                        let ir_start = self.ir.len();
                                         self.compile_function_declaration(qualified_name.clone(), parameters, func_decl.body.statements);
+                                        let ir_end = self.ir.len();
+                                        
+                                        // Clear module context after compiling
+                                        self.current_module_name = None;
                                         
                                         if !self.clean_output {
                                             println!("Imported function: {} -> {}", func_decl.name.name, qualified_name);
+                                            println!("  Generated IR instructions {} to {}", ir_start, ir_end - 1);
+                                            // Print the IR for this function
+                                            for (i, instr) in self.ir[ir_start..ir_end].iter().enumerate() {
+                                                println!("    [{}] {}", ir_start + i, instr);
+                                            }
                                         }
                                     }
                                 },
@@ -856,10 +895,27 @@ impl Compiler {
         }
     }
 
+    /// Helper function to qualify variable name if it's a module-level variable
+    fn qualify_var_name(&self, var_name: &str) -> String {
+        // Check if we're in a module context
+        if let Some(ref module_name) = self.current_module_name {
+            // Check if this variable is a module-level variable
+            if let Some(module_vars) = self.module_level_vars.get(module_name) {
+                if module_vars.contains(&var_name.to_string()) {
+                    // Qualify it with module name
+                    return format!("{}.{}", module_name, var_name);
+                }
+            }
+        }
+        // Return as-is (local variable or parameter)
+        var_name.to_string()
+    }
+
     fn compile_expression(&mut self, expr: Expression) {
         match expr {
             Expression::Identifier(ident) => {
-                self.emit(IR::LoadVar(ident.name));
+                let qualified_name = self.qualify_var_name(&ident.name);
+                self.emit(IR::LoadVar(qualified_name));
             },
             Expression::StringLiteral(str_lit) => {
                 self.emit(IR::PushString(str_lit.value));
@@ -1068,81 +1124,83 @@ impl Compiler {
             Expression::AssignmentExpression(assign_expr) => {
                 // Handle assignment to identifier
                 if let Expression::Identifier(ident) = *assign_expr.left {
+                    let qualified_name = self.qualify_var_name(&ident.name);
+                    
                     match assign_expr.operator {
                         crate::frontend::parser::ast::AssignmentOperator::Assign => {
                             // Simple assignment: var = value
                             self.compile_expression(*assign_expr.right);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::AddAssign => {
                             // Addition assignment: var += value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::Add);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::SubtractAssign => {
                             // Subtraction assignment: var -= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::Subtract);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::MultiplyAssign => {
                             // Multiplication assignment: var *= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::Multiply);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::DivideAssign => {
                             // Division assignment: var /= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::Divide);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::ModuloAssign => {
                             // Modulo assignment: var %= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::Modulo);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::BitwiseAndAssign => {
                             // Bitwise AND assignment: var &= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::BitwiseAnd);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::BitwiseOrAssign => {
                             // Bitwise OR assignment: var |= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::BitwiseOr);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::BitwiseXorAssign => {
                             // Bitwise XOR assignment: var ^= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::BitwiseXor);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::LeftShiftAssign => {
                             // Left shift assignment: var <<= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::LeftShift);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                         crate::frontend::parser::ast::AssignmentOperator::RightShiftAssign => {
                             // Right shift assignment: var >>= value
-                            self.emit(IR::LoadVar(ident.name.clone()));
+                            self.emit(IR::LoadVar(qualified_name.clone()));
                             self.compile_expression(*assign_expr.right);
                             self.emit(IR::RightShift);
-                            self.emit(IR::StoreVar(ident.name));
+                            self.emit(IR::StoreVar(qualified_name));
                         },
                     }
                 } else {

@@ -67,57 +67,54 @@ impl Runtime {
             println!("Registered {} functions", function_count);
         }
         
-        // Pre-execute ALL module initialization code (constants and variables)
-        // This scans the entire IR and executes all StoreVar instructions that happen
-        // before function bodies (these are module-level initializations)
+        // Pre-execute module initialization code (constants and variables)
+        // ONLY execute instructions BEFORE the first DefineFunction
         let mut init_count = 0;
+        let mut init_end_pc = 0;
+        
         for (i, instruction) in ir.iter().enumerate() {
+            // Stop at the first function definition
+            if matches!(instruction, IR::DefineFunction(_, _)) {
+                init_end_pc = i;
+                break;
+            }
+            
+            // Execute initialization instructions
             match instruction {
                 IR::PushNumber(n) => self.stack.push(n.to_string()),
                 IR::PushString(s) => self.stack.push(s.clone()),
                 IR::PushBoolean(b) => self.stack.push(b.to_string()),
                 IR::PushNull => self.stack.push("null".to_string()),
                 IR::StoreVar(name) => {
-                    // Only initialize if this is before any function body
-                    // Check if we're in the initialization phase (before first Call instruction)
-                    let is_init_phase = !ir[..i].iter().any(|inst| matches!(inst, IR::Call(_, _)));
-                    
-                    if is_init_phase {
-                        if let Some(value) = self.stack.pop() {
-                            self.variables.insert(name.clone(), value);
-                            init_count += 1;
-                            if !self.clean_output {
-                                println!("Initialized: {} = {}", name, self.variables.get(name).unwrap_or(&"?".to_string()));
-                            }
-                        }
-                    } else {
-                        // Put the value back if we're not in init phase
-                        if let Some(value) = self.stack.last() {
-                            self.stack.push(value.clone());
+                    if let Some(value) = self.stack.pop() {
+                        self.variables.insert(name.clone(), value);
+                        init_count += 1;
+                        if !self.clean_output {
+                            println!("Initialized: {} = {}", name, self.variables.get(name).unwrap_or(&"?".to_string()));
                         }
                     }
-                },
-                IR::DefineFunction(_, _) | IR::Label(_) | IR::Return => {
-                    // These don't affect initialization
                 },
                 _ => {
-                    // Clear stack for other instructions during scan
-                    if matches!(instruction, IR::Call(_, _)) {
-                        break; // Stop scanning at first Call
-                    }
+                    // Skip other instructions during initialization
                 }
             }
         }
         
         if !self.clean_output && init_count > 0 {
             println!("Initialized {} module variables/constants", init_count);
+            println!("Initialization ended at PC {}", init_end_pc);
+            println!("DEBUG: Variables after init: {:?}", self.variables.keys().collect::<Vec<_>>());
         }
         
         // Clear the stack after initialization
         self.stack.clear();
+        
+        if !self.clean_output {
+            println!("DEBUG: Variables after stack clear: {:?}", self.variables.keys().collect::<Vec<_>>());
+        }
 
-        // Start normal execution from beginning
-        let mut pc = 0;
+        // Start normal execution from the first function definition (skip initialization code)
+        let mut pc = init_end_pc;
         while pc < ir.len() {
             let instruction = &ir[pc];
             
@@ -150,24 +147,46 @@ impl Runtime {
                 },
                 IR::StoreVar(name) => {
                     if let Some(value) = self.stack.pop() {
-                        if let Some((_, func_vars)) = self.call_stack.last_mut() {
+                        // Check if this is a qualified module variable (contains '.')
+                        if name.contains('.') {
+                            // Module-level variable - always store globally
+                            self.variables.insert(name.clone(), value);
+                        } else if let Some((_, func_vars)) = self.call_stack.last_mut() {
+                            // Local variable - store in function scope
                             func_vars.insert(name.clone(), value);
                         } else {
+                            // Global variable
                             self.variables.insert(name.clone(), value);
                         }
                     }
                 },
                 IR::LoadVar(name) => {
-                    let value = if let Some((_, func_vars)) = self.call_stack.last() {
-                        func_vars.get(name)
-                    } else { None };
+                    // Check if this is a qualified module variable (contains '.')
+                    let value = if name.contains('.') {
+                        // Module-level variable - load from global scope
+                        if !self.clean_output {
+                            println!("DEBUG: Loading module var '{}' from global scope", name);
+                            println!("DEBUG: Available global vars: {:?}", self.variables.keys().collect::<Vec<_>>());
+                        }
+                        self.variables.get(name)
+                    } else if let Some((_, func_vars)) = self.call_stack.last() {
+                        // Try function scope first, then global
+                        func_vars.get(name).or_else(|| self.variables.get(name))
+                    } else {
+                        // Load from global scope
+                        self.variables.get(name)
+                    };
 
                     if let Some(val) = value {
                         self.stack.push(val.clone());
-                    } else if let Some(val) = self.variables.get(name) {
-                        self.stack.push(val.clone());
+                        if !self.clean_output && name.contains('.') {
+                            println!("DEBUG: Loaded '{}' = '{}'", name, val);
+                        }
                     } else {
                         self.stack.push("undefined".to_string());
+                        if !self.clean_output && name.contains('.') {
+                            println!("DEBUG: Variable '{}' not found, pushing 'undefined'", name);
+                        }
                     }
                 },
                 IR::SetGlobal(name) => {
@@ -367,8 +386,8 @@ impl Runtime {
                                 }
                                 
                                 // Save current state and jump to function
-                                self.call_stack.push((pc + 1, self.variables.clone()));
-                                self.variables = func_variables;
+                                // Don't replace self.variables - keep global variables intact!
+                                self.call_stack.push((pc + 1, func_variables));
                                 pc = func_addr;
                                 continue;
                             }
@@ -461,8 +480,8 @@ impl Runtime {
                 },
                 IR::Return => {
                     let return_value = self.stack.pop().unwrap_or_else(|| "null".to_string());
-                    if let Some((return_addr, caller_variables)) = self.call_stack.pop() {
-                        self.variables = caller_variables;
+                    if let Some((return_addr, _func_variables)) = self.call_stack.pop() {
+                        // Don't restore variables - global variables stay in self.variables
                         self.stack.push(return_value);
                         pc = return_addr;
                         continue;

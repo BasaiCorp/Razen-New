@@ -1,0 +1,35 @@
+// Test module variable modification
+use "./utils/math"
+
+fun main() {
+    printlnc("=== Counter Test ===", "blue")
+    
+    // Test 1: Initial value
+    println("Test 1: Initial counter value")
+    var initial = math.get_counter()
+    println("Initial counter = " + initial.tostr())
+    
+    // Test 2: Increment once
+    println("")
+    println("Test 2: Increment counter once")
+    math.increment_counter()
+    var after_one = math.get_counter()
+    println("After 1 increment = " + after_one.tostr())
+    
+    // Test 3: Increment again
+    println("")
+    println("Test 3: Increment counter again")
+    math.increment_counter()
+    var after_two = math.get_counter()
+    println("After 2 increments = " + after_two.tostr())
+    
+    // Test 4: Increment third time
+    println("")
+    println("Test 4: Increment counter third time")
+    math.increment_counter()
+    var after_three = math.get_counter()
+    println("After 3 increments = " + after_three.tostr())
+    
+    println("")
+    printlnc("=== Test Complete ===", "green")
+}
