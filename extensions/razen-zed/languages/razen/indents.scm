@@ -1,3 +1,3 @@
-; Indentation rules for Razen
-
-("{" @start "}" @end) @indent
+(_ "[" "]" @end) @indent
+(_ "{" "}" @end) @indent
+(_ "(" ")" @end) @indent

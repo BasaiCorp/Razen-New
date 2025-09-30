@@ -1,20 +1,10 @@
 ; Razen syntax highlighting
 
-; Comments
 (comment) @comment
 
-; Literals
-(integer) @number
-(float) @number
-(string) @string
-(boolean) @constant.builtin
+(parameter
+  name: (identifier) @parameter)
 
-; String interpolation
-(interpolated_string) @string
-(string_content) @string
-(interpolation) @embedded
-
-; Functions
 (function_declaration
   name: (identifier) @function)
 
@@ -27,7 +17,6 @@
 (method_call_expression
   method: (identifier) @function)
 
-; Types
 (struct_declaration
   name: (identifier) @type)
 
@@ -40,7 +29,6 @@
 (struct_instantiation
   type: (identifier) @type)
 
-; Properties
 (struct_field
   name: (identifier) @property)
 
@@ -50,34 +38,89 @@
 (member_expression
   property: (identifier) @property)
 
-; Variables
 (variable_declaration
   name: (identifier) @variable)
 
 (constant_declaration
   name: (identifier) @constant)
 
-(parameter
-  name: (identifier) @variable.parameter)
+(integer) @number
+(float) @number
+(string) @string
+(interpolated_string) @string
+(string_content) @string
+(interpolation) @embedded
+(escape_sequence) @string.escape
 
-; Identifiers
-(identifier) @variable
-
-; Punctuation
 [
-  "("
-  ")"
-  "["
-  "]"
-  "{"
-  "}"
+ "var"
+ "const"
+ "fun"
+ "struct"
+ "enum"
+ "impl"
+ "use"
+ "pub"
+ "as"
+ "mod"
+ "from"
+ "if"
+ "else"
+ "elif"
+ "while"
+ "for"
+ "in"
+ "match"
+ "return"
+ "break"
+ "continue"
+ "try"
+ "catch"
+ "throw"
+ "self"
+] @keyword
+
+[
+ "true"
+ "false"
+] @boolean
+
+[
+ "."
+ ","
+ ":"
+ ";"
+] @punctuation.delimiter
+
+[
+ "("
+ ")"
+ "{"
+ "}"
+ "["
+ "]"
 ] @punctuation.bracket
 
 [
-  ","
-  "."
-  ":"
-  ";"
-] @punctuation.delimiter
+ "+"
+ "-"
+ "*"
+ "/"
+ "%"
+ "="
+ "=="
+ "!="
+ "<"
+ ">"
+ "<="
+ ">="
+ "!"
+ "&&"
+ "||"
+ "&"
+ "|"
+ "^"
+ "~"
+] @operator
 
-"=" @operator
+(identifier) @variable
