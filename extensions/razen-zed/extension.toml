@@ -11,9 +11,7 @@ languages = ["languages/razen"]
 [lib]
 
 [grammars.razen]
-repository = "https://github.com/BasaiCorp/Razen-New"
-rev = "main"
-path = "extensions/razen-zed/tree-sitter-razen"
+path = "tree-sitter-razen"
 
 [language_servers]
 

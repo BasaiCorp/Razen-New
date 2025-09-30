@@ -1,8 +1,8 @@
 # Tree-sitter generated files
-tree-sitter-razen/src/
+# tree-sitter-razen/src/  # COMMENTED OUT - We need src/ for Zed
 tree-sitter-razen/node_modules/
 tree-sitter-razen/target/
-tree-sitter-razen/bindings/
+# tree-sitter-razen/bindings/  # COMMENTED OUT - We need bindings/ for Zed
 
 # Build artifacts
 *.o
