@@ -11,7 +11,6 @@
   "use"
   "pub"
   "as"
-  "mod"
   "if"
   "else"
   "elif"
