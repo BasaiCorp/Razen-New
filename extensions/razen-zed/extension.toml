@@ -2,11 +2,19 @@ id = "razen"
 name = "Razen"
 version = "0.1.0"
 schema_version = 1
-authors = ["Razen Language Team <razen@example.com>"]
 description = "Language support for Razen - a modern, efficient programming language"
 repository = "https://github.com/BasaiCorp/Razen-New"
+authors = ["Razen Language Team <razen@example.com>"]
+themes = []
+languages = ["languages/razen"]
+
+[lib]
 
 [grammars.razen]
 repository = "https://github.com/BasaiCorp/Razen-New"
 rev = "main"
 path = "extensions/razen-zed/tree-sitter-razen"
+
+[language_servers]
+
+[slash_commands]
