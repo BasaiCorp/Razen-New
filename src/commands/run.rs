@@ -1,10 +1,10 @@
-//! Run command implementation - JIT compile and execute
+//! Run command implementation - RAJIT compile and execute
 
 use std::path::PathBuf;
 use std::fs;
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::SemanticAnalyzer;
+use crate::backend::{SemanticAnalyzer, NativeJIT};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error};
 
@@ -65,12 +65,20 @@ pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             handle_error(&format!("Compilation failed: {}", compiler.errors.join("; ")));
         }
         
-        match compiler.execute() {
-            Ok(_) => {
-                // Silent success (like go run)
+        // Use RAJIT (Razen Adaptive JIT) by default for fast execution
+        match NativeJIT::new() {
+            Ok(mut jit) => {
+                match jit.compile_and_run(&compiler.ir) {
+                    Ok(_) => {
+                        // Silent success (like go run)
+                    }
+                    Err(e) => {
+                        handle_error(&format!("RAJIT execution failed: {}", e));
+                    }
+                }
             }
             Err(e) => {
-                handle_error(&format!("Execution failed: {}", e));
+                handle_error(&format!("Failed to initialize RAJIT: {}", e));
             }
         }
     } else {
