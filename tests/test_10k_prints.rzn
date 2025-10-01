@@ -3,7 +3,7 @@
 fun main() {
     var i = 0
     
-    while i < 500000 {
+    while i < 1000000 {
         println(i)
         i = i + 1
     }

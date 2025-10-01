@@ -247,8 +247,14 @@ impl JIT {
             optimized = self.invariant_code_motion(optimized);
         }
         
-        // Tier 4: Memory optimizations (level 4)
+        // Tier 4: Aggressive optimizations (level 4)
         if self.optimization_level >= 4 {
+            // Multiple passes for maximum optimization
+            for _ in 0..3 {
+                optimized = self.advanced_peephole(optimized);
+                optimized = self.stack_optimization(optimized);
+                optimized = self.redundant_load_elimination(optimized);
+            }
             optimized = self.dead_store_elimination(optimized);
         }
         
@@ -428,7 +434,7 @@ impl JIT {
     
     /// Tier 4: Loop unrolling - Expand small loops for better CPU pipelining
     /// Only unrolls loops WITHOUT side effects to preserve correctness
-    fn loop_unrolling(&self, mut ir: Vec<IR>) -> Vec<IR> {
+    fn loop_unrolling(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
         
@@ -471,7 +477,7 @@ impl JIT {
     
     /// Tier 4: Invariant code motion - Move loop-invariant code outside loops
     /// Only moves PURE operations (no side effects like println, file I/O, etc)
-    fn invariant_code_motion(&self, mut ir: Vec<IR>) -> Vec<IR> {
+    fn invariant_code_motion(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
         
@@ -585,11 +591,11 @@ impl JIT {
     }
     
     /// Tier 5: Dead store elimination - Remove redundant stores
-    fn dead_store_elimination(&self, mut ir: Vec<IR>) -> Vec<IR> {
+    fn dead_store_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut last_store: HashMap<String, usize> = HashMap::new();
         
-        for (i, inst) in ir.iter().enumerate() {
+        for (_i, inst) in ir.iter().enumerate() {
             match inst {
                 IR::StoreVar(name) => {
                     // If this variable is stored again before being loaded, previous store is dead
@@ -621,7 +627,7 @@ impl JIT {
     fn apply_inline_caching(&mut self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         
-        for (i, inst) in ir.iter().enumerate() {
+        for (_i, inst) in ir.iter().enumerate() {
             match inst {
                 IR::LoadVar(name) => {
                     // Check if we have a cached version of this load
@@ -686,6 +692,121 @@ impl JIT {
             type_feedback_entries: self.type_feedback.len(),
             stack_allocated_vars: self.stack_allocated_vars.len(),
         }
+    }
+    
+    /// Advanced peephole optimization - More aggressive pattern matching
+    fn advanced_peephole(&self, ir: Vec<IR>) -> Vec<IR> {
+        let mut result = Vec::new();
+        let mut i = 0;
+        
+        while i < ir.len() {
+            // Pattern: LoadVar(x), LoadVar(x) -> LoadVar(x), Dup
+            if i + 1 < ir.len() {
+                if let (IR::LoadVar(name1), IR::LoadVar(name2)) = (&ir[i], &ir[i + 1]) {
+                    if name1 == name2 {
+                        result.push(IR::LoadVar(name1.clone()));
+                        result.push(IR::Dup);
+                        i += 2;
+                        continue;
+                    }
+                }
+            }
+            
+            // Pattern: PushNumber(x), Pop -> (remove both)
+            if i + 1 < ir.len() {
+                if let (IR::PushNumber(_), IR::Pop) = (&ir[i], &ir[i + 1]) {
+                    i += 2;
+                    continue;
+                }
+            }
+            
+            // Pattern: Dup, Pop -> (remove both)
+            if i + 1 < ir.len() {
+                if let (IR::Dup, IR::Pop) = (&ir[i], &ir[i + 1]) {
+                    i += 2;
+                    continue;
+                }
+            }
+            
+            // Pattern: StoreVar(x), LoadVar(x) -> StoreVar(x), Dup
+            if i + 1 < ir.len() {
+                if let (IR::StoreVar(name1), IR::LoadVar(name2)) = (&ir[i], &ir[i + 1]) {
+                    if name1 == name2 {
+                        result.push(IR::StoreVar(name1.clone()));
+                        result.push(IR::Dup);
+                        i += 2;
+                        continue;
+                    }
+                }
+            }
+            
+            result.push(ir[i].clone());
+            i += 1;
+        }
+        
+        result
+    }
+    
+    /// Stack optimization - Reduce unnecessary stack operations
+    fn stack_optimization(&self, ir: Vec<IR>) -> Vec<IR> {
+        let mut result = Vec::new();
+        let mut i = 0;
+        
+        while i < ir.len() {
+            // Pattern: Push, Swap, Pop -> Pop
+            if i + 2 < ir.len() {
+                if matches!(ir[i], IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_)) {
+                    if let (IR::Swap, IR::Pop) = (&ir[i + 1], &ir[i + 2]) {
+                        result.push(IR::Pop);
+                        i += 3;
+                        continue;
+                    }
+                }
+            }
+            
+            // Pattern: Dup, Dup -> Dup, Dup (keep for now, but track)
+            // Pattern: Pop, Pop -> (can be optimized in some cases)
+            
+            result.push(ir[i].clone());
+            i += 1;
+        }
+        
+        result
+    }
+    
+    /// Redundant load elimination - Cache loaded values
+    fn redundant_load_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
+        let mut result = Vec::new();
+        let mut i = 0;
+        
+        while i < ir.len() {
+            // Pattern: LoadVar(x), ..., LoadVar(x) with no StoreVar(x) in between
+            if let IR::LoadVar(name) = &ir[i] {
+                // Look ahead to see if same variable is loaded again
+                // Look ahead to see if same variable is loaded again
+                for j in (i + 1)..ir.len().min(i + 10) {
+                    match &ir[j] {
+                        IR::StoreVar(store_name) if store_name == name => {
+                            break; // Variable modified, can't optimize
+                        }
+                        IR::LoadVar(_load_name) if _load_name == name => {
+                            // Found redundant load, but we need to check if value is still on stack
+                            // For now, keep as-is (complex analysis needed)
+                            break;
+                        }
+                        IR::Call(_, _) => {
+                            break; // Function call might modify state
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            
+            result.push(ir[i].clone());
+            i += 1;
+        }
+        
+        result
     }
 }
 
