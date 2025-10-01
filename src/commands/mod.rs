@@ -32,12 +32,16 @@ pub struct Cli {
 /// Available CLI commands
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Compile and run a Razen program (JIT mode)
-    #[command(about = "Compile and execute a Razen source file with clean output")]
+    /// Compile and run a Razen program (RAJIT mode)
+    #[command(about = "Compile and execute a Razen source file with RAJIT JIT compiler")]
     Run {
         /// Path to the Razen source file
         #[arg(value_name = "FILE")]
         file: PathBuf,
+        
+        /// Optimization level (0-4): 0=none, 1=basic, 2=standard, 3=aggressive, 4=maximum
+        #[arg(short = 'O', long = "opt-level", value_name = "LEVEL", default_value = "2")]
+        opt_level: u8,
     },
 
     /// Development mode with debugging and compiler messages
@@ -162,7 +166,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { file } => run::execute(file),
+        Commands::Run { file, opt_level } => run::execute(file, opt_level),
         Commands::Dev { file, watch, jit, aot } => dev::execute(file, watch, jit, aot),
         Commands::Build {
             output,

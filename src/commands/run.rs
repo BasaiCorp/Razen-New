@@ -8,8 +8,8 @@ use crate::backend::{SemanticAnalyzer, NativeJIT};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error};
 
-/// Execute the run command - compile and run a Razen program
-pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+/// Execute the run command - compile and run a Razen program with RAJIT
+pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::Error>> {
     // Validate input file
     if let Err(e) = validate_file_exists(&file) {
         handle_error(&e);
@@ -65,8 +65,8 @@ pub fn execute(file: PathBuf) -> Result<(), Box<dyn std::error::Error>> {
             handle_error(&format!("Compilation failed: {}", compiler.errors.join("; ")));
         }
         
-        // Use RAJIT (Razen Adaptive JIT) by default for fast execution
-        match NativeJIT::new() {
+        // Use RAJIT (Razen Adaptive JIT) with specified optimization level
+        match NativeJIT::with_optimization(opt_level) {
             Ok(mut jit) => {
                 match jit.compile_and_run(&compiler.ir) {
                     Ok(_) => {
