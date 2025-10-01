@@ -50,6 +50,14 @@ pub enum Commands {
         /// Watch for file changes and auto-reload
         #[arg(short, long)]
         watch: bool,
+
+        /// Use native JIT compilation (custom x86-64 backend)
+        #[arg(long)]
+        jit: bool,
+
+        /// Use native AOT compilation (custom x86-64 backend)
+        #[arg(long)]
+        aot: bool,
     },
 
     /// Build entire Razen project (reads razen.toml)
@@ -155,7 +163,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Run { file } => run::execute(file),
-        Commands::Dev { file, watch } => dev::execute(file, watch),
+        Commands::Dev { file, watch, jit, aot } => dev::execute(file, watch, jit, aot),
         Commands::Build {
             output,
             optimization,

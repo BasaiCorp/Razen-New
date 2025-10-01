@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::{SemanticAnalyzer, AOTCompiler};
+use crate::backend::{SemanticAnalyzer, AOT};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{success_message, info_message};
 
@@ -202,15 +202,13 @@ pub fn execute(
     info_message(&format!("Generating native executable: {}", output_path.display()));
     
     // Create AOT compiler
-    let mut aot_compiler = AOTCompiler::new();
-    aot_compiler.set_optimization_level(build_optimization);
-    aot_compiler.set_debug_info(build_debug);
+    let mut aot_compiler = AOT::with_optimization(build_optimization);
     
     // Get compiled IR from the compiler
     let ir = compiler.get_ir();
     
     // Compile to native executable
-    aot_compiler.compile_to_executable(&ir, &output_path, &config.project.name)
+    aot_compiler.compile(&ir, output_path.to_str().unwrap())
         .map_err(|e| format!("AOT compilation failed: {}", e))?;
     
     success_message(&format!("Built executable: {}", output_path.display()));

@@ -4,12 +4,12 @@ use std::path::PathBuf;
 use std::fs;
 use crate::frontend::parser::{parse_source_with_debug, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::SemanticAnalyzer;
+use crate::backend::{SemanticAnalyzer, NativeJIT, NativeAOT};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error, success_message, info_message};
 
 /// Execute the dev command - development mode with detailed compiler output
-pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Error>> {
+pub fn execute(file: PathBuf, watch: bool, jit: bool, aot: bool) -> Result<(), Box<dyn std::error::Error>> {
     // Validate input file
     if let Err(e) = validate_file_exists(&file) {
         handle_error(&e);
@@ -84,23 +84,84 @@ pub fn execute(file: PathBuf, watch: bool) -> Result<(), Box<dyn std::error::Err
         
         success_message("Compilation completed successfully!");
         
-        println!("\nPhase 4: Execution...");
-        println!("--- Program Output ---");
-        
-        match compiler.execute() {
-            Ok(_) => {
-                println!("--- End Output ---");
-                success_message("Program executed successfully!");
-                
-                println!("\nDevelopment Summary:");
-                println!("  Parsing: OK");
-                println!("  Semantic Analysis: OK");
-                println!("  Compilation: OK");
-                println!("  Execution: OK");
+        // Choose execution method based on flags
+        if jit {
+            // Native JIT compilation
+            println!("\nPhase 4: Native JIT Compilation & Execution...");
+            info_message("Using custom x86-64 backend (no dependencies!)");
+            
+            match NativeJIT::new() {
+                Ok(mut native_jit) => {
+                    println!("--- JIT Output ---");
+                    match native_jit.compile_and_run(&compiler.ir) {
+                        Ok(result) => {
+                            println!("Result: {}", result);
+                            println!("--- End JIT Output ---");
+                            success_message("Native JIT compilation and execution successful!");
+                            
+                            println!("\nDevelopment Summary:");
+                            println!("  Parsing: OK");
+                            println!("  Semantic Analysis: OK");
+                            println!("  IR Generation: OK");
+                            println!("  Native JIT: OK");
+                            println!("  Execution: OK");
+                        }
+                        Err(e) => {
+                            println!("--- End JIT Output ---");
+                            handle_error(&format!("Native JIT execution failed: {}", e));
+                        }
+                    }
+                }
+                Err(e) => {
+                    handle_error(&format!("Failed to initialize native JIT: {}", e));
+                }
             }
-            Err(e) => {
-                println!("--- End Output ---");
-                handle_error(&format!("Execution failed: {}", e));
+        } else if aot {
+            // Native AOT compilation
+            println!("\nPhase 4: Native AOT Compilation...");
+            info_message("Using custom x86-64 backend (no dependencies!)");
+            
+            let mut native_aot = NativeAOT::new();
+            let output_name = file.file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("output");
+            
+            match native_aot.compile(&compiler.ir, output_name) {
+                Ok(_) => {
+                    success_message(&format!("Native AOT compilation successful! Executable: {}", output_name));
+                    info_message("Generated native ELF executable (no runtime dependencies!)");
+                    
+                    println!("\nDevelopment Summary:");
+                    println!("  Parsing: OK");
+                    println!("  Semantic Analysis: OK");
+                    println!("  IR Generation: OK");
+                    println!("  Native AOT: OK");
+                    println!("  Output: {}", output_name);
+                }
+                Err(e) => {
+                    handle_error(&format!("Native AOT compilation failed: {}", e));
+                }
+            }
+        } else {
+            // IR interpreter (default)
+            println!("\nPhase 4: Execution (IR Interpreter)...");
+            println!("--- Program Output ---");
+            
+            match compiler.execute() {
+                Ok(_) => {
+                    println!("--- End Output ---");
+                    success_message("Program executed successfully!");
+                    
+                    println!("\nDevelopment Summary:");
+                    println!("  Parsing: OK");
+                    println!("  Semantic Analysis: OK");
+                    println!("  Compilation: OK");
+                    println!("  Execution: OK");
+                }
+                Err(e) => {
+                    println!("--- End Output ---");
+                    handle_error(&format!("Execution failed: {}", e));
+                }
             }
         }
     } else {

@@ -1,0 +1,35 @@
+// Simple test for Step 2: Arithmetic Operations
+// Tests: Add, Subtract, Multiply, Divide, Modulo, Negate
+
+fun main() {
+    println("=== Step 2: Arithmetic Operations Test ===")
+    
+    // Test 1: Add
+    var a = 10
+    var b = 5
+    var sum = a + b
+    println("Add: 10 + 5 = " + sum)
+    
+    // Test 2: Subtract
+    var diff = a - b
+    println("Subtract: 10 - 5 = " + diff)
+    
+    // Test 3: Multiply
+    var prod = a * b
+    println("Multiply: 10 * 5 = " + prod)
+    
+    // Test 4: Divide
+    var quot = a / b
+    println("Divide: 10 / 5 = " + quot)
+    
+    // Test 5: Modulo
+    var remainder = a % b
+    println("Modulo: 10 % 5 = " + remainder)
+    
+    // Test 6: Negate
+    var x = 42
+    var neg = -x
+    println("Negate: -42 = " + neg)
+    
+    println("=== All Basic Arithmetic Operations Complete ===")
+}
