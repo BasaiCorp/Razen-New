@@ -1,0 +1,20 @@
+// Heavy performance test - 10k iterations with calculations
+
+fun main() {
+    println("=== Heavy Performance Test: 10,000 iterations ===")
+    
+    var sum = 0
+    var i = 0
+    
+    // Loop 10,000 times with calculations
+    while i < 10000 {
+        var temp = i * 2
+        temp = temp + 5
+        temp = temp - 3
+        sum = sum + temp
+        i = i + 1
+    }
+    
+    println("Sum after 10,000 iterations: " + sum)
+    println("=== Test Complete ===")
+}

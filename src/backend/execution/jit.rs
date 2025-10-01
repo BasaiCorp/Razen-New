@@ -427,6 +427,7 @@ impl JIT {
     }
     
     /// Tier 4: Loop unrolling - Expand small loops for better CPU pipelining
+    /// Only unrolls loops WITHOUT side effects to preserve correctness
     fn loop_unrolling(&self, mut ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -437,14 +438,24 @@ impl JIT {
                 if let Some(loop_end) = self.find_loop_end(&ir, i) {
                     let loop_size = loop_end - i;
                     
-                    // Only unroll small loops
-                    if loop_size < 10 && loop_size > 2 {
+                    // Check if loop has side effects
+                    let has_side_effects = self.loop_has_side_effects(&ir, i, loop_end);
+                    
+                    // Only unroll small loops WITHOUT side effects
+                    if loop_size < 10 && loop_size > 2 && !has_side_effects {
                         // Duplicate loop body 2x for unrolling
                         let loop_body: Vec<IR> = ir[(i+1)..loop_end].to_vec();
                         result.push(ir[i].clone()); // Label
                         result.extend(loop_body.clone());
                         result.extend(loop_body); // Unrolled iteration
                         result.push(ir[loop_end].clone()); // Jump
+                        i = loop_end + 1;
+                        continue;
+                    } else {
+                        // Has side effects or too large - keep as-is
+                        for j in i..=loop_end {
+                            result.push(ir[j].clone());
+                        }
                         i = loop_end + 1;
                         continue;
                     }
@@ -459,6 +470,7 @@ impl JIT {
     }
     
     /// Tier 4: Invariant code motion - Move loop-invariant code outside loops
+    /// Only moves PURE operations (no side effects like println, file I/O, etc)
     fn invariant_code_motion(&self, mut ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -469,25 +481,38 @@ impl JIT {
                     let mut invariants = Vec::new();
                     let mut loop_body = Vec::new();
                     
-                    // Identify invariant instructions (constants, pure operations)
-                    for j in (i+1)..loop_end {
-                        match &ir[j] {
-                            IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_) => {
-                                invariants.push(ir[j].clone());
-                            }
-                            _ => {
-                                loop_body.push(ir[j].clone());
+                    // Check if loop has side effects
+                    let has_side_effects = self.loop_has_side_effects(&ir, i, loop_end);
+                    
+                    if !has_side_effects {
+                        // Safe to optimize - identify invariant instructions
+                        for j in (i+1)..loop_end {
+                            match &ir[j] {
+                                // Pure operations that can be moved
+                                IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_) => {
+                                    invariants.push(ir[j].clone());
+                                }
+                                _ => {
+                                    loop_body.push(ir[j].clone());
+                                }
                             }
                         }
+                        
+                        // Move invariants before loop
+                        result.extend(invariants);
+                        result.push(ir[i].clone()); // Label
+                        result.extend(loop_body);
+                        result.push(ir[loop_end].clone()); // Jump
+                        i = loop_end + 1;
+                        continue;
+                    } else {
+                        // Has side effects - keep loop as-is
+                        for j in i..=loop_end {
+                            result.push(ir[j].clone());
+                        }
+                        i = loop_end + 1;
+                        continue;
                     }
-                    
-                    // Move invariants before loop
-                    result.extend(invariants);
-                    result.push(ir[i].clone()); // Label
-                    result.extend(loop_body);
-                    result.push(ir[loop_end].clone()); // Jump
-                    i = loop_end + 1;
-                    continue;
                 }
             }
             
@@ -496,6 +521,24 @@ impl JIT {
         }
         
         result
+    }
+    
+    /// Check if a loop has side effects (I/O, function calls, etc)
+    fn loop_has_side_effects(&self, ir: &[IR], loop_start: usize, loop_end: usize) -> bool {
+        for i in loop_start..=loop_end {
+            match &ir[i] {
+                // Side effects: function calls (includes println, print, etc)
+                IR::Call(_, _) => {
+                    return true;
+                }
+                // Store operations modify state (variables have side effects in loops)
+                IR::StoreVar(_) | IR::SetGlobal(_) => {
+                    return true;
+                }
+                _ => {}
+            }
+        }
+        false
     }
     
     /// Tier 5: Escape analysis - Determine if variables escape their scope

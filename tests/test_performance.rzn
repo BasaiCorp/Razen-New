@@ -1,0 +1,17 @@
+// Performance test - 10k iterations
+
+fun main() {
+    println("=== Performance Test: 10,000 iterations ===")
+    
+    var count = 0
+    var i = 0
+    
+    // Loop 10,000 times
+    while i < 10000 {
+        count = count + 1
+        i = i + 1
+    }
+    
+    println("Completed " + count + " iterations!")
+    println("=== Test Complete ===")
+}
