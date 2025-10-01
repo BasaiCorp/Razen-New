@@ -23,15 +23,26 @@ pub fun register() {
     email = input()
     print("Enter Password: ")
     password = input()
-    print("Enter Confirm Password: ")
-    username = input()
-}
+    
+    while true {
+        print("Enter Confirm Password: ")
+        confirm_password = input()
 
-pub var user = users.Userdata {
-    username: username,
-    firstname: firstname,
-    lastname: lastname,
-    age: age,
-    email: email,
-    password: password
+        if confirm_password == password {
+            break
+        } else {
+            printlnc("Password does not match!", "red")
+        }
+    }
+
+    var user = users.Userdata {
+        username: username,
+        firstname: firstname,
+        lastname: lastname,
+        age: age,
+        email: email,
+        password: password
+    }
+
+    println(user)
 }

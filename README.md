@@ -73,7 +73,7 @@ impl Person {
 }
 
 fun main() {
-    var person = Person.new("Alice", 25)
+    var person = Person.new("Hanuman", 25)
     person.greet()
 }
 ```
@@ -104,7 +104,7 @@ fun main() {
     }
     
     // Array iteration
-    for name in ["Alice", "Bob", "Charlie"] {
+    for name in ["Hanuman", "Ram", "Brahma"] {
         printlnc(f"Hello, {name}!", "green")
     }
     

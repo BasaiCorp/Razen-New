@@ -1,5 +1,5 @@
 [project]
-name = "module_tests"
+name = "variables-datatypes"
 version = "0.1.0"
 description = "A Razen project"
 

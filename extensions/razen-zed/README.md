@@ -103,7 +103,7 @@ impl Person {
 
 // Main function
 fun main() {
-    var person = Person::new("Alice", 25)
+    var person = Person::new("Hanuman", 25)
     person.greet()
     
     // Control flow

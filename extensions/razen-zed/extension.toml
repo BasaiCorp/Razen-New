@@ -12,7 +12,7 @@ languages = ["languages/razen"]
 
 [grammars.razen]
 repository = "https://github.com/BasaiCorp/Razen-New"
-rev = "d5962b1762d8b3aefdd993670896b99cba7621f9"
+rev = "0ec718dc4f2fbc5dc3847687e18c2c3e8bd19758"
 path = "extensions/razen-zed/tree-sitter-razen"
 
 [language_servers]

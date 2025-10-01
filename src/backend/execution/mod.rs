@@ -5,7 +5,9 @@
 pub mod ir;
 pub mod compiler;
 pub mod runtime;
+pub mod value;
 
 pub use ir::*;
 pub use compiler::*;
 pub use runtime::*;
+pub use value::*;

@@ -416,9 +416,9 @@ fun main() {
     println(f"Welcome {name} to Razen v{version}")
 
     // Object-oriented programming demonstration
-    var person = Person.new("Alice", 25)
+    var person = Person.new("Hanuman", 25)
     person.greet()
-    person.introduce("Bob")
+    person.introduce("Ram")
 
     // Function calls
     var result = add(10, 20)
@@ -451,7 +451,7 @@ fun main() {
     println("")
 
     // String array iteration
-    for person_name in ["Alice", "Bob", "Charlie"] {
+    for person_name in ["Hanuman", "Ram", "Brahma"] {
         printlnc(f"Hello, {person_name}!", "cyan")
     }
 

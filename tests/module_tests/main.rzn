@@ -7,7 +7,7 @@ use "./models/user"
 use "./models/product"
 use "./config"
 
-fun main() {
+fun main2() {
     printlnc("=== Module System Tests ===", "blue")
     println("")
     
@@ -58,16 +58,16 @@ fun main() {
     printlnc("Test 5: Struct Instantiation", "green")
     var user1 = user.User {
         id: 1,
-        name: "Alice",
-        email: "alice@example.com",
+        name: "Hanuman",
+        email: "Hanuman@example.com",
         age: 25
     }
     println("Created user1")
     
     var user2 = user.User {
         id: 2,
-        name: "Bob",
-        email: "bob@example.com",
+        name: "Ram",
+        email: "Ram@example.com",
         age: 30
     }
     println("Created user2")
@@ -82,7 +82,7 @@ fun main() {
     
     // Test 6: Create structs through functions
     printlnc("Test 6: Struct Creation via Functions", "green")
-    var user3 = user.create_user(3, "Charlie", "charlie@example.com", 28)
+    var user3 = user.create_user(3, "Brahma", "Brahma@example.com", 28)
     println("Created user3 via function")
     user.display_user(user3)
     println("")
@@ -126,3 +126,5 @@ fun main() {
     
     printlnc("=== All Module Tests Completed! ===", "blue")
 }
+
+main2()

@@ -92,13 +92,13 @@ fun control_flow_demo() {
 fun collections_demo() {
     // Arrays
     var numbers = [1, 2, 3, 4, 5]
-    var names = ["Alice", "Bob", "Charlie"]
+    var names = ["Hanuman", "Ram", "Brahma"]
     
     // Maps
     var scores = {
-        "Alice": 95,
-        "Bob": 87,
-        "Charlie": 92
+        "Hanuman": 95,
+        "Ram": 87,
+        "Brahma": 92
     }
     
     // Array access
@@ -106,7 +106,7 @@ fun collections_demo() {
     var second = names[1]
     
     // Map access
-    var alice_score = scores["Alice"]
+    var Hanuman_score = scores["Hanuman"]
 }
 
 // Operators
@@ -163,7 +163,7 @@ fun main() {
     println("=== Razen Language Test ===")
     
     // Create person
-    var person = Person.new("Alice", 25, "alice@example.com")
+    var person = Person.new("Hanuman", 25, "Hanuman@example.com")
     person.greet()
     
     if person.is_adult() {

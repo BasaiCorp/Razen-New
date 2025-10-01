@@ -1,0 +1,12 @@
+fun main() {
+    println("Starting Razen loop benchmark...")
+    println("Running 1,000,000 iterations...")
+    
+    var i = 0
+    while i < 1000000 {
+        i = i + 1
+    }
+    
+    println(f"Completed: {i} iterations")
+    println("Razen loop execution finished!")
+}

@@ -37,30 +37,30 @@ fun main() {
     
     // ✅ Test 3: Qualified struct instantiation
     printlnc("✅ Test 3: Qualified Struct Instantiation", "green")
-    var alice = user.User {
+    var Hanuman = user.User {
         id: 1,
-        name: "Alice Johnson",
-        email: "alice@example.com",
+        name: "Hanuman Johnson",
+        email: "Hanuman@example.com",
         age: 28
     }
-    println("Created user: Alice Johnson")
-    user.display_user(alice)
+    println("Created user: Hanuman Johnson")
+    user.display_user(Hanuman)
     
-    var bob = user.User {
+    var Ram = user.User {
         id: 2,
-        name: "Bob Smith",
-        email: "bob@example.com",
+        name: "Ram Smith",
+        email: "Ram@example.com",
         age: 35
     }
-    println("Created user: Bob Smith")
-    user.display_user(bob)
+    println("Created user: Ram Smith")
+    user.display_user(Ram)
     println("")
     
     // ✅ Test 4: Create structs via module functions
     printlnc("✅ Test 4: Struct Creation via Functions", "green")
-    var charlie = user.create_user(3, "Charlie Brown", "charlie@example.com", 42)
-    println("Created user via function: Charlie Brown")
-    user.display_user(charlie)
+    var Brahma = user.create_user(3, "Brahma Brown", "Brahma@example.com", 42)
+    println("Created user via function: Brahma Brown")
+    user.display_user(Brahma)
     println("")
     
     // ✅ Test 5: Multiple struct types from same module

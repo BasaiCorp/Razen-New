@@ -1,0 +1,86 @@
+// Type system examples
+
+fun greet(name: str) {
+    println(f"Hello, {name}!")
+}
+
+fun add(a: int, b: int) -> int {
+    return a + b
+}
+
+fun main() {
+    println("=== Type Inference ===")
+    
+    // Automatic type inference
+    var name = "Hanuman"     // Inferred as str
+    var age = 25           // Inferred as int
+    var price = 19.99      // Inferred as float
+    var isActive = true    // Inferred as bool
+    
+    println(f"Name: {name}")
+    println(f"Age: {age}")
+    println(f"Price: {price}")
+    println(f"Active: {isActive}")
+    
+    // Flexible typing (no annotation)
+    println("=== Flexible Typing ===")
+    var value = 10
+    println(f"Value (int): {value}")
+    
+    value = "hello"
+    println(f"Value (str): {value}")
+    
+    value = true
+    println(f"Value (bool): {value}")
+    
+    // Strict typing (with annotation)
+    println("=== Strict Typing ===")
+    var count: int = 0
+    println(f"Initial count: {count}")
+    
+    count = 10
+    println(f"Updated count: {count}")
+    
+    count = count + 5
+    println(f"Final count: {count}")
+    
+    // Type annotations for clarity
+    println("=== Type Annotations ===")
+    var userId: int = 12345
+    var userName: str = "Hanuman"
+    var balance: float = 1000.50
+    var isAdmin: bool = false
+    
+    println(f"User ID: {userId}")
+    println(f"Username: {userName}")
+    println(f"Balance: ${balance}")
+    println(f"Admin: {isAdmin}")
+    
+    // Function with typed parameters
+    println("=== Typed Functions ===")
+    
+    greet("Ram")
+    var sum = add(10, 20)
+    println(f"Sum: {sum}")
+    
+    // Type safety demonstration
+    println("=== Type Safety ===")
+    var safeCount: int = 0
+    safeCount = 10           // OK: int value
+    safeCount = safeCount + 5    // OK: int operation
+    
+    println(f"Safe count: {safeCount}")
+    
+    // Mixed type operations
+    println("=== Mixed Type Operations ===")
+    var intValue = 10
+    var floatValue = 3.5
+    
+    // Automatic type coercion
+    var result = intValue + floatValue
+    println(f"{intValue} + {floatValue} = {result}")
+    
+    // Explicit conversion
+    var preciseResult = tofloat(intValue) / floatValue
+    println(f"{intValue} / {floatValue} = {preciseResult}")
+}

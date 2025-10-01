@@ -1,0 +1,47 @@
+// Basic variable declaration and usage
+
+fun main() {
+    // Simple variable declarations
+    var name = "Hanuman"
+    var age = 25
+    var price = 19.99
+    var isActive = true
+    
+    println("=== Basic Variables ===")
+    println(f"Name: {name}")
+    println(f"Age: {age}")
+    println(f"Price: ${price}")
+    println(f"Active: {isActive}")
+    
+    // Variable reassignment
+    println("=== Variable Reassignment ===")
+    var count = 0
+    println(f"Initial count: {count}")
+    
+    count = 10
+    println(f"After assignment: {count}")
+    
+    count = count + 5
+    println(f"After increment: {count}")
+    
+    // Type annotations
+    println("=== Type Annotations ===")
+    var userId: int = 12345
+    var userName: str = "Ram_smith"
+    var balance: float = 1000.50
+    
+    println(f"User ID: {userId}")
+    println(f"Username: {userName}")
+    println(f"Balance: ${balance}")
+    
+    // Flexible typing
+    println("=== Flexible Typing ===")
+    var value = 10
+    println(f"Value (int): {value}")
+    
+    value = "hello"
+    println(f"Value (str): {value}")
+    
+    value = true
+    println(f"Value (bool): {value}")
+}

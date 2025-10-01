@@ -33,28 +33,28 @@ fun main() {
     // Test 3: Struct instantiation
     println("")
     printlnc("Test 3: Struct Instantiation", "green")
-    var alice = user.User {
+    var Hanuman = user.User {
         id: 1,
-        name: "Alice",
-        email: "alice@example.com",
+        name: "Hanuman",
+        email: "Hanuman@example.com",
         age: 25
     }
-    println("Created user: Alice")
+    println("Created user: Hanuman")
     
-    var bob = user.User {
+    var Ram = user.User {
         id: 2,
-        name: "Bob",
-        email: "bob@example.com",
+        name: "Ram",
+        email: "Ram@example.com",
         age: 30
     }
-    println("Created user: Bob")
+    println("Created user: Ram")
     
     // Test 4: Factory functions
     println("")
     printlnc("Test 4: Factory Functions", "green")
-    var charlie = user.create_user(3, "Charlie", "charlie@example.com", 28)
-    println("Created user via factory: Charlie")
-    user.display_user(charlie)
+    var Brahma = user.create_user(3, "Brahma", "Brahma@example.com", 28)
+    println("Created user via factory: Brahma")
+    user.display_user(Brahma)
     
     // Test 5: Complex operations
     println("")

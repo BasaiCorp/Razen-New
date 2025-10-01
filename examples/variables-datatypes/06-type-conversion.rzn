@@ -1,0 +1,92 @@
+// Type conversion examples
+
+fun main() {
+    println("=== String Conversions ===")
+    
+    // Integer to string
+    var number = 42
+    var numberStr = tostr(number)
+    println(f"Integer {number} to string: '{numberStr}'")
+    
+    // Float to string
+    var price = 19.99
+    var priceStr = tostr(price)
+    println(f"Float {price} to string: '{priceStr}'")
+    
+    // Boolean to string
+    var flag = true
+    var flagStr = tostr(flag)
+    println(f"Boolean {flag} to string: '{flagStr}'")
+    
+    // String to integer
+    println("=== String to Number ===")
+    var ageStr = "25"
+    var age = toint(ageStr)
+    println(f"String '{ageStr}' to integer: {age}")
+    
+    // String to float
+    var priceInput = "3.14"
+    var priceValue = tofloat(priceInput)
+    println(f"String '{priceInput}' to float: {priceValue}")
+    
+    // Numeric conversions
+    println("=== Numeric Conversions ===")
+    
+    // Integer to float
+    var intValue = 10
+    var floatValue = tofloat(intValue)
+    println(f"Integer {intValue} to float: {floatValue}")
+    
+    // Float to integer (truncates)
+    var decimal = 42.7
+    var truncated = toint(decimal)
+    println(f"Float {decimal} to integer: {truncated}")
+    
+    // User input processing
+    println("=== User Input Processing ===")
+    print("Enter your age: ")
+    var input = input()
+    var userAge = toint(input)
+    
+    if userAge >= 18 {
+        println("You are an adult")
+    } else {
+        println("You are a minor")
+    }
+    
+    // Formatting output
+    println("=== Formatting Output ===")
+    var count = 42
+    var amount = 19.99
+    var isAvailable = true
+    
+    var message = "Items: " + tostr(count) + 
+                  ", Price: $" + tostr(amount) + 
+                  ", Available: " + tostr(isAvailable)
+    println(message)
+    
+    // F-strings (automatic conversion)
+    println("=== F-Strings (Automatic) ===")
+    var items = 10
+    var total = 99.99
+    var inStock = true
+    
+    var autoMessage = f"Items: {items}, Total: ${total}, In Stock: {inStock}"
+    println(autoMessage)
+    
+    // Mathematical operations with conversion
+    println("=== Math with Conversion ===")
+    var intNum = 10
+    var floatNum = 3.5
+    
+    // Convert int to float for precise division
+    var result = tofloat(intNum) / floatNum
+    println(f"{intNum} / {floatNum} = {result}")
+    
+    // Percentage calculation
+    println("=== Percentage Calculation ===")
+    var value = 25
+    var totalValue = 100
+    var percentage = (tofloat(value) / tofloat(totalValue)) * 100.0
+    println(f"{value} is {percentage}% of {totalValue}")
+}

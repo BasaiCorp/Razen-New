@@ -1,0 +1,69 @@
+// Float operations and examples
+
+fun main() {
+    println("=== Float Basics ===")
+    var x = 10.5
+    var y = 2.5
+    
+    println(f"x = {x}, y = {y}")
+    
+    // Arithmetic operations
+    println("=== Arithmetic Operations ===")
+    var sum = x + y
+    var difference = x - y
+    var product = x * y
+    var quotient = x / y
+    
+    println(f"Sum: {x} + {y} = {sum}")
+    println(f"Difference: {x} - {y} = {difference}")
+    println(f"Product: {x} * {y} = {product}")
+    println(f"Quotient: {x} / {y} = {quotient}")
+    
+    // Price calculations
+    println("=== Price Calculations ===")
+    var price = 19.99
+    var quantity = 3.0
+    var total = price * quantity
+    
+    println(f"Price: ${price}")
+    println(f"Quantity: {quantity}")
+    println(f"Total: ${total}")
+    
+    // Tax calculation
+    println("=== Tax Calculation ===")
+    var amount = 100.0
+    var taxRate = 0.08
+    var tax = amount * taxRate
+    var totalWithTax = amount + tax
+    
+    println(f"Amount: ${amount}")
+    println(f"Tax Rate: {taxRate}")
+    println(f"Tax: ${tax}")
+    println(f"Total with Tax: ${totalWithTax}")
+    
+    // Circle area
+    println("=== Circle Area ===")
+    var radius = 5.0
+    var pi = 3.14159
+    var area = pi * radius * radius
+    
+    println(f"Radius: {radius}")
+    println(f"Area: {area}")
+    
+    // Temperature conversion
+    println("=== Temperature Conversion ===")
+    var celsius = 25.0
+    var fahrenheit = (celsius * 9.0 / 5.0) + 32.0
+    
+    println(f"{celsius}°C = {fahrenheit}°F")
+    
+    // Average calculation
+    println("=== Average Calculation ===")
+    var num1 = 10.5
+    var num2 = 20.3
+    var num3 = 15.7
+    var average = (num1 + num2 + num3) / 3.0
+    
+    println(f"Numbers: {num1}, {num2}, {num3}")
+    println(f"Average: {average}")
+}

@@ -1,0 +1,72 @@
+// String operations and examples
+
+fun main() {
+    println("=== String Basics ===")
+    var firstName = "John"
+    var lastName = "Doe"
+    var fullName = firstName + " " + lastName
+    
+    println(f"First Name: {firstName}")
+    println(f"Last Name: {lastName}")
+    println(f"Full Name: {fullName}")
+    
+    // F-string interpolation
+    println("=== F-String Interpolation ===")
+    var name = "Hanuman"
+    var age = 25
+    var city = "New York"
+    
+    var message = f"{name} is {age} years old and lives in {city}"
+    println(message)
+    
+    // String concatenation
+    println("=== String Concatenation ===")
+    var greeting = "Hello"
+    var target = "World"
+    var punctuation = "!"
+    var fullGreeting = greeting + ", " + target + punctuation
+    
+    println(fullGreeting)
+    
+    // Building messages
+    println("=== Building Messages ===")
+    var username = "Hanuman"
+    var action = "logged in"
+    var timestamp = "2024-01-15"
+    
+    var logMessage = f"[{timestamp}] User {username} {action}"
+    println(logMessage)
+    
+    // Formatting output
+    println("=== Formatting Output ===")
+    var product = "Laptop"
+    var price = 999.99
+    var quantity = 2
+    
+    println(f"Product: {product}")
+    println(f"Price: ${price}")
+    println(f"Quantity: {quantity}")
+    println(f"Total: ${price * tofloat(quantity)}")
+    
+    // User input example
+    println("=== User Input Example ===")
+    print("Enter your name: ")
+    var userName = input()
+    var userGreeting = f"Hello, {userName}!"
+    println(userGreeting)
+    
+    // Colored output
+    println("=== Colored Output ===")
+    printlnc("Success message", "green")
+    printlnc("Warning message", "yellow")
+    printlnc("Error message", "red")
+    printlnc("Info message", "blue")
+    
+    // F-strings with colored output
+    println("=== Colored F-Strings ===")
+    var score = 95
+    printlnc(f"Your score: {score}%", "bright_green")
+    
+    var status = "Active"
+    printlnc(f"Status: {status}", "#00FF00")
+}

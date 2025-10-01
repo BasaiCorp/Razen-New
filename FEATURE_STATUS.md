@@ -82,7 +82,7 @@ Razen supports a comprehensive set of operators for various operations:
 
 **Structs**
 - Struct declarations: `struct Person { name: str, age: int }`
-- Struct instantiation: `Person { name: "Alice", age: 30 }`
+- Struct instantiation: `Person { name: "Hanuman", age: 30 }`
 - Member access: `person.name`, `person.age`
 
 **Enums**

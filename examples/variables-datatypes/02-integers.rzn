@@ -1,0 +1,61 @@
+// Integer operations and examples
+
+fun main() {
+    println("=== Integer Basics ===")
+    var a = 10
+    var b = 3
+    
+    println(f"a = {a}, b = {b}")
+    
+    // Arithmetic operations
+    println("=== Arithmetic Operations ===")
+    var sum = a + b
+    var difference = a - b
+    var product = a * b
+    var quotient = a / b
+    var remainder = a % b
+    
+    println(f"Sum: {a} + {b} = {sum}")
+    println(f"Difference: {a} - {b} = {difference}")
+    println(f"Product: {a} * {b} = {product}")
+    println(f"Quotient: {a} / {b} = {quotient}")
+    println(f"Remainder: {a} % {b} = {remainder}")
+    
+    // Comparisons
+    println("\n=== Comparisons ===")
+    println(f"{a} == {b}: {a == b}")
+    println(f"{a} != {b}: {a != b}")
+    println(f"{a} < {b}: {a < b}")
+    println(f"{a} > {b}: {a > b}")
+    println(f"{a} <= {b}: {a <= b}")
+    println(f"{a} >= {b}: {a >= b}")
+    
+    // Counter example
+    println("=== Counter Example ===")
+    var count = 0
+    println(f"Initial count: {count}")
+    
+    for i in 1..=5 {
+        count = count + 1
+        println(f"Count: {count}")
+    }
+    
+    // Sum of range
+    println("=== Sum of Range ===")
+    var total = 0
+    for i in 1..=10 {
+        total = total + i
+    }
+    println(f"Sum of 1 to 10: {total}")
+    
+    // Even and odd
+    println("=== Even and Odd ===")
+    for num in 1..=10 {
+        var isEven = num % 2 == 0
+        if isEven {
+            println(f"{num} is even")
+        } else {
+            println(f"{num} is odd")
+        }
+    }
+}

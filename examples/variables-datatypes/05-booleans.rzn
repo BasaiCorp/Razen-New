@@ -1,0 +1,94 @@
+// Boolean operations and examples
+
+fun main() {
+    println("=== Boolean Basics ===")
+    var isActive = true
+    var isComplete = false
+    
+    println(f"Is Active: {isActive}")
+    println(f"Is Complete: {isComplete}")
+    
+    // Logical operations
+    println("=== Logical Operations ===")
+    var a = true
+    var b = false
+    
+    println(f"a = {a}, b = {b}")
+    println(f"a && b = {a && b}")
+    println(f"a || b = {a || b}")
+    println(f"!a = {!a}")
+    println(f"!b = {!b}")
+    
+    // Comparisons
+    println("=== Comparisons ===")
+    var x = 10
+    var y = 20
+    
+    println(f"x = {x}, y = {y}")
+    println(f"x == y: {x == y}")
+    println(f"x != y: {x != y}")
+    println(f"x < y: {x < y}")
+    println(f"x > y: {x > y}")
+    println(f"x <= y: {x <= y}")
+    println(f"x >= y: {x >= y}")
+    
+    // Validation example
+    println("=== Validation Example ===")
+    var age = 25
+    var hasLicense = true
+    var hasInsurance = true
+    
+    var canDrive = age >= 18 && hasLicense && hasInsurance
+    println(f"Age: {age}")
+    println(f"Has License: {hasLicense}")
+    println(f"Has Insurance: {hasInsurance}")
+    println(f"Can Drive: {canDrive}")
+    
+    // Access control
+    println("=== Access Control ===")
+    var isLoggedIn = true
+    var isAdmin = false
+    var hasPermission = true
+    
+    var canAccess = isLoggedIn && (isAdmin || hasPermission)
+    println(f"Logged In: {isLoggedIn}")
+    println(f"Is Admin: {isAdmin}")
+    println(f"Has Permission: {hasPermission}")
+    println(f"Can Access: {canAccess}")
+    
+    // Range checking
+    println("=== Range Checking ===")
+    var userAge = 25
+    var isAdult = userAge >= 18
+    var isSenior = userAge >= 65
+    var isWorkingAge = userAge >= 18 && userAge < 65
+    
+    println(f"Age: {userAge}")
+    println(f"Is Adult: {isAdult}")
+    println(f"Is Senior: {isSenior}")
+    println(f"Is Working Age: {isWorkingAge}")
+    
+    // Control flow with booleans
+    println("=== Control Flow ===")
+    var hasTicket = true
+    
+    if hasTicket {
+        println("Enter the venue")
+    } else {
+        println("Please purchase a ticket")
+    }
+    
+    // Multiple conditions
+    println("=== Multiple Conditions ===")
+    var score = 85
+    var isPassing = score >= 60
+    var isExcellent = score >= 90
+    
+    if isExcellent {
+        println("Grade: Excellent!")
+    } elif isPassing {
+        println("Grade: Passing")
+    } else {
+        println("Grade: Needs improvement")
+    }
+}

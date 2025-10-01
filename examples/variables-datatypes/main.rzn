@@ -1,0 +1,14 @@
+// Razen project main file
+
+fun main() {
+    println("Hello, Razen!")
+    println("Project initialized successfully!")
+    
+    // Integer + Float = Float
+    var _result = 10 + 5.5       // 15.5 (float)
+    println(_result)
+
+    // String + Any = String
+    var message = "Count: " + tostr(10)
+    println(message)
+}
