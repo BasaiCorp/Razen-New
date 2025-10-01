@@ -74,6 +74,7 @@ pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::E
                 match jit.compile_and_run(&compiler.ir) {
                     Ok(_) => {
                         let duration = start_time.elapsed();
+                        let time_secs = duration.as_secs_f64();
                         
                         // Show execution time with optimization info
                         let opt_name = match opt_level {
@@ -85,8 +86,19 @@ pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::E
                             _ => "unknown",
                         };
                         
-                        eprintln!("\nRAJIT execution completed in {:.3}s (optimization: {})", 
-                                 duration.as_secs_f64(), opt_name);
+                        // Color based on execution time
+                        let (color_code, time_str) = if time_secs < 3.0 {
+                            ("\x1b[32m", format!("{:.3}s", time_secs)) // Green: < 3s (fast!)
+                        } else if time_secs < 10.0 {
+                            ("\x1b[33m", format!("{:.3}s", time_secs)) // Yellow: 3-10s (good)
+                        } else if time_secs < 20.0 {
+                            ("\x1b[38;5;208m", format!("{:.3}s", time_secs)) // Orange: 10-20s (okay)
+                        } else {
+                            ("\x1b[31m", format!("{:.3}s", time_secs)) // Red: > 20s (slow)
+                        };
+                        
+                        eprintln!("\nRAJIT execution completed in {}{}\x1b[0m (optimization: {})", 
+                                 color_code, time_str, opt_name);
                     }
                     Err(e) => {
                         handle_error(&format!("RAJIT execution failed: {}", e));
