@@ -86,6 +86,7 @@ impl Runtime {
             
             // Execute initialization instructions
             match instruction {
+                IR::PushInteger(i) => self.stack.push(Value::Integer(*i)),
                 IR::PushNumber(n) => self.stack.push(Value::Number(*n)),
                 IR::PushString(s) => self.stack.push(Value::String(s.clone())),
                 IR::PushBoolean(b) => self.stack.push(Value::Boolean(*b)),
@@ -125,6 +126,9 @@ impl Runtime {
             let instruction = &ir[pc];
             
             match instruction {
+                IR::PushInteger(i) => {
+                    self.stack.push(Value::Integer(*i));
+                },
                 IR::PushNumber(n) => {
                     self.stack.push(Value::Number(*n));
                 },
@@ -784,7 +788,7 @@ impl Runtime {
     }
 
     fn is_builtin(&self, name: &str) -> bool {
-        matches!(name, "print" | "println" | "printc" | "printlnc" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
+        matches!(name, "print" | "println" | "printc" | "printlnc" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "typeof" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
     }
 
     fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
@@ -905,6 +909,21 @@ impl Runtime {
                     self.stack.push(Value::Boolean(value.is_truthy()));
                 } else {
                     return Err("tobool() requires one argument".to_string());
+                }
+            },
+            "typeof" => {
+                if let Some(value) = self.stack.pop() {
+                    let type_name = match value {
+                        Value::Integer(_) => "int",
+                        Value::Number(_) => "float",
+                        Value::String(_) => "str",
+                        Value::Boolean(_) => "bool",
+                        Value::Struct { ref type_name, .. } => type_name.as_str(),
+                        Value::Null => "null",
+                    };
+                    self.stack.push(Value::String(type_name.to_string()));
+                } else {
+                    return Err("typeof() requires one argument".to_string());
                 }
             },
             "create_range" => {

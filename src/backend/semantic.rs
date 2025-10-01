@@ -374,11 +374,12 @@ impl SemanticAnalyzer {
             ("read", vec!["filename"]),
             ("write", vec!["filename", "content"]),
             ("len", vec!["value"]),
-            // Dot notation type conversion methods
+            // Type conversion functions
             ("toint", vec!["value"]),
             ("tofloat", vec!["value"]),
             ("tostr", vec!["value"]),
             ("tobool", vec!["value"]),
+            ("typeof", vec!["value"]),
             ("append", vec!["list", "value"]),
             ("remove", vec!["list", "index"]),
         ];
@@ -823,16 +824,20 @@ impl SemanticAnalyzer {
                     }
                     UnaryOperator::Minus | UnaryOperator::Plus => {
                         if let Some(ref op_type) = operand_type {
-                            if op_type != "int" {
+                            // Accept both int and float for unary +/-
+                            if op_type != "int" && op_type != "float" {
                                 let diagnostic = helpers::type_mismatch(
-                                    "int",
+                                    "int or float",
                                     &op_type,
                                     Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0)),
                                 );
                                 self.diagnostics.add(diagnostic);
                             }
+                            // Return the same type as operand
+                            operand_type.clone()
+                        } else {
+                            None
                         }
-                        Some("int".to_string())
                     }
                     UnaryOperator::BitwiseNot => {
                         if let Some(ref op_type) = operand_type {

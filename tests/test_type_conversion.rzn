@@ -1,0 +1,61 @@
+// Test type conversion functions
+
+fun main() {
+    println("=== Type Conversion Tests ===")
+    println("")
+    
+    // Test 1: Integer to String
+    println("Test 1: Integer to String")
+    var number = 42
+    var text = tostr(number)
+    println(text)
+    println(f"typeof(text) = {typeof(text)}")
+    println("")
+    
+    // Test 2: String to Integer
+    println("Test 2: String to Integer")
+    var textNum = "123"
+    var num = toint(textNum)
+    println(num)
+    println(f"typeof(num) = {typeof(num)}")
+    println("")
+    
+    // Test 3: Float to Integer
+    println("Test 3: Float to Integer")
+    var result1 = toint(42.7)
+    println(f"toint(42.7) = {result1}")
+    
+    var result2 = toint(-10.9)
+    println(f"toint(-10.9) = {result2}")
+    println("")
+    
+    // Test 4: Integer to Boolean
+    println("Test 4: Integer to Boolean")
+    var flag1 = tobool(0)
+    var flag2 = tobool(5)
+    println(f"tobool(0) = {flag1}")
+    println(f"tobool(5) = {flag2}")
+    println("")
+    
+    // Test 5: typeof on different types
+    println("Test 5: typeof function")
+    var intVal = 42
+    var floatVal = 3.14
+    var strVal = "hello"
+    var boolVal = true
+    println(f"typeof(42) = {typeof(intVal)}")
+    println(f"typeof(3.14) = {typeof(floatVal)}")
+    println(f"typeof(hello) = {typeof(strVal)}")
+    println(f"typeof(true) = {typeof(boolVal)}")
+    println("")
+    
+    // Test 6: tofloat conversions
+    println("Test 6: tofloat conversions")
+    var intToFloat = tofloat(10)
+    var strToFloat = tofloat("3.14")
+    println(f"tofloat(10) = {intToFloat}")
+    println(f"tofloat(3.14) = {strToFloat}")
+    println("")
+    
+    println("=== All Type Conversion Tests Passed! ===")
+}

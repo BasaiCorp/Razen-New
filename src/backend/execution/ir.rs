@@ -8,6 +8,7 @@ use std::fmt;
 #[derive(Debug, Clone)]
 pub enum IR {
     // Stack operations
+    PushInteger(i64),
     PushNumber(f64),
     PushString(String),
     PushBoolean(bool),
@@ -94,6 +95,7 @@ pub enum IR {
 impl fmt::Display for IR {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            IR::PushInteger(i) => write!(f, "PUSH_INT {}", i),
             IR::PushNumber(n) => write!(f, "PUSH_NUM {}", n),
             IR::PushString(s) => write!(f, "PUSH_STR \"{}\"", s),
             IR::PushBoolean(b) => write!(f, "PUSH_BOOL {}", b),

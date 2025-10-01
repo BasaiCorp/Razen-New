@@ -931,7 +931,7 @@ impl Compiler {
                 self.emit(IR::PushString(str_lit.value));
             },
             Expression::IntegerLiteral(int_lit) => {
-                self.emit(IR::PushNumber(int_lit.value as f64));
+                self.emit(IR::PushInteger(int_lit.value));
             },
             Expression::FloatLiteral(float_lit) => {
                 self.emit(IR::PushNumber(float_lit.value));
@@ -1391,10 +1391,11 @@ impl Compiler {
         // Simple bytecode generation
         for ir in &self.ir {
             match ir {
-                IR::PushNumber(_) => code.push(0x01),
-                IR::PushString(_) => code.push(0x02),
-                IR::PushBoolean(_) => code.push(0x03),
-                IR::PushNull => code.push(0x04),
+                IR::PushInteger(_) => code.push(0x01),
+                IR::PushNumber(_) => code.push(0x02),
+                IR::PushString(_) => code.push(0x03),
+                IR::PushBoolean(_) => code.push(0x04),
+                IR::PushNull => code.push(0x05),
                 IR::Pop => code.push(0x05),
                 IR::StoreVar(_) => code.push(0x08),
                 IR::LoadVar(_) => code.push(0x09),
