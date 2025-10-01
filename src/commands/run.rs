@@ -2,6 +2,7 @@
 
 use std::path::PathBuf;
 use std::fs;
+use std::time::Instant;
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
 use crate::backend::{SemanticAnalyzer, NativeJIT};
@@ -66,11 +67,26 @@ pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::E
         }
         
         // Use RAJIT (Razen Adaptive JIT) with specified optimization level
+        let start_time = Instant::now();
+        
         match NativeJIT::with_optimization(opt_level) {
             Ok(mut jit) => {
                 match jit.compile_and_run(&compiler.ir) {
                     Ok(_) => {
-                        // Silent success (like go run)
+                        let duration = start_time.elapsed();
+                        
+                        // Show execution time with optimization info
+                        let opt_name = match opt_level {
+                            0 => "none",
+                            1 => "basic",
+                            2 => "standard",
+                            3 => "aggressive",
+                            4 => "maximum",
+                            _ => "unknown",
+                        };
+                        
+                        eprintln!("\nRAJIT execution completed in {:.3}s (optimization: {})", 
+                                 duration.as_secs_f64(), opt_name);
                     }
                     Err(e) => {
                         handle_error(&format!("RAJIT execution failed: {}", e));
