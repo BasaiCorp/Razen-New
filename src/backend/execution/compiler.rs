@@ -1261,6 +1261,10 @@ impl Compiler {
                 // Call the function with the qualified name
                 self.emit(IR::Call(qualified_name, module_call.arguments.len()));
             },
+            Expression::GroupingExpression(grouping) => {
+                // Parenthesized expression - just compile the inner expression
+                self.compile_expression(*grouping.expression);
+            },
             _ => {
                 // Handle other expression types as needed
                 if !self.clean_output {

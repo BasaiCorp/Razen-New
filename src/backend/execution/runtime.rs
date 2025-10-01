@@ -113,8 +113,9 @@ impl Runtime {
             println!("DEBUG: Variables after stack clear: {:?}", self.variables.keys().collect::<Vec<_>>());
         }
 
-        // Start normal execution from the first function definition (skip initialization code)
-        let mut pc = init_end_pc;
+        // Start normal execution from the beginning (position 0)
+        // The Jump instructions will skip over function bodies
+        let mut pc = 0;
         while pc < ir.len() {
             let instruction = &ir[pc];
             
@@ -324,6 +325,9 @@ impl Runtime {
                     }
                 },
                 IR::Jump(target) => {
+                    if !self.clean_output {
+                        println!("DEBUG: Jump from {} to {}", pc, target);
+                    }
                     pc = *target;
                     continue;
                 },
