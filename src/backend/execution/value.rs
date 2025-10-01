@@ -2,6 +2,7 @@
 //! High-performance value representation for runtime
 
 use std::fmt;
+use std::collections::HashMap;
 
 /// Optimized value type for runtime - avoids string conversions
 #[derive(Debug, Clone)]
@@ -10,6 +11,10 @@ pub enum Value {
     Integer(i64),
     String(String),
     Boolean(bool),
+    Struct {
+        type_name: String,
+        fields: HashMap<String, Value>,
+    },
     Null,
 }
 
@@ -22,6 +27,7 @@ impl Value {
             Value::Number(n) => *n != 0.0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty() && s != "null" && s != "false" && s != "False",
+            Value::Struct { .. } => true,
             Value::Null => false,
         }
     }
@@ -192,6 +198,7 @@ impl Value {
             Value::String(s) => s.parse::<f64>().ok(),
             Value::Boolean(true) => Some(1.0),
             Value::Boolean(false) => Some(0.0),
+            Value::Struct { .. } => None,
             Value::Null => None,
         }
     }
@@ -205,6 +212,7 @@ impl Value {
             Value::String(s) => s.parse::<i64>().ok(),
             Value::Boolean(true) => Some(1),
             Value::Boolean(false) => Some(0),
+            Value::Struct { .. } => None,
             Value::Null => None,
         }
     }
@@ -224,6 +232,12 @@ impl fmt::Display for Value {
             Value::Integer(i) => write!(f, "{}", i),
             Value::String(s) => write!(f, "{}", s),
             Value::Boolean(b) => write!(f, "{}", b),
+            Value::Struct { type_name, fields } => {
+                let field_strs: Vec<String> = fields.iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect();
+                write!(f, "{} {{ {} }}", type_name, field_strs.join(", "))
+            }
             Value::Null => write!(f, "null"),
         }
     }

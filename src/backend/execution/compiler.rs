@@ -54,6 +54,11 @@ impl SymbolTable {
             }
         }
     }
+    
+    #[allow(dead_code)]
+    fn is_defined(&self, name: &str) -> bool {
+        self.resolve(name).is_some()
+    }
 }
 
 /// Function table for tracking function definitions
@@ -83,7 +88,7 @@ pub struct Compiler {
     pub ir: Vec<IR>,
     symbol_table: SymbolTable,
     function_table: FunctionTable,
-    function_param_names: HashMap<String, Vec<String>>,
+    pub function_param_names: HashMap<String, Vec<String>>,
     current_function: Option<String>,
     break_stack: Vec<Vec<usize>>,
     continue_stack: Vec<Vec<usize>>,
@@ -513,6 +518,10 @@ impl Compiler {
         let function_start = self.emit_label(&function_label);
         self.function_table.define(&name, function_start);
         self.function_param_names.insert(name.clone(), parameters.clone());
+        
+        if !self.clean_output {
+            println!("DEBUG COMPILER: Registered function '{}' with params: {:?}", name, parameters);
+        }
 
         self.emit(IR::DefineFunction(name.clone(), function_start));
 
@@ -882,7 +891,8 @@ impl Compiler {
         
         // Compile each method in the impl block
         for method in impl_block.methods {
-            let method_name = format!("{}::{}", type_name, method.name.name);
+            // Use dot notation for method names (Person.new, not Person::new)
+            let method_name = format!("{}.{}", type_name, method.name.name);
             let mut parameters: Vec<String> = Vec::new();
             
             // Add parameters (including self if not static)
@@ -1250,16 +1260,37 @@ impl Compiler {
                 self.emit(IR::GetKey); // Use map-like access for structs
             },
             Expression::ModuleCallExpression(module_call) => {
-                // Compile arguments
-                for arg in &module_call.arguments {
-                    self.compile_expression(arg.clone());
+                // Check if this is a variable (instance method call) or a type/module (static method/module call)
+                let module_name = &module_call.module.name;
+                
+                // Check if it's a variable by trying to resolve it
+                let is_variable = self.symbol_table.resolve(module_name).is_some();
+                
+                if is_variable {
+                    // This is an instance method call like person.greet()
+                    // Compile the object first
+                    self.emit(IR::LoadVar(module_name.clone()));
+                    
+                    // Compile arguments
+                    for arg in &module_call.arguments {
+                        self.compile_expression(arg.clone());
+                    }
+                    
+                    // Use MethodCall instruction (runtime will extract type from object)
+                    self.emit(IR::MethodCall(module_call.function.name.clone(), module_call.arguments.len() + 1)); // +1 for self
+                } else {
+                    // This is a static method call (Person.new) or module call (utils.add)
+                    // Compile arguments
+                    for arg in &module_call.arguments {
+                        self.compile_expression(arg.clone());
+                    }
+                    
+                    // Create a qualified function name using dot notation
+                    let qualified_name = format!("{}.{}", module_name, module_call.function.name);
+                    
+                    // Call the function with the qualified name
+                    self.emit(IR::Call(qualified_name, module_call.arguments.len()));
                 }
-                
-                // Create a qualified function name: module.function
-                let qualified_name = format!("{}.{}", module_call.module.name, module_call.function.name);
-                
-                // Call the function with the qualified name
-                self.emit(IR::Call(qualified_name, module_call.arguments.len()));
             },
             Expression::GroupingExpression(grouping) => {
                 // Parenthesized expression - just compile the inner expression

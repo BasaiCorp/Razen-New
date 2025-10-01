@@ -92,6 +92,13 @@ pub fn execute(file: PathBuf, watch: bool, jit: bool, aot: bool) -> Result<(), B
             
             match NativeJIT::new() {
                 Ok(mut native_jit) => {
+                    native_jit.set_clean_output(false); // Debug output for dev command
+                    
+                    // Register function parameter names
+                    for (func_name, params) in &compiler.function_param_names {
+                        native_jit.register_function_params(func_name.clone(), params.clone());
+                    }
+                    
                     println!("--- JIT Output ---");
                     match native_jit.compile_and_run(&compiler.ir) {
                         Ok(result) => {

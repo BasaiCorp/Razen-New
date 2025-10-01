@@ -34,6 +34,10 @@ impl Runtime {
     pub fn set_clean_output(&mut self, clean: bool) {
         self.clean_output = clean;
     }
+    
+    pub fn is_clean_output(&self) -> bool {
+        self.clean_output
+    }
 
     /// Register function parameter names for proper parameter binding
     pub fn register_function_params(&mut self, name: String, params: Vec<String>) {
@@ -149,15 +153,24 @@ impl Runtime {
                 },
                 IR::StoreVar(name) => {
                     if let Some(value) = self.stack.pop() {
+                        if !self.clean_output {
+                            println!("DEBUG: StoreVar '{}' = '{}', call_stack depth: {}", name, value, self.call_stack.len());
+                        }
                         // Check if this is a qualified module variable (contains '.')
                         if name.contains('.') {
                             // Module-level variable - always store globally
                             self.variables.insert(name.clone(), value);
                         } else if let Some((_, func_vars)) = self.call_stack.last_mut() {
                             // Local variable - store in function scope
+                            if !self.clean_output {
+                                println!("DEBUG: Storing '{}' in function scope", name);
+                            }
                             func_vars.insert(name.clone(), value);
                         } else {
                             // Global variable
+                            if !self.clean_output {
+                                println!("DEBUG: Storing '{}' in global scope", name);
+                            }
                             self.variables.insert(name.clone(), value);
                         }
                     }
@@ -180,15 +193,15 @@ impl Runtime {
                     };
 
                     if let Some(val) = value {
+                        if !self.clean_output {
+                            println!("DEBUG: LoadVar '{}' = '{}', call_stack depth: {}", name, val, self.call_stack.len());
+                        }
                         self.stack.push(val.clone());
-                        if !self.clean_output && name.contains('.') {
-                            println!("DEBUG: Loaded '{}' = '{}'", name, val);
-                        }
                     } else {
-                        self.stack.push(Value::Null);
-                        if !self.clean_output && name.contains('.') {
-                            println!("DEBUG: Variable '{}' not found, pushing 'null'", name);
+                        if !self.clean_output {
+                            println!("DEBUG: Variable '{}' not found, pushing 'null', call_stack depth: {}", name, self.call_stack.len());
                         }
+                        self.stack.push(Value::Null);
                     }
                 },
                 IR::SetGlobal(name) => {
@@ -338,14 +351,23 @@ impl Runtime {
                             
                             // If we have parameter names stored, bind arguments to parameters
                             if let Some(param_names) = self.function_params.get(name) {
+                                if !self.clean_output {
+                                    println!("DEBUG: Binding {} parameters for function '{}'", param_names.len(), name);
+                                }
                                 for (i, param_name) in param_names.iter().enumerate() {
                                     if i < args.len() {
+                                        if !self.clean_output {
+                                            println!("DEBUG: Binding param '{}' = '{}'", param_name, args[i]);
+                                        }
                                         func_variables.insert(param_name.clone(), args[i].clone());
                                     } else {
                                         func_variables.insert(param_name.clone(), Value::Null);
                                     }
                                 }
                             } else {
+                                if !self.clean_output {
+                                    println!("DEBUG: No param names registered for function '{}', using generic names", name);
+                                }
                                 // Fallback: create generic parameter names
                                 for (i, arg) in args.iter().enumerate() {
                                     func_variables.insert(format!("param{}", i), arg.clone());
@@ -389,19 +411,48 @@ impl Runtime {
                         let self_obj = &args[0];
                         let method_args = &args[1..];
                         
-                        // For now, we'll look for methods in the format "TypeName::method_name"
-                        // We need to infer the type from the variable name or object structure
-                        
-                        // Try to find the method by checking all available methods
-                        let mut full_method_name = format!("Object::{}", method_name);
-                        
-                        // Look for any method with this name in our functions
-                        for func_name in self.functions.keys() {
-                            if func_name.ends_with(&format!("::{}", method_name)) {
-                                full_method_name = func_name.clone();
-                                break;
+                        // Extract type from the object
+                        let object_type = if let Value::Struct { type_name, .. } = self_obj {
+                            // Proper struct value - get type directly
+                            Some(type_name.clone())
+                        } else if let Value::String(obj_str) = self_obj {
+                            // Fallback: parse string representation (backwards compatibility)
+                            if obj_str.starts_with('{') && obj_str.contains("__type__:") {
+                                let content = &obj_str[1..obj_str.len()-1];
+                                let pairs: Vec<&str> = content.split(", ").collect();
+                                let mut found_type = None;
+                                for pair in pairs {
+                                    if let Some(colon_pos) = pair.find(": ") {
+                                        let key = &pair[..colon_pos];
+                                        let value = &pair[colon_pos + 2..];
+                                        if key == "__type__" {
+                                            found_type = Some(value.to_string());
+                                            break;
+                                        }
+                                    }
+                                }
+                                found_type
+                            } else {
+                                None
                             }
-                        }
+                        } else {
+                            None
+                        };
+                        
+                        // Build the full method name using dot notation
+                        let full_method_name = if let Some(type_name) = object_type {
+                            format!("{}.{}", type_name, method_name)
+                        } else {
+                            // Fallback: try to find any method with this name
+                            let mut found_name = format!("Object.{}", method_name);
+                            for func_name in self.functions.keys() {
+                                if func_name.ends_with(&format!(".{}", method_name)) {
+                                    found_name = func_name.clone();
+                                    break;
+                                }
+                            }
+                            found_name
+                        };
                         
                         if !self.clean_output {
                             println!("Looking for method '{}' (full name: '{}')", method_name, full_method_name);
@@ -431,8 +482,8 @@ impl Runtime {
                             }
                             
                             // Save current state and jump to method
-                            self.call_stack.push((pc + 1, self.variables.clone()));
-                            self.variables = func_variables;
+                            // Use same approach as regular function calls - keep variables in call stack
+                            self.call_stack.push((pc + 1, func_variables));
                             pc = func_addr;
                             continue;
                         } else {
@@ -505,50 +556,100 @@ impl Runtime {
                     self.stack.push(Value::String(array_repr));
                 },
                 IR::CreateMap(size) => {
-                    // Pop 'size * 2' elements from stack (key-value pairs) and create a map representation
+                    if !self.clean_output {
+                        println!("DEBUG: CreateMap with size {}", size);
+                        println!("DEBUG: Stack size before CreateMap: {}", self.stack.len());
+                    }
+                    
+                    // Pop 'size * 2' elements from stack (key-value pairs)
                     let mut pairs = Vec::new();
                     for _ in 0..*size {
                         if let (Some(value), Some(key)) = (self.stack.pop(), self.stack.pop()) {
-                            pairs.push(format!("{}: {}", key, value));
+                            if !self.clean_output {
+                                println!("DEBUG: Pair - key: {}, value: {}", key, value);
+                            }
+                            pairs.push((key, value));
                         }
                     }
                     pairs.reverse(); // Restore original order
                     
-                    // For now, represent map as a string (in a full implementation, we'd use proper data structures)
-                    let map_repr = format!("{{{}}}", pairs.join(", "));
-                    self.stack.push(Value::String(map_repr));
+                    // Check if first key is "__type__" to determine if this is a struct
+                    let mut type_name = None;
+                    let mut fields = HashMap::new();
+                    
+                    for (key, value) in pairs {
+                        let key_str = key.to_string();
+                        if key_str == "__type__" {
+                            type_name = Some(value.to_string());
+                        } else {
+                            fields.insert(key_str, value);
+                        }
+                    }
+                    
+                    // If we have a type name, create a proper Struct value
+                    if let Some(type_name) = type_name {
+                        if !self.clean_output {
+                            println!("DEBUG: Creating struct '{}' with fields: {:?}", type_name, fields.keys().collect::<Vec<_>>());
+                        }
+                        self.stack.push(Value::Struct { type_name, fields });
+                    } else {
+                        // Otherwise, create a generic map representation as string (for backwards compatibility)
+                        let field_strs: Vec<String> = fields.iter()
+                            .map(|(k, v)| format!("{}: {}", k, v))
+                            .collect();
+                        let map_repr = format!("{{{}}}", field_strs.join(", "));
+                        self.stack.push(Value::String(map_repr));
+                    }
                 },
                 IR::GetKey => {
                     // Pop key and object from stack, push the value for that key
                     if let (Some(key), Some(object)) = (self.stack.pop(), self.stack.pop()) {
-                        let mut found = false;
                         let key_str = key.to_string();
-                        let object_str = object.to_string();
                         
-                        // For now, parse the object as a map-like string representation
-                        if object_str.starts_with('{') && object_str.ends_with('}') {
-                            let content = &object_str[1..object_str.len()-1]; // Remove braces
-                            if !content.is_empty() {
-                                let pairs: Vec<&str> = content.split(", ").collect();
-                                
-                                for pair in pairs {
-                                    if let Some(colon_pos) = pair.find(": ") {
-                                        let pair_key = &pair[..colon_pos];
-                                        let pair_value = &pair[colon_pos + 2..];
-                                        
-                                        if pair_key == key_str {
-                                            self.stack.push(Value::from_string(pair_value.to_string()));
-                                            found = true;
-                                            break;
+                        // Handle proper Struct values
+                        if let Value::Struct { type_name, fields } = &object {
+                            if !self.clean_output {
+                                println!("DEBUG: GetKey on struct '{}', looking for field '{}', available fields: {:?}", type_name, key_str, fields.keys().collect::<Vec<_>>());
+                            }
+                            if let Some(value) = fields.get(&key_str) {
+                                if !self.clean_output {
+                                    println!("DEBUG: Found field '{}' = '{}'", key_str, value);
+                                }
+                                self.stack.push(value.clone());
+                            } else {
+                                if !self.clean_output {
+                                    println!("DEBUG: Field '{}' not found in struct", key_str);
+                                }
+                                self.stack.push(Value::Null);
+                            }
+                        } else {
+                            // Fallback: parse string representation for backwards compatibility
+                            let mut found = false;
+                            let object_str = object.to_string();
+                            
+                            if object_str.starts_with('{') && object_str.ends_with('}') {
+                                let content = &object_str[1..object_str.len()-1]; // Remove braces
+                                if !content.is_empty() {
+                                    let pairs: Vec<&str> = content.split(", ").collect();
+                                    
+                                    for pair in pairs {
+                                        if let Some(colon_pos) = pair.find(": ") {
+                                            let pair_key = &pair[..colon_pos];
+                                            let pair_value = &pair[colon_pos + 2..];
+                                            
+                                            if pair_key == key_str {
+                                                self.stack.push(Value::from_string(pair_value.to_string()));
+                                                found = true;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                        
-                        if !found {
-                            // Key not found, push null
-                            self.stack.push(Value::Null);
+                            
+                            if !found {
+                                self.stack.push(Value::Null);
+                            }
                         }
                     }
                 },

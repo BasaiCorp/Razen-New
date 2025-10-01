@@ -538,6 +538,17 @@ impl SemanticAnalyzer {
                     Position::new(1, 1, 0),
                     false,
                 );
+                
+                // Also register in structs map for method resolution
+                let struct_symbol = StructSymbol {
+                    _name: struct_decl.name.name.clone(),
+                    _fields: struct_decl.fields.iter().map(|f| {
+                        let type_name = Self::get_type_name_from_type_annotation(&f.type_annotation);
+                        (f.name.name.clone(), type_name)
+                    }).collect(),
+                    _defined_at: Position::new(1, 1, 0),
+                };
+                self.symbol_table.structs.insert(struct_decl.name.name.clone(), struct_symbol);
             }
             Statement::EnumDeclaration(enum_decl) => {
                 // Register enum type in symbol table
@@ -954,6 +965,100 @@ impl SemanticAnalyzer {
                 self.analyze_expression(&group_expr.expression)
             }
             Expression::ModuleCallExpression(module_call) => {
+                let module_name = module_call.module.name.clone();
+                
+                // Check if this is actually a variable (instance method call like person.greet())
+                let var_type_name = if let Some(symbol) = self.symbol_table.lookup(&module_name) {
+                    if let SymbolType::Variable(type_name) = &symbol.symbol_type {
+                        Some(type_name.clone())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+                
+                if let Some(type_name) = var_type_name {
+                    // Mark the variable as used (it's the object for the method call)
+                    self.symbol_table.mark_used(&module_name);
+                    
+                    // This is an instance method call on a variable
+                    // Clone the method info we need before analyzing arguments (to avoid borrow issues)
+                    let method_info = self.symbol_table.methods.get(&type_name)
+                            .and_then(|methods| {
+                                let method_name = &module_call.function.name;
+                                methods.iter()
+                                    .find(|m| m._name == *method_name && !m.is_static)
+                                    .map(|m| (m.parameters.len(), m.return_type.clone()))
+                            });
+                        
+                        if let Some((param_count, return_type)) = method_info {
+                            // Validate argument count (excluding self parameter)
+                            let expected_args = param_count.saturating_sub(1);
+                            if module_call.arguments.len() != expected_args {
+                                let diagnostic = Diagnostic::new(
+                                    crate::frontend::diagnostics::DiagnosticKind::ArgumentCountMismatch {
+                                        expected: expected_args,
+                                        found: module_call.arguments.len(),
+                                    },
+                                )
+                                .with_code("E0012");
+                                self.diagnostics.add(diagnostic);
+                            }
+                            
+                            // Analyze arguments
+                            for arg in &module_call.arguments {
+                                self.analyze_expression(arg);
+                            }
+                            
+                            return return_type;
+                        }
+                }
+                
+                // Check if this is a static method call on a struct type (like Person.new())
+                if self.symbol_table.structs.contains_key(&module_name) {
+                    // This is a static method call
+                    let method_info = self.symbol_table.methods.get(&module_name)
+                        .and_then(|methods| {
+                            let method_name = &module_call.function.name;
+                            methods.iter()
+                                .find(|m| m._name == *method_name && m.is_static)
+                                .map(|m| (m.parameters.len(), m.return_type.clone()))
+                        });
+                    
+                    if let Some((expected_params, return_type)) = method_info {
+                        // Validate argument count
+                        if module_call.arguments.len() != expected_params {
+                            let diagnostic = Diagnostic::new(
+                                crate::frontend::diagnostics::DiagnosticKind::ArgumentCountMismatch {
+                                    expected: expected_params,
+                                    found: module_call.arguments.len(),
+                                },
+                            )
+                            .with_code("E0012");
+                            self.diagnostics.add(diagnostic);
+                        }
+                        
+                        // Analyze arguments
+                        for arg in &module_call.arguments {
+                            self.analyze_expression(arg);
+                        }
+                        
+                        return return_type;
+                    } else {
+                        let diagnostic = Diagnostic::new(
+                            crate::frontend::diagnostics::DiagnosticKind::UndefinedMethod {
+                                method: module_call.function.name.clone(),
+                                type_name: module_name.clone(),
+                            },
+                        )
+                        .with_code("E0013");
+                        self.diagnostics.add(diagnostic);
+                        return None;
+                    }
+                }
+                
+                // Otherwise, treat it as a regular module call
                 self.analyze_module_call(module_call)
             }
         }
@@ -1209,6 +1314,10 @@ impl SemanticAnalyzer {
         let mut methods = Vec::new();
 
         for method in &impl_block.methods {
+            // Set current_function context so return statements are valid (using dot notation)
+            let old_function = self.current_function.clone();
+            self.current_function = Some(format!("{}.{}", type_name, method.name.name));
+            
             // Analyze method parameters and body
             self.symbol_table.push_scope();
 
@@ -1251,6 +1360,9 @@ impl SemanticAnalyzer {
 
             methods.push(method_symbol);
             self.symbol_table.pop_scope();
+            
+            // Restore previous function context
+            self.current_function = old_function;
         }
 
         // Register all methods for this type

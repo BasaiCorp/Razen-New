@@ -1,0 +1,40 @@
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    fun greet(self) {
+        println(f"Hello, I'm {self.name} and I'm {self.age} years old!")
+    }
+    
+    fun get_name(self) -> str {
+        return self.name
+    }
+}
+
+fun main() {
+    println("Creating person1...")
+    var person1 = Person.new("Alice", 25)
+    println("Calling person1.greet()...")
+    person1.greet()
+    
+    println("")
+    println("Creating person2...")
+    var person2 = Person.new("Bob", 30)
+    println("Calling person2.greet()...")
+    person2.greet()
+    
+    println("")
+    println("Getting person1 name...")
+    var name1 = person1.get_name()
+    println(f"person1.get_name() = {name1}")
+    
+    println("Getting person2 name...")
+    var name2 = person2.get_name()
+    println(f"person2.get_name() = {name2}")
+}

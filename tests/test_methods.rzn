@@ -1,0 +1,92 @@
+// Comprehensive method test for struct impl blocks
+
+struct Calculator {
+    value: int
+}
+
+impl Calculator {
+    // Static method (constructor)
+    fun new(initial: int) -> Calculator {
+        return Calculator { value: initial }
+    }
+    
+    // Instance method with self
+    fun add(self, num: int) -> int {
+        return self.value + num
+    }
+    
+    // Instance method that modifies
+    fun multiply(self, factor: int) -> int {
+        return self.value * factor
+    }
+    
+    // Instance method without parameters
+    fun get_value(self) -> int {
+        return self.value
+    }
+}
+
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    fun greet(self) {
+        println(f"Hello, I'm {self.name} and I'm {self.age} years old!")
+    }
+    
+    fun get_name(self) -> str {
+        return self.name
+    }
+    
+    fun get_age(self) -> int {
+        return self.age
+    }
+}
+
+fun main() {
+    println("=== Method Test Suite ===")
+    println("")
+    
+    // Test 1: Calculator static method
+    println("Test 1: Static method calls")
+    var calc = Calculator.new(10)
+    println("Created calculator with value 10")
+    
+    // Test 2: Calculator instance methods
+    println("")
+    println("Test 2: Instance method calls")
+    var sum = calc.add(5)
+    println(f"calc.add(5) = {sum}")
+    
+    var product = calc.multiply(3)
+    println(f"calc.multiply(3) = {product}")
+    
+    var value = calc.get_value()
+    println(f"calc.get_value() = {value}")
+    
+    // Test 3: Person static and instance methods
+    println("")
+    println("Test 3: Person methods")
+    var person1 = Person.new("Alice", 25)
+    person1.greet()
+    
+    var person2 = Person.new("Bob", 30)
+    person2.greet()
+    
+    // Test 4: Method return values
+    println("")
+    println("Test 4: Method return values")
+    var name = person1.get_name()
+    var age = person1.get_age()
+    println(f"person1.get_name() = {name}")
+    println(f"person1.get_age() = {age}")
+    
+    println("")
+    println("=== All Method Tests Passed! ===")
+}

@@ -73,6 +73,13 @@ pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::
         
         match NativeJIT::with_optimization(opt_level) {
             Ok(mut jit) => {
+                jit.set_clean_output(true); // Clean output for run command
+                
+                // Register function parameter names
+                for (func_name, params) in &compiler.function_param_names {
+                    jit.register_function_params(func_name.clone(), params.clone());
+                }
+                
                 match jit.compile_and_run(&compiler.ir) {
                     Ok(_) => {
                         let duration = start_time.elapsed();

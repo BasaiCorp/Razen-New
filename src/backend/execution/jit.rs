@@ -114,31 +114,42 @@ impl JIT {
         })
     }
     
+    /// Set clean output mode
+    pub fn set_clean_output(&mut self, clean: bool) {
+        self.runtime.set_clean_output(clean);
+    }
+    
+    /// Register function parameter names
+    pub fn register_function_params(&mut self, func_name: String, params: Vec<String>) {
+        self.runtime.register_function_params(func_name, params);
+    }
+    
     /// Compile and execute IR with RAJIT 5-tier adaptive optimizations
     pub fn compile_and_run(&mut self, ir: &[IR]) -> Result<i64, String> {
-        // Tier 1: Identify hot loops in the IR
-        let hot_loops = self.identify_hot_loops(ir);
+        // Tier 1: Apply baseline optimizations (always active)
+        let mut optimized_ir = ir.to_vec();
         
-        // Tier 2: Apply baseline optimizations to entire IR
-        let mut optimized_ir = if self.optimization_level > 0 {
-            self.optimize_ir(ir)
-        } else {
-            ir.to_vec()
-        };
+        if !self.runtime.is_clean_output() {
+            println!("DEBUG JIT: Starting with {} IR instructions", ir.len());
+            println!("DEBUG JIT: Optimization level: {}", self.optimization_level);
+        }
         
-        // Tier 3: Apply aggressive optimizations to hot loops
+        // Tier 2: Identify hot loops for potential optimization
+        let hot_loops = self.identify_hot_loops(&optimized_ir);
+        
+        // Tier 3: Optimize hot loops if optimization level is high enough
         if self.optimization_level >= 3 && !hot_loops.is_empty() {
             optimized_ir = self.optimize_hot_loops(optimized_ir, &hot_loops);
         }
         
         // Tier 4: Apply inline caching and type specialization
-        if self.optimization_level >= 3 {
+        if self.optimization_level >= 4 {
             optimized_ir = self.apply_inline_caching(optimized_ir);
             self.collect_type_feedback(&optimized_ir);
         }
         
         // Tier 5: Perform escape analysis for memory optimization
-        if self.optimization_level >= 4 {
+        if self.optimization_level >= 5 {
             self.escape_analysis(&optimized_ir);
         }
         
@@ -147,8 +158,9 @@ impl JIT {
             self.optimized_traces.insert(*loop_start, optimized_ir.clone());
         }
         
-        // Set clean output for production mode
-        self.runtime.set_clean_output(true);
+        if !self.runtime.is_clean_output() {
+            println!("DEBUG JIT: After optimization: {} IR instructions", optimized_ir.len());
+        }
         
         // Execute optimized IR using the proven runtime
         self.runtime.execute(&optimized_ir)?;
