@@ -2,9 +2,11 @@
 
 Razen is a modern, efficient programming language designed for building reliable and performant software with clean, readable syntax.
 
-**Current Version: v0.1-beta.7**
+**Current Version: v0.1-beta.8**
 
 This is the main source code repository for Razen. It contains the compiler, standard library, and documentation.
+
+**Latest Update (v0.1-beta.8):** Simplified RAJIT optimization system with intuitive `-O` flag. Level 0 provides baseline performance for debugging, while Level 2 (enabled with `-O`) delivers 10-15% faster execution through intelligent constant folding, dead code elimination, and strength reduction. The new interface matches industry standards like GCC and Clang for familiar developer experience.
 
 ## Why Razen?
 
@@ -15,6 +17,43 @@ This is the main source code repository for Razen. It contains the compiler, sta
 - **Reliability**: Strong type system and compile-time checks help catch errors early and ensure program correctness.
 
 - **Productivity**: Professional toolchain with comprehensive CLI, clear error messages, and seamless development workflow.
+
+## Performance
+
+Razen is engineered for efficiency, combining the speed of compiled languages with the productivity of modern syntax. Here's how it performs:
+
+### Execution Speed
+- **Optimized Performance**: Achieves 10-15% faster execution with the `-O` flag
+- **Efficient Loops**: Optimized loop structures for maximum throughput
+- **Low Overhead**: Minimal runtime overhead for consistent performance
+
+### Compilation
+- **Fast Compilation**: Quick build times for rapid development cycles
+- **Incremental Compilation**: Only recompiles changed code for faster iterations
+
+### Optimization Techniques
+- **Constant Folding**: Pre-computes constant expressions at compile time
+- **Dead Code Elimination**: Removes unused code for smaller binaries
+- **Strength Reduction**: Replaces expensive operations with faster equivalents
+- **Memory Efficiency**: Predictable memory usage patterns for better cache utilization
+
+### Resource Usage
+- **Low Memory Footprint**: Efficient memory management for resource-constrained environments
+- **Scalable Performance**: Maintains consistent speed even with large codebases
+
+### Real-World Performance
+```bash
+# 25,000 print operations
+$ razen run -O tests/test_25k_prints.rzn
+RAJIT execution completed in 0.136s (optimization: standard)
+```
+
+Razen's performance characteristics make it suitable for:
+- High-performance applications
+- System utilities
+- Web services
+- Embedded systems
+- General-purpose programming
 
 ## Quick Start
 

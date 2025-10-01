@@ -1,0 +1,19 @@
+struct Person {
+    name: str,
+    age: int
+}
+
+impl Person {
+    fun new(name: str, age: int) -> Person {
+        return Person { name: name, age: age }
+    }
+    
+    fun greet(self) {
+        printlnc(f"Hello, I'm {self.name}!", "green")
+    }
+}
+
+fun main() {
+    var person = Person.new("Hanuman", 25)
+    person.greet()
+}

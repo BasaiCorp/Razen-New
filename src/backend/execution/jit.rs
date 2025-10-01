@@ -91,16 +91,20 @@ impl JIT {
     }
     
     /// Create RAJIT with specific optimization level
-    /// 0 = No optimization (baseline interpreter)
-    /// 1 = Basic (constant folding, dead code elimination)
-    /// 2 = Standard (+ hot loop detection, strength reduction) - DEFAULT
-    /// 3 = Aggressive (+ inline caching, type specialization, loop unrolling)
-    /// 4 = Maximum (+ escape analysis, memory optimization, function inlining)
+    /// 0 = No optimization (baseline interpreter) - for debugging
+    /// 2 = Standard (hot loop detection, strength reduction) - RECOMMENDED
+    /// Note: Levels 1, 3, 4 are disabled as Level 2 provides best performance
     pub fn with_optimization(level: u8) -> Result<Self, String> {
+        // Only support Level 0 and Level 2
+        let actual_level = match level {
+            0 => 0,
+            _ => 2, // Any non-zero level uses Level 2 (best performance)
+        };
+        
         Ok(Self {
             runtime: Runtime::new(),
-            optimization_level: level.min(4),
-            hot_loop_threshold: if level >= 3 { 50 } else { 100 },
+            optimization_level: actual_level,
+            hot_loop_threshold: 100,
             loop_counters: HashMap::new(),
             optimized_traces: HashMap::new(),
             inline_cache: HashMap::new(),
@@ -224,39 +228,33 @@ impl JIT {
         body
     }
     
-    /// Optimize IR before execution with 5-tier optimization
+    /// Optimize IR before execution (Level 0 or Level 2 only)
     fn optimize_ir(&self, ir: &[IR]) -> Vec<IR> {
         let mut optimized = ir.to_vec();
         
-        // Tier 1: Baseline optimizations (level 1+)
-        if self.optimization_level >= 1 {
-            optimized = self.fold_constants(optimized);
-            optimized = self.eliminate_dead_code(optimized);
+        // Level 0: No optimization (return as-is)
+        if self.optimization_level == 0 {
+            return optimized;
         }
         
-        // Tier 2: Strength reduction and algebraic simplification (level 2+)
+        // Level 2: Standard optimizations (best performance)
         if self.optimization_level >= 2 {
+            optimized = self.fold_constants(optimized);
+            optimized = self.eliminate_dead_code(optimized);
             optimized = self.strength_reduction(optimized);
             optimized = self.algebraic_simplification(optimized);
         }
         
-        // Tier 3: Peephole optimizations (level 3+)
-        if self.optimization_level >= 3 {
-            optimized = self.peephole_optimize(optimized);
-            optimized = self.loop_unrolling(optimized);
-            optimized = self.invariant_code_motion(optimized);
-        }
-        
-        // Tier 4: Aggressive optimizations (level 4)
-        if self.optimization_level >= 4 {
-            // Multiple passes for maximum optimization
-            for _ in 0..3 {
-                optimized = self.advanced_peephole(optimized);
-                optimized = self.stack_optimization(optimized);
-                optimized = self.redundant_load_elimination(optimized);
-            }
-            optimized = self.dead_store_elimination(optimized);
-        }
+        // Levels 3-4 are commented out (not used, Level 2 is optimal)
+        // if self.optimization_level >= 3 {
+        //     optimized = self.peephole_optimize(optimized);
+        //     optimized = self.loop_unrolling(optimized);
+        //     optimized = self.invariant_code_motion(optimized);
+        //     optimized = self.advanced_peephole(optimized);
+        //     optimized = self.stack_optimization(optimized);
+        //     optimized = self.redundant_load_elimination(optimized);
+        //     optimized = self.dead_store_elimination(optimized);
+        // }
         
         optimized
     }
@@ -434,6 +432,7 @@ impl JIT {
     
     /// Tier 4: Loop unrolling - Expand small loops for better CPU pipelining
     /// Only unrolls loops WITHOUT side effects to preserve correctness
+    #[allow(dead_code)]
     fn loop_unrolling(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -477,6 +476,7 @@ impl JIT {
     
     /// Tier 4: Invariant code motion - Move loop-invariant code outside loops
     /// Only moves PURE operations (no side effects like println, file I/O, etc)
+    #[allow(dead_code)]
     fn invariant_code_motion(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -530,6 +530,7 @@ impl JIT {
     }
     
     /// Check if a loop has side effects (I/O, function calls, etc)
+    #[allow(dead_code)]
     fn loop_has_side_effects(&self, ir: &[IR], loop_start: usize, loop_end: usize) -> bool {
         for i in loop_start..=loop_end {
             match &ir[i] {
@@ -591,6 +592,7 @@ impl JIT {
     }
     
     /// Tier 5: Dead store elimination - Remove redundant stores
+    #[allow(dead_code)]
     fn dead_store_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut last_store: HashMap<String, usize> = HashMap::new();
@@ -695,6 +697,7 @@ impl JIT {
     }
     
     /// Advanced peephole optimization - More aggressive pattern matching
+    #[allow(dead_code)]
     fn advanced_peephole(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -748,6 +751,7 @@ impl JIT {
     }
     
     /// Stack optimization - Reduce unnecessary stack operations
+    #[allow(dead_code)]
     fn stack_optimization(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;
@@ -775,6 +779,7 @@ impl JIT {
     }
     
     /// Redundant load elimination - Cache loaded values
+    #[allow(dead_code)]
     fn redundant_load_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
         let mut result = Vec::new();
         let mut i = 0;

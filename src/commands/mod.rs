@@ -19,7 +19,7 @@ pub mod test;
 #[derive(Parser)]
 #[command(name = "razen")]
 #[command(about = "A professional programming language compiler and runtime")]
-#[command(version = "0.1-beta.7")]
+#[command(version = "0.1-beta.8")]
 #[command(author = "Prathmesh Barot (aka PrathmeshCodes)")]
 #[command(
     long_about = "Razen is a modern, efficient programming language with clean syntax and powerful features."
@@ -39,9 +39,9 @@ pub enum Commands {
         #[arg(value_name = "FILE")]
         file: PathBuf,
         
-        /// Optimization level (0-4): 0=none, 1=basic, 2=standard, 3=aggressive, 4=maximum
-        #[arg(short = 'O', long = "opt-level", value_name = "LEVEL", default_value = "2")]
-        opt_level: u8,
+        /// Enable optimizations (uses standard level 2 for best performance)
+        #[arg(short = 'O', long = "optimize")]
+        optimize: bool,
     },
 
     /// Development mode with debugging and compiler messages
@@ -166,7 +166,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { file, opt_level } => run::execute(file, opt_level),
+        Commands::Run { file, optimize } => run::execute(file, optimize),
         Commands::Dev { file, watch, jit, aot } => dev::execute(file, watch, jit, aot),
         Commands::Build {
             output,

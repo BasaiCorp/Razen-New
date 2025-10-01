@@ -10,7 +10,9 @@ use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error};
 
 /// Execute the run command - compile and run a Razen program with RAJIT
-pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::Error>> {
+pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::Error>> {
+    // Level 0 (no optimization) by default, Level 2 (standard) with -O flag
+    let opt_level = if optimize { 2 } else { 0 };
     // Validate input file
     if let Err(e) = validate_file_exists(&file) {
         handle_error(&e);
@@ -77,13 +79,10 @@ pub fn execute(file: PathBuf, opt_level: u8) -> Result<(), Box<dyn std::error::E
                         let time_secs = duration.as_secs_f64();
                         
                         // Show execution time with optimization info
-                        let opt_name = match opt_level {
-                            0 => "none",
-                            1 => "basic",
-                            2 => "standard",
-                            3 => "aggressive",
-                            4 => "maximum",
-                            _ => "unknown",
+                        let opt_name = if opt_level == 0 {
+                            "none"
+                        } else {
+                            "standard"
                         };
                         
                         // Color based on execution time
