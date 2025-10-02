@@ -13,7 +13,7 @@ Razen provides built-in functions for converting between types:
 
 ## String Conversions
 
-### Integer to String -
+### Integer to String
 
 ```razen
 var number = 42
@@ -38,7 +38,7 @@ var text = tostr(flag)
 println(text)           // Output: true
 ```
 
-### String to Integer -
+### String to Integer
 
 ```razen
 var text = "123"
@@ -73,7 +73,7 @@ var decimal = tofloat(integer)
 println(decimal)        // Output: 10.0
 ```
 
-### Float to Integer -
+### Float to Integer
 
 Converts by truncating the decimal part:
 
@@ -87,7 +87,7 @@ var negInt = toint(negative)
 println(negInt)         // Output: -10
 ```
 
-### Integer to Boolean -
+### Integer to Boolean
 
 ```razen
 var zero = 0
@@ -168,7 +168,7 @@ var number = safeToInt(input, 0)
 println(number)  // Output: 0
 ```
 
-### Rounding Float to Integer -
+### Rounding Float to Integer
 
 ```razen
 fun round(value: float) -> int {
@@ -251,7 +251,7 @@ println(message2)
 
 ## Conversion Functions Reference
 
-### toint() -
+### toint()
 Converts values to integer:
 
 ```razen
@@ -262,7 +262,7 @@ toint(true)       // 1
 toint(false)      // 0
 ```
 
-### tofloat() -
+### tofloat()
 
 Converts values to float:
 
@@ -274,7 +274,7 @@ tofloat(true)     // 1.0
 tofloat(false)    // 0.0
 ```
 
-### tostr() -
+### tostr()
 
 Converts values to string:
 
@@ -285,7 +285,7 @@ tostr(true)       // "true"
 tostr(false)      // "false"
 ```
 
-### tobool() -
+### tobool()
 
 Converts values to boolean:
 
@@ -463,7 +463,7 @@ var hours = minutesToHours(toint(minutes))
 println(f"{seconds} seconds = {hours} hours")
 ```
 
-## Type Checking - 
+## Type Checking
 
 Check types before conversion:
 

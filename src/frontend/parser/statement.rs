@@ -583,6 +583,23 @@ impl<'a> StatementParser<'a> {
 
     /// Parse type annotation
     fn parse_type_annotation(&mut self) -> ParseResult<TypeAnnotation> {
+        // Handle array syntax: [type]
+        if self.match_tokens(&[TokenKind::LeftBracket]) {
+            let element_type = self.parse_type_annotation()?;
+            self.consume(TokenKind::RightBracket, "Expected ']' after array element type")?;
+            return Ok(TypeAnnotation::Array(Box::new(element_type)));
+        }
+        
+        // Handle map syntax: {key_type: value_type}
+        if self.match_tokens(&[TokenKind::LeftBrace]) {
+            let key_type = self.parse_type_annotation()?;
+            self.consume(TokenKind::Colon, "Expected ':' after map key type")?;
+            let value_type = self.parse_type_annotation()?;
+            self.consume(TokenKind::RightBrace, "Expected '}' after map value type")?;
+            return Ok(TypeAnnotation::Map(Box::new(key_type), Box::new(value_type)));
+        }
+        
+        // Handle basic types
         if self.match_tokens(&[TokenKind::Int]) {
             Ok(TypeAnnotation::Int)
         } else if self.match_tokens(&[TokenKind::FloatType]) {
@@ -596,10 +613,10 @@ impl<'a> StatementParser<'a> {
         } else if self.match_tokens(&[TokenKind::Any]) {
             Ok(TypeAnnotation::Any)
         } else if self.match_tokens(&[TokenKind::Array]) {
-            // TODO: Parse array element type
+            // Legacy syntax: Array (without element type specification)
             Ok(TypeAnnotation::Array(Box::new(TypeAnnotation::Any)))
         } else if self.match_tokens(&[TokenKind::Map]) {
-            // TODO: Parse map key and value types
+            // Legacy syntax: Map (without key/value type specification)
             Ok(TypeAnnotation::Map(
                 Box::new(TypeAnnotation::Any),
                 Box::new(TypeAnnotation::Any),

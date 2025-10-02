@@ -546,7 +546,7 @@ impl Runtime {
                     }
                 },
                 IR::CreateArray(size) => {
-                    // Pop 'size' elements from stack and create an array representation
+                    // Pop 'size' elements from stack and create an array
                     let mut elements = Vec::new();
                     for _ in 0..*size {
                         if let Some(element) = self.stack.pop() {
@@ -555,9 +555,8 @@ impl Runtime {
                     }
                     elements.reverse(); // Restore original order
                     
-                    // For now, represent array as a string (in a full implementation, we'd use proper data structures)
-                    let array_repr = format!("[{}]", elements.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", "));
-                    self.stack.push(Value::String(array_repr));
+                    // Create proper Array value
+                    self.stack.push(Value::Array(elements));
                 },
                 IR::CreateMap(size) => {
                     if !self.clean_output {
@@ -597,61 +596,70 @@ impl Runtime {
                         }
                         self.stack.push(Value::Struct { type_name, fields });
                     } else {
-                        // Otherwise, create a generic map representation as string (for backwards compatibility)
-                        let field_strs: Vec<String> = fields.iter()
-                            .map(|(k, v)| format!("{}: {}", k, v))
-                            .collect();
-                        let map_repr = format!("{{{}}}", field_strs.join(", "));
-                        self.stack.push(Value::String(map_repr));
+                        // Otherwise, create a proper Map value
+                        if !self.clean_output {
+                            println!("DEBUG: Creating map with {} fields", fields.len());
+                        }
+                        self.stack.push(Value::Map(fields));
                     }
                 },
                 IR::GetKey => {
                     // Pop key and object from stack, push the value for that key
                     if let (Some(key), Some(object)) = (self.stack.pop(), self.stack.pop()) {
-                        let key_str = key.to_string();
-                        
-                        // Handle proper Struct values
-                        if let Value::Struct { type_name, fields } = &object {
-                            if !self.clean_output {
-                                println!("DEBUG: GetKey on struct '{}', looking for field '{}', available fields: {:?}", type_name, key_str, fields.keys().collect::<Vec<_>>());
-                            }
-                            if let Some(value) = fields.get(&key_str) {
-                                if !self.clean_output {
-                                    println!("DEBUG: Found field '{}' = '{}'", key_str, value);
-                                }
-                                self.stack.push(value.clone());
-                            } else {
-                                if !self.clean_output {
-                                    println!("DEBUG: Field '{}' not found in struct", key_str);
-                                }
-                                self.stack.push(Value::Null);
-                            }
-                        } else {
-                            // Fallback: parse string representation for backwards compatibility
-                            let mut found = false;
-                            let object_str = object.to_string();
-                            
-                            if object_str.starts_with('{') && object_str.ends_with('}') {
-                                let content = &object_str[1..object_str.len()-1]; // Remove braces
-                                if !content.is_empty() {
-                                    let pairs: Vec<&str> = content.split(", ").collect();
-                                    
-                                    for pair in pairs {
-                                        if let Some(colon_pos) = pair.find(": ") {
-                                            let pair_key = &pair[..colon_pos];
-                                            let pair_value = &pair[colon_pos + 2..];
-                                            
-                                            if pair_key == key_str {
-                                                self.stack.push(Value::from_string(pair_value.to_string()));
-                                                found = true;
-                                                break;
-                                            }
+                        match &object {
+                            // Handle Array indexing
+                            Value::Array(arr) => {
+                                if let Some(index) = key.to_integer() {
+                                    if index >= 0 && (index as usize) < arr.len() {
+                                        self.stack.push(arr[index as usize].clone());
+                                    } else {
+                                        if !self.clean_output {
+                                            println!("DEBUG: Array index {} out of bounds (len: {})", index, arr.len());
                                         }
+                                        self.stack.push(Value::Null);
                                     }
+                                } else {
+                                    if !self.clean_output {
+                                        println!("DEBUG: Invalid array index: {}", key);
+                                    }
+                                    self.stack.push(Value::Null);
                                 }
-                            }
-                            
-                            if !found {
+                            },
+                            // Handle Map indexing
+                            Value::Map(map) => {
+                                let key_str = key.to_string();
+                                if let Some(value) = map.get(&key_str) {
+                                    self.stack.push(value.clone());
+                                } else {
+                                    if !self.clean_output {
+                                        println!("DEBUG: Key '{}' not found in map", key_str);
+                                    }
+                                    self.stack.push(Value::Null);
+                                }
+                            },
+                            // Handle Struct field access
+                            Value::Struct { type_name, fields } => {
+                                let key_str = key.to_string();
+                                if !self.clean_output {
+                                    println!("DEBUG: GetKey on struct '{}', looking for field '{}', available fields: {:?}", type_name, key_str, fields.keys().collect::<Vec<_>>());
+                                }
+                                if let Some(value) = fields.get(&key_str) {
+                                    if !self.clean_output {
+                                        println!("DEBUG: Found field '{}' = '{}'", key_str, value);
+                                    }
+                                    self.stack.push(value.clone());
+                                } else {
+                                    if !self.clean_output {
+                                        println!("DEBUG: Field '{}' not found in struct", key_str);
+                                    }
+                                    self.stack.push(Value::Null);
+                                }
+                            },
+                            // Fallback for other types
+                            _ => {
+                                if !self.clean_output {
+                                    println!("DEBUG: GetKey not supported for value type: {:?}", object);
+                                }
                                 self.stack.push(Value::Null);
                             }
                         }
@@ -918,6 +926,8 @@ impl Runtime {
                         Value::Number(_) => "float",
                         Value::String(_) => "str",
                         Value::Boolean(_) => "bool",
+                        Value::Array(_) => "array",
+                        Value::Map(_) => "map",
                         Value::Struct { ref type_name, .. } => type_name.as_str(),
                         Value::Null => "null",
                     };

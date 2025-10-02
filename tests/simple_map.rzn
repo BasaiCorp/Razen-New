@@ -1,0 +1,2 @@
+var ages: {str: int} = {"Ram": 25, "Hanuman": 30}
+println(ages)

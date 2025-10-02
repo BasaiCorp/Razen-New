@@ -1296,6 +1296,12 @@ impl Compiler {
                 // Parenthesized expression - just compile the inner expression
                 self.compile_expression(*grouping.expression);
             },
+            Expression::IndexExpression(index_expr) => {
+                // Array or map indexing: object[index]
+                self.compile_expression(*index_expr.object);
+                self.compile_expression(*index_expr.index);
+                self.emit(IR::GetKey); // Use GetKey for both array and map access
+            },
             _ => {
                 // Handle other expression types as needed
                 if !self.clean_output {

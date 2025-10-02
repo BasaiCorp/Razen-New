@@ -1,0 +1,28 @@
+// Test arrays
+var numbers: [int] = [1, 2, 3, 4, 5]
+var names: [str] = ["Hanuman", "Ram", "Brahma"]
+var prices: [float] = [19.99, 29.99, 39.99]
+var flags: [bool] = [true, false, true]
+
+// Test maps/dictionaries
+var ages: {str: int} = {"Ram": 25, "Hanuman": 30, "Brahma": 35}
+var scores: {str: float} = {"math": 95.5, "science": 88.0}
+var settings: {str: bool} = {"active": true, "debug": false}
+
+// Test nested arrays
+var matrix: [[int]] = [[1, 2], [3, 4], [5, 6]]
+
+// Test nested maps
+var config: {str: {str: int}} = {"server": {"port": 8080, "timeout": 30}}
+
+// Test array access
+var first: int = numbers[0]
+var second: str = names[1]
+
+// Test map access
+var ram_age: int = ages["Ram"]
+
+// Print to verify
+println(first)
+println(second)
+println(ram_age)

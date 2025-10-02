@@ -11,6 +11,8 @@ pub enum Value {
     Integer(i64),
     String(String),
     Boolean(bool),
+    Array(Vec<Value>),
+    Map(HashMap<String, Value>),
     Struct {
         type_name: String,
         fields: HashMap<String, Value>,
@@ -27,6 +29,8 @@ impl Value {
             Value::Number(n) => *n != 0.0,
             Value::Integer(i) => *i != 0,
             Value::String(s) => !s.is_empty() && s != "null" && s != "false" && s != "False",
+            Value::Array(arr) => !arr.is_empty(),
+            Value::Map(map) => !map.is_empty(),
             Value::Struct { .. } => true,
             Value::Null => false,
         }
@@ -198,6 +202,8 @@ impl Value {
             Value::String(s) => s.parse::<f64>().ok(),
             Value::Boolean(true) => Some(1.0),
             Value::Boolean(false) => Some(0.0),
+            Value::Array(_) => None,
+            Value::Map(_) => None,
             Value::Struct { .. } => None,
             Value::Null => None,
         }
@@ -212,6 +218,8 @@ impl Value {
             Value::String(s) => s.parse::<i64>().ok(),
             Value::Boolean(true) => Some(1),
             Value::Boolean(false) => Some(0),
+            Value::Array(_) => None,
+            Value::Map(_) => None,
             Value::Struct { .. } => None,
             Value::Null => None,
         }
@@ -232,6 +240,16 @@ impl fmt::Display for Value {
             Value::Integer(i) => write!(f, "{}", i),
             Value::String(s) => write!(f, "{}", s),
             Value::Boolean(b) => write!(f, "{}", b),
+            Value::Array(arr) => {
+                let elements: Vec<String> = arr.iter().map(|v| v.to_string()).collect();
+                write!(f, "[{}]", elements.join(", "))
+            }
+            Value::Map(map) => {
+                let pairs: Vec<String> = map.iter()
+                    .map(|(k, v)| format!("{}: {}", k, v))
+                    .collect();
+                write!(f, "{{{}}}", pairs.join(", "))
+            }
             Value::Struct { type_name, fields } => {
                 let field_strs: Vec<String> = fields.iter()
                     .map(|(k, v)| format!("{}: {}", k, v))

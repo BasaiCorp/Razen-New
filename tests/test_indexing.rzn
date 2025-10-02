@@ -1,0 +1,9 @@
+// Test array indexing
+var numbers: [int] = [10, 20, 30]
+var first: int = numbers[0]
+println(first)
+
+// Test map indexing
+var ages: {str: int} = {"Ram": 25}
+var ram_age: int = ages["Ram"]
+println(ram_age)
