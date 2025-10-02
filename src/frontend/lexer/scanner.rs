@@ -20,6 +20,7 @@ impl Scanner {
         keywords.insert("const".to_string(), TokenKind::Const);
         keywords.insert("var".to_string(), TokenKind::Var);
         keywords.insert("fun".to_string(), TokenKind::Fun);
+        keywords.insert("type".to_string(), TokenKind::Type);
 
         // Data Structures
         keywords.insert("struct".to_string(), TokenKind::Struct);

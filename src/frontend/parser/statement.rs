@@ -40,6 +40,8 @@ impl<'a> StatementParser<'a> {
             self.parse_module_declaration()
         } else if self.check(&TokenKind::Use) {
             self.parse_use_statement()
+        } else if self.check(&TokenKind::Type) {
+            self.parse_type_alias_declaration(is_public)
         } else if self.check(&TokenKind::Const) {
             self.parse_constant_declaration(is_public)
         } else if self.check(&TokenKind::Var) {
@@ -120,6 +122,21 @@ impl<'a> StatementParser<'a> {
         Ok(Statement::UseStatement(UseStatement {
             path,
             alias,
+        }))
+    }
+
+    /// Parse type alias declaration: type Name = TargetType
+    fn parse_type_alias_declaration(&mut self, is_public: bool) -> ParseResult<Statement> {
+        self.consume(TokenKind::Type, "Expected 'type'")?;
+        let name = self.consume_identifier("Expected type alias name")?;
+
+        self.consume(TokenKind::Equal, "Expected '=' after type alias name")?;
+        let target_type = self.parse_type_annotation()?;
+
+        Ok(Statement::TypeAliasDeclaration(TypeAliasDeclaration {
+            name: Identifier::new(name),
+            target_type,
+            is_public,
         }))
     }
 

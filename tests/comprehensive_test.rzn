@@ -3,7 +3,7 @@
 // Arrays with different types
 var numbers: [int] = [1, 2, 3, 4, 5]
 var names: [str] = ["Hanuman", "Ram", "Brahma"]
-var prices: [float] = [19.99, 29.99, 39.99]
+var _prices: [float] = [19.99, 29.99, 39.99]
 
 // Maps with different value types
 var ages: {str: int} = {"Ram": 25, "Hanuman": 30}

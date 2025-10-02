@@ -101,6 +101,7 @@ pub struct Compiler {
     imported_modules: HashMap<String, String>, // module_name -> module_path
     current_module_name: Option<String>, // Track current module being compiled
     module_level_vars: HashMap<String, Vec<String>>, // module_name -> [var1, var2, ...]
+    type_aliases: HashMap<String, crate::frontend::parser::ast::TypeAnnotation>, // type_name -> target_type
 }
 
 impl Compiler {
@@ -122,6 +123,7 @@ impl Compiler {
             imported_modules: HashMap::new(),
             current_module_name: None,
             module_level_vars: HashMap::new(),
+            type_aliases: HashMap::new(),
         }
     }
 
@@ -180,6 +182,39 @@ impl Compiler {
     fn leave_scope(&mut self) {
         if let Some(parent) = self.symbol_table.parent.take() {
             self.symbol_table = *parent;
+        }
+    }
+
+    /// Resolve a type annotation, expanding type aliases if needed
+    fn resolve_type(&self, type_annotation: &crate::frontend::parser::ast::TypeAnnotation) -> crate::frontend::parser::ast::TypeAnnotation {
+        use crate::frontend::parser::ast::TypeAnnotation;
+        
+        match type_annotation {
+            TypeAnnotation::Custom(identifier) => {
+                // Check if this is a type alias
+                if let Some(target_type) = self.type_aliases.get(&identifier.name) {
+                    // Recursively resolve in case the target is also an alias
+                    self.resolve_type(target_type)
+                } else {
+                    // Not an alias, return as-is
+                    type_annotation.clone()
+                }
+            },
+            TypeAnnotation::Array(inner) => {
+                // Resolve the inner type
+                TypeAnnotation::Array(Box::new(self.resolve_type(inner)))
+            },
+            TypeAnnotation::Map(key, value) => {
+                // Resolve both key and value types
+                TypeAnnotation::Map(
+                    Box::new(self.resolve_type(key)),
+                    Box::new(self.resolve_type(value))
+                )
+            },
+            _ => {
+                // Primitive types don't need resolution
+                type_annotation.clone()
+            }
         }
     }
 
@@ -485,6 +520,14 @@ impl Compiler {
                 
                 // Store the constant value
                 self.emit(IR::StoreVar(const_decl.name.name));
+            },
+            Statement::TypeAliasDeclaration(type_alias) => {
+                // Register the type alias for later resolution
+                self.type_aliases.insert(type_alias.name.name.clone(), type_alias.target_type);
+                
+                if !self.clean_output {
+                    println!("Registered type alias: {}", type_alias.name.name);
+                }
             },
             Statement::StructDeclaration(struct_decl) => {
                 self.compile_struct_declaration(struct_decl);

@@ -1,0 +1,29 @@
+// Test nested type aliases
+
+// Define basic type aliases
+type UserId = int
+type UserName = str
+
+// Define type aliases that use other aliases
+type PrimaryKey = UserId
+type DisplayName = UserName
+
+// Test with function parameters
+fun showUser(userId: PrimaryKey, userName: DisplayName) {
+    println(f"User #{userId}: {userName}")
+}
+
+fun main() {
+    println("Testing Nested Type Aliases")
+    println("===========================")
+    
+    // Use nested aliases
+    var id: PrimaryKey = 42
+    var name: DisplayName = "John Doe"
+    
+    println(f"Primary Key: {id}")
+    println(f"Display Name: {name}")
+    
+    showUser(id, name)
+    showUser(100, "Jane Smith")
+}

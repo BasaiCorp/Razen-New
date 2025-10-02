@@ -1,0 +1,41 @@
+// Test type alias functionality
+
+// Define type aliases
+type UserId = int
+type EmailAddress = str
+type Score = float
+type IsActive = bool
+
+// Use aliases in variable declarations
+var id: UserId = 12345
+var email: EmailAddress = "user@example.com"
+var score: Score = 95.5
+var active: IsActive = true
+
+// Test with functions
+fun getUserInfo(userId: UserId, userEmail: EmailAddress) {
+    println(f"User ID: {userId}")
+    println(f"Email: {userEmail}")
+}
+
+fun main() {
+    println("Testing Type Aliases")
+    println("====================")
+    
+    // Print variables
+    println(f"ID: {id}")
+    println(f"Email: {email}")
+    println(f"Score: {score}")
+    println(f"Active: {active}")
+    
+    // Call function with aliased types
+    getUserInfo(id, email)
+    
+    // Test type alias with new variables
+    var newId: UserId = 67890
+    var newEmail: EmailAddress = "admin@example.com"
+    
+    println("")
+    println("New User:")
+    getUserInfo(newId, newEmail)
+}

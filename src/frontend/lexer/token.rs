@@ -3,7 +3,7 @@
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenKind {
     // Variable & Function Declaration
-    Const, Var, Fun,
+    Const, Var, Fun, Type,
 
     // Data Structures
     Struct, Enum, Impl,

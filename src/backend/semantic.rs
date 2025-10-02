@@ -3,7 +3,7 @@
 //! Performs type checking, scope analysis, and semantic validation
 
 use crate::backend::type_checker::TypeChecker;
-use crate::frontend::diagnostics::{helpers, Diagnostic, Diagnostics, Position, Span};
+use crate::frontend::diagnostics::{helpers, Diagnostic, DiagnosticKind, Diagnostics, Position, Span};
 use crate::frontend::parser::ast::*;
 use crate::frontend::module_system::{ModuleResolver, VisibilityChecker, ModuleError};
 use crate::frontend::module_system::resolver::ResolvedModule;
@@ -21,6 +21,7 @@ pub struct SemanticAnalyzer {
     module_resolver: Option<ModuleResolver>,
     visibility_checker: VisibilityChecker,
     current_file: Option<PathBuf>,
+    type_aliases: HashMap<String, TypeAnnotation>, // type_name -> target_type
 }
 
 /// Symbol table for tracking variables and functions
@@ -127,6 +128,71 @@ impl SemanticAnalyzer {
         }
     }
 
+    /// Validate that a type annotation refers to valid types
+    fn validate_type_annotation(&mut self, annotation: &TypeAnnotation) {
+        match annotation {
+            TypeAnnotation::Custom(ident) => {
+                // Check if this is a valid type alias or struct
+                let is_valid = self.type_aliases.contains_key(&ident.name) 
+                    || self.symbol_table.structs.contains_key(&ident.name);
+                
+                if !is_valid {
+                    let diagnostic = Diagnostic::new(
+                        DiagnosticKind::undefined_variable(&ident.name)
+                    )
+                    .with_code("E0004")
+                    .with_note(format!("cannot find type `{}` in this scope", ident.name))
+                    .with_help(format!("define type alias with `type {} = <type>` or check if it's a valid type", ident.name));
+                    
+                    self.diagnostics.add(diagnostic);
+                }
+            },
+            TypeAnnotation::Array(inner) => {
+                // Validate the inner type
+                self.validate_type_annotation(inner);
+            },
+            TypeAnnotation::Map(key, value) => {
+                // Validate both key and value types
+                self.validate_type_annotation(key);
+                self.validate_type_annotation(value);
+            },
+            _ => {
+                // Primitive types are always valid
+            }
+        }
+    }
+
+    /// Resolve a type annotation, expanding type aliases if needed
+    fn resolve_type_annotation(&self, annotation: &TypeAnnotation) -> TypeAnnotation {
+        match annotation {
+            TypeAnnotation::Custom(ident) => {
+                // Check if this is a type alias
+                if let Some(target_type) = self.type_aliases.get(&ident.name) {
+                    // Recursively resolve in case the target is also an alias
+                    self.resolve_type_annotation(target_type)
+                } else {
+                    // Not an alias, return as-is
+                    annotation.clone()
+                }
+            },
+            TypeAnnotation::Array(inner) => {
+                // Resolve the inner type
+                TypeAnnotation::Array(Box::new(self.resolve_type_annotation(inner)))
+            },
+            TypeAnnotation::Map(key, value) => {
+                // Resolve both key and value types
+                TypeAnnotation::Map(
+                    Box::new(self.resolve_type_annotation(key)),
+                    Box::new(self.resolve_type_annotation(value))
+                )
+            },
+            _ => {
+                // Primitive types don't need resolution
+                annotation.clone()
+            }
+        }
+    }
+
     pub fn new() -> Self {
         let mut analyzer = SemanticAnalyzer {
             diagnostics: Diagnostics::new(),
@@ -138,6 +204,7 @@ impl SemanticAnalyzer {
             module_resolver: None,
             visibility_checker: VisibilityChecker::new(),
             current_file: None,
+            type_aliases: HashMap::new(),
         };
 
         // Add built-in functions
@@ -531,6 +598,27 @@ impl SemanticAnalyzer {
                 // Declare the constant with the inferred type (immutable)
                 self.declare_variable(const_name, &inferred_type, Position::new(1, 1, 0), false);
             }
+            Statement::TypeAliasDeclaration(type_alias) => {
+                // Register the type alias for resolution
+                self.type_aliases.insert(
+                    type_alias.name.name.clone(),
+                    type_alias.target_type.clone()
+                );
+                
+                // Register in symbol table as a type (not a variable, so it won't be flagged as unused)
+                // We use a special symbol type that won't trigger unused warnings
+                let symbol = Symbol {
+                    _name: type_alias.name.name.clone(),
+                    symbol_type: SymbolType::Builtin, // Mark as builtin so it's not flagged as unused
+                    defined_at: Position::new(1, 1, 0),
+                    used: true, // Mark as used by default
+                    mutable: false,
+                };
+                
+                if let Some(current_scope) = self.symbol_table.scopes.last_mut() {
+                    current_scope.insert(type_alias.name.name.clone(), symbol);
+                }
+            }
             Statement::StructDeclaration(struct_decl) => {
                 // Register struct type in symbol table
                 self.declare_variable(
@@ -636,17 +724,25 @@ impl SemanticAnalyzer {
 
         // Add parameters to scope with their proper types
         for param in &func_decl.parameters {
+            let param_type_string;
             let param_type = if let Some(ref type_ann) = param.type_annotation {
-                match type_ann {
-                    TypeAnnotation::Int => "int",
-                    TypeAnnotation::Float => "float",
-                    TypeAnnotation::String => "str",
-                    TypeAnnotation::Bool => "bool",
-                    TypeAnnotation::Char => "char",
-                    TypeAnnotation::Any => "any",
-                    TypeAnnotation::Custom(id) => &id.name,
-                    _ => "any",
-                }
+                // Validate the type annotation
+                self.validate_type_annotation(type_ann);
+                
+                // Resolve type aliases
+                let resolved_type_ann = self.resolve_type_annotation(type_ann);
+                
+                param_type_string = match resolved_type_ann {
+                    TypeAnnotation::Int => "int".to_string(),
+                    TypeAnnotation::Float => "float".to_string(),
+                    TypeAnnotation::String => "str".to_string(),
+                    TypeAnnotation::Bool => "bool".to_string(),
+                    TypeAnnotation::Char => "char".to_string(),
+                    TypeAnnotation::Any => "any".to_string(),
+                    TypeAnnotation::Custom(id) => id.name.clone(),
+                    _ => "any".to_string(),
+                };
+                &param_type_string
             } else {
                 "any" // Parameters without type annotations are flexible
             };
@@ -687,23 +783,30 @@ impl SemanticAnalyzer {
         };
 
         // Use explicit type annotation if provided, otherwise use inferred type
+        let var_type_string;
         let var_type = if let Some(ref type_ann) = var_decl.type_annotation {
-            let declared_type = match type_ann {
-                TypeAnnotation::Int => "int",
-                TypeAnnotation::Float => "float",
-                TypeAnnotation::String => "str",
-                TypeAnnotation::Bool => "bool",
-                TypeAnnotation::Char => "char",
-                TypeAnnotation::Any => "any",
-                TypeAnnotation::Custom(id) => &id.name,
-                _ => "any",
+            // First validate that Custom types exist
+            self.validate_type_annotation(type_ann);
+            
+            // Resolve type aliases
+            let resolved_type_ann = self.resolve_type_annotation(type_ann);
+            
+            var_type_string = match resolved_type_ann {
+                TypeAnnotation::Int => "int".to_string(),
+                TypeAnnotation::Float => "float".to_string(),
+                TypeAnnotation::String => "str".to_string(),
+                TypeAnnotation::Bool => "bool".to_string(),
+                TypeAnnotation::Char => "char".to_string(),
+                TypeAnnotation::Any => "any".to_string(),
+                TypeAnnotation::Custom(id) => id.name.clone(),
+                _ => "any".to_string(),
             };
 
             // Check type compatibility if both declared type and initializer exist
             if let Some(ref _expr) = var_decl.initializer {
-                if !self.types_compatible(&inferred_type, declared_type) {
+                if !self.types_compatible(&inferred_type, &var_type_string) {
                     let diagnostic = helpers::type_mismatch(
-                        declared_type,
+                        &var_type_string,
                         &inferred_type,
                         self.create_span_from_identifier(&var_decl.name),
                     );
@@ -711,7 +814,7 @@ impl SemanticAnalyzer {
                 }
             }
 
-            declared_type
+            &var_type_string
         } else {
             &inferred_type
         };

@@ -230,7 +230,7 @@ fun power(base: float, exponent: int) -> float {
         result = result * base
     }
     return result
-}
+} 
 
 fun sqrt(n: float) -> float {
     // Newton's method for square root
@@ -282,7 +282,7 @@ var number = tofloat(text)
 println(number)  // 3.14
 ```
 
-### Integer to Float
+### Integer to Float -
 
 ```razen
 var integer = 10
@@ -292,7 +292,7 @@ println(decimal)  // 10.0
 
 ## Common Patterns
 
-### Average Calculation
+### Average Calculation -
 
 ```razen
 fun average(numbers: [float]) -> float {
@@ -314,7 +314,7 @@ fun average(numbers: [float]) -> float {
 var avg = average([10.5, 20.3, 15.7])
 ```
 
-### Distance Calculation
+### Distance Calculation -
 
 ```razen
 fun distance(x1: float, y1: float, x2: float, y2: float) -> float {
@@ -438,8 +438,8 @@ var total = 0.0
 ### Handle Precision Carefully
 
 ```razen
-// For money, consider using integers (cents)
-var priceInCents: int = 1999  // $19.99
+// For money, consider using integers (Paise)
+var priceInCents: int = 1999  // Rupees 19.99
 var totalInCents = priceInCents * 3
 var totalDollars = tofloat(totalInCents) / 100.0
 ```

@@ -11,6 +11,7 @@ pub struct TypeContext {
     _variables: HashMap<String, Type>,
     functions: HashMap<String, (Vec<Type>, Type)>, // (params, return_type)
     scopes: Vec<HashMap<String, Type>>,
+    type_aliases: HashMap<String, Type>, // type_name -> target_type
 }
 
 /// Main type checker
@@ -25,6 +26,7 @@ impl TypeContext {
             _variables: HashMap::new(),
             functions: HashMap::new(),
             scopes: vec![HashMap::new()],
+            type_aliases: HashMap::new(),
         };
         
         // Add builtin functions
@@ -88,6 +90,26 @@ impl TypeContext {
                 scope.insert(name.to_string(), new_type);
                 return;
             }
+        }
+    }
+    
+    pub fn register_type_alias(&mut self, name: String, target_type: Type) {
+        self.type_aliases.insert(name, target_type);
+    }
+    
+    pub fn resolve_type_alias(&self, type_ref: &Type) -> Type {
+        match type_ref {
+            Type::Custom(name) => {
+                // Check if this is a type alias
+                if let Some(target_type) = self.type_aliases.get(name) {
+                    // Recursively resolve in case the target is also an alias
+                    self.resolve_type_alias(target_type)
+                } else {
+                    // Not an alias, return as-is
+                    type_ref.clone()
+                }
+            },
+            _ => type_ref.clone(),
         }
     }
 }

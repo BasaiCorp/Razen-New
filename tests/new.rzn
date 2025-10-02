@@ -1,3 +1,13 @@
-var numbers: [int] = [1, 2, 3, 4, 5]
-var names: [str] = ["Hanuman", "Ram", "Brahma"]
-var prices: [float] = [19.99, 29.99, 39.99]
+var username = "Hanuman"
+var password = "secret123"
+
+var isValidUsername = len(username) >= 3
+var isValidPassword = len(password) >= 8
+
+var isValid = isValidUsername && isValidPassword
+
+if isValid {
+    println("Credentials are valid")
+} else {
+    println("Invalid credentials")
+}

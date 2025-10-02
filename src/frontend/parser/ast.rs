@@ -16,6 +16,7 @@ pub enum Statement {
     // Variable declarations
     VariableDeclaration(VariableDeclaration),
     ConstantDeclaration(ConstantDeclaration),
+    TypeAliasDeclaration(TypeAliasDeclaration),
     
     // Function declaration
     FunctionDeclaration(FunctionDeclaration),
@@ -140,6 +141,13 @@ pub struct ConstantDeclaration {
     pub name: Identifier,
     pub type_annotation: Option<TypeAnnotation>,
     pub initializer: Expression,
+    pub is_public: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TypeAliasDeclaration {
+    pub name: Identifier,
+    pub target_type: TypeAnnotation,
     pub is_public: bool,
 }
 
