@@ -1,0 +1,35 @@
+// Built-in functions test for enhanced JIT performance
+fun main() {
+    var number = 42
+    var text = "hello"
+    var flag = true
+    var result = 0
+    
+    // Type conversion functions (should use optimized bytecode)
+    var int_val = toint(number)
+    var float_val = tofloat(number)
+    var str_val = tostr(number)
+    var bool_val = tobool(number)
+    
+    // Type checking
+    var type_info = typeof(number)
+    
+    // String operations
+    var length = len(text)
+    
+    // Arithmetic with conversions for performance testing
+    for i in 1..=100 {
+        result = result + toint(i)
+        result = result + tofloat(i * 2)
+        
+        if i % 10 == 0 {
+            var temp_type = typeof(result)
+            var temp_bool = tobool(result)
+        }
+    }
+    
+    // Final computation
+    var final_result = result + int_val + length
+    
+    println(f"Built-in functions test result: {final_result}")
+}
