@@ -55,10 +55,124 @@ use super::ir::IR;
 use super::runtime::Runtime;
 use std::collections::HashMap;
 use std::mem;
+use std::fmt;
 
 // Real JIT dependencies for machine code generation
 use dynasmrt::{dynasm, DynasmApi};
 use dynasmrt::x64::Assembler;
+
+/// JIT-specific error types for better error handling
+#[derive(Debug, Clone)]
+pub enum JITError {
+    CompilationFailed(String),
+    ExecutionFailed(String),
+    CachingFailed(String),
+    RuntimeError(String),
+    InvalidOperation(String),
+}
+
+impl fmt::Display for JITError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            JITError::CompilationFailed(msg) => write!(f, "JIT Compilation Error: {}", msg),
+            JITError::ExecutionFailed(msg) => write!(f, "JIT Execution Error: {}", msg),
+            JITError::CachingFailed(msg) => write!(f, "JIT Caching Error: {}", msg),
+            JITError::RuntimeError(msg) => write!(f, "JIT Runtime Error: {}", msg),
+            JITError::InvalidOperation(msg) => write!(f, "JIT Invalid Operation: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for JITError {}
+
+/// Result type for JIT operations
+type JITResult<T> = Result<T, JITError>;
+
+/// Consolidated cache management for better performance
+#[derive(Debug)]
+struct CacheManager {
+    bytecode_cache: HashMap<String, Vec<ByteCode>>,
+    native_function_cache: HashMap<String, usize>, // Cache key -> Function index
+    inline_cache: HashMap<String, Vec<IR>>,
+    type_feedback: HashMap<usize, String>,
+}
+
+impl CacheManager {
+    fn new() -> Self {
+        Self {
+            bytecode_cache: HashMap::new(),
+            native_function_cache: HashMap::new(),
+            inline_cache: HashMap::new(),
+            type_feedback: HashMap::new(),
+        }
+    }
+    
+    fn get_bytecode(&self, key: &str) -> Option<&Vec<ByteCode>> {
+        self.bytecode_cache.get(key)
+    }
+    
+    fn cache_bytecode(&mut self, key: String, bytecode: Vec<ByteCode>) {
+        self.bytecode_cache.insert(key, bytecode);
+    }
+    
+    fn get_native_function(&self, key: &str) -> Option<&usize> {
+        self.native_function_cache.get(key)
+    }
+    
+    fn cache_native_function(&mut self, key: String, index: usize) {
+        self.native_function_cache.insert(key, index);
+    }
+    
+    fn cache_stats(&self) -> (usize, usize) {
+        (self.bytecode_cache.len(), self.native_function_cache.len())
+    }
+}
+
+/// Variable management for registers and native slots
+#[derive(Debug)]
+struct VariableManager {
+    variable_registers: HashMap<String, u8>, // Variable -> Register mapping
+    next_register: u8,
+    native_variables: HashMap<String, usize>, // Variable -> Native slot mapping
+    next_native_slot: usize,
+}
+
+impl VariableManager {
+    fn new() -> Self {
+        Self {
+            variable_registers: HashMap::new(),
+            next_register: 0,
+            native_variables: HashMap::new(),
+            next_native_slot: 0,
+        }
+    }
+    
+    fn get_or_allocate_register(&mut self, var_name: &str) -> u8 {
+        if let Some(&reg) = self.variable_registers.get(var_name) {
+            reg
+        } else {
+            let reg = self.next_register;
+            self.variable_registers.insert(var_name.to_string(), reg);
+            self.next_register += 1;
+            reg
+        }
+    }
+    
+    fn get_or_allocate_native_slot(&mut self, var_name: &str) -> usize {
+        if let Some(&slot) = self.native_variables.get(var_name) {
+            slot
+        } else {
+            let slot = self.next_native_slot;
+            self.native_variables.insert(var_name.to_string(), slot);
+            self.next_native_slot += 1;
+            slot
+        }
+    }
+    
+    fn get_native_slot_count(&self) -> usize {
+        self.next_native_slot
+    }
+}
 
 /// Compiled native function with executable machine code
 pub struct CompiledFunction {
@@ -73,6 +187,9 @@ impl CompiledFunction {
         let stack_ptr = stack.as_mut_ptr();
         let stack_size = stack.len();
         let vars_ptr = variables.as_mut_ptr();
+        
+        // The code field keeps the executable buffer alive
+        let _code_guard = &self.code;
         (self.entry_point)(stack_ptr, stack_size, vars_ptr)
     }
 }
@@ -139,29 +256,12 @@ pub struct JIT {
     runtime: Runtime,
     optimization_level: u8,
     
-    // Tier 2: Hot loop detection
-    #[allow(dead_code)]
-    hot_loop_threshold: usize,
-    loop_counters: HashMap<usize, usize>,
-    optimized_traces: HashMap<usize, Vec<IR>>,
-    
-    // Tier 4: Inline caching
-    inline_cache: HashMap<String, Vec<IR>>,
-    type_feedback: HashMap<usize, String>,
-    
-    // Tier 5: Memory optimization
-    #[allow(dead_code)]
-    escape_analysis_cache: HashMap<usize, bool>,
-    stack_allocated_vars: HashMap<String, bool>,
+    // Consolidated caching system
+    cache_manager: CacheManager,
     
     // Real JIT: Machine code generation
     compiled_functions: Vec<CompiledFunction>,
-    bytecode_cache: HashMap<String, Vec<ByteCode>>,
-    native_function_cache: HashMap<String, usize>, // Cache key -> Function index
-    variable_registers: HashMap<String, u8>, // Variable -> Register mapping
-    next_register: u8,
-    native_variables: HashMap<String, usize>, // Variable -> Native slot mapping
-    next_native_slot: usize,
+    variable_manager: VariableManager,
     
     // Performance counters
     native_executions: usize,
@@ -171,26 +271,15 @@ pub struct JIT {
 
 impl JIT {
     /// Create new RAJIT with default optimizations (Level 2)
-    pub fn new() -> Result<Self, String> {
+    pub fn new() -> JITResult<Self> {
         Ok(Self {
             runtime: Runtime::new(),
             optimization_level: 2,
-            hot_loop_threshold: 100,
-            loop_counters: HashMap::new(),
-            optimized_traces: HashMap::new(),
-            inline_cache: HashMap::new(),
-            type_feedback: HashMap::new(),
-            escape_analysis_cache: HashMap::new(),
-            stack_allocated_vars: HashMap::new(),
+            cache_manager: CacheManager::new(),
             
             // Real JIT initialization
             compiled_functions: Vec::new(),
-            bytecode_cache: HashMap::new(),
-            native_function_cache: HashMap::new(),
-            variable_registers: HashMap::new(),
-            next_register: 0,
-            native_variables: HashMap::new(),
-            next_native_slot: 0,
+            variable_manager: VariableManager::new(),
             
             // Performance counters
             native_executions: 0,
@@ -203,7 +292,7 @@ impl JIT {
     /// 0 = No optimization (baseline interpreter) - for debugging
     /// 2 = Standard (hot loop detection, strength reduction) - RECOMMENDED
     /// Note: Levels 1, 3, 4 are disabled as Level 2 provides best performance
-    pub fn with_optimization(level: u8) -> Result<Self, String> {
+    pub fn with_optimization(level: u8) -> JITResult<Self> {
         // Only support Level 0 and Level 2
         let actual_level = match level {
             0 => 0,
@@ -213,22 +302,11 @@ impl JIT {
         Ok(Self {
             runtime: Runtime::new(),
             optimization_level: actual_level,
-            hot_loop_threshold: 100,
-            loop_counters: HashMap::new(),
-            optimized_traces: HashMap::new(),
-            inline_cache: HashMap::new(),
-            type_feedback: HashMap::new(),
-            escape_analysis_cache: HashMap::new(),
-            stack_allocated_vars: HashMap::new(),
+            cache_manager: CacheManager::new(),
             
             // Real JIT initialization
             compiled_functions: Vec::new(),
-            bytecode_cache: HashMap::new(),
-            native_function_cache: HashMap::new(),
-            variable_registers: HashMap::new(),
-            next_register: 0,
-            native_variables: HashMap::new(),
-            next_native_slot: 0,
+            variable_manager: VariableManager::new(),
             
             // Performance counters
             native_executions: 0,
@@ -248,13 +326,14 @@ impl JIT {
     }
     
     /// Real JIT: Compile IR to machine code and bytecode, then execute
-    pub fn compile_and_run(&mut self, ir: &[IR]) -> Result<i64, String> {
+    pub fn compile_and_run(&mut self, ir: &[IR]) -> JITResult<i64> {
         if !self.runtime.is_clean_output() {
             println!("DEBUG JIT: RAJIT Real JIT Engine Starting");
             println!("DEBUG JIT: Input: {} IR instructions", ir.len());
             println!("DEBUG JIT: Optimization level: {}", self.optimization_level);
+            let (bytecode_count, native_count) = self.cache_manager.cache_stats();
             println!("DEBUG JIT: Cache status: {} bytecode entries, {} native functions", 
-                    self.bytecode_cache.len(), self.compiled_functions.len());
+                    bytecode_count, native_count);
         }
         
         // STEP 1: Analyze IR and decide compilation strategy
@@ -288,7 +367,8 @@ impl JIT {
             }
             CompilationStrategy::Runtime => {
                 self.runtime_executions += 1;
-                self.runtime.execute(ir)?;
+                self.runtime.execute(ir)
+                    .map_err(|e| JITError::RuntimeError(format!("Runtime execution failed: {}", e)))?;
                 Ok(0)
             }
         };
@@ -301,8 +381,9 @@ impl JIT {
             println!("  Bytecode executions: {}", self.bytecode_executions);
             println!("  Runtime executions: {}", self.runtime_executions);
             println!("  Compiled functions: {}", self.compiled_functions.len());
+            let (bytecode_cache_size, _) = self.cache_manager.cache_stats();
             println!("  Cache efficiency: {:.1}%", 
-                    if ir.len() > 0 { (self.bytecode_cache.len() as f64 / ir.len() as f64) * 100.0 } else { 0.0 });
+                    if ir.len() > 0 { (bytecode_cache_size as f64 / ir.len() as f64) * 100.0 } else { 0.0 });
         }
         
         result
@@ -391,12 +472,12 @@ impl JIT {
     }
     
     /// Compile IR to native x86-64 machine code and execute
-    fn compile_and_execute_native(&mut self, ir: &[IR]) -> Result<i64, String> {
+    fn compile_and_execute_native(&mut self, ir: &[IR]) -> JITResult<i64> {
         // Generate better cache key based on IR content hash
         let cache_key = self.generate_cache_key(ir, "native");
         
         // Check native function cache first
-        if let Some(&fn_index) = self.native_function_cache.get(&cache_key) {
+        if let Some(&fn_index) = self.cache_manager.get_native_function(&cache_key) {
             if fn_index < self.compiled_functions.len() {
                 if !self.runtime.is_clean_output() {
                     println!("DEBUG JIT: Using cached native function at index {}", fn_index);
@@ -427,7 +508,7 @@ impl JIT {
                 let fn_index = self.compiled_functions.len() - 1;
                 
                 // Cache the compiled function
-                self.native_function_cache.insert(cache_key, fn_index);
+                self.cache_manager.cache_native_function(cache_key, fn_index);
                 
                 // Execute the compiled function
                 self.native_executions += 1;
@@ -458,19 +539,20 @@ impl JIT {
                 }
                 // Fallback to runtime
                 self.runtime_executions += 1;
-                self.runtime.execute(ir)?;
+                self.runtime.execute(ir)
+                    .map_err(|e| JITError::RuntimeError(format!("Runtime fallback failed: {}", e)))?;
                 Ok(0)
             }
         }
     }
     
     /// Compile IR to optimized bytecode and execute
-    fn compile_and_execute_bytecode(&mut self, ir: &[IR]) -> Result<i64, String> {
+    fn compile_and_execute_bytecode(&mut self, ir: &[IR]) -> JITResult<i64> {
         // Generate better cache key based on IR content hash
         let cache_key = self.generate_cache_key(ir, "bytecode");
         
         // Check cache first
-        if let Some(cached_bytecode) = self.bytecode_cache.get(&cache_key) {
+        if let Some(cached_bytecode) = self.cache_manager.get_bytecode(&cache_key) {
             if !self.runtime.is_clean_output() {
                 println!("DEBUG JIT: Using cached bytecode (key: {})", cache_key);
             }
@@ -491,11 +573,11 @@ impl JIT {
                     ir.len(), bytecode.len());
             println!("DEBUG JIT: Compression ratio: {:.1}%", 
                     (bytecode.len() as f64 / ir.len() as f64) * 100.0);
-            println!("DEBUG JIT: Allocated {} registers for variables", self.next_register);
+            println!("DEBUG JIT: Allocated {} registers for variables", self.variable_manager.next_register);
         }
         
         // Cache the bytecode
-        self.bytecode_cache.insert(cache_key, bytecode.clone());
+        self.cache_manager.cache_bytecode(cache_key, bytecode.clone());
         
         // Execute bytecode
         self.bytecode_executions += 1;
@@ -521,572 +603,12 @@ impl JIT {
         result
     }
     
-    /// Execute cached native code by key
-    fn execute_native_from_cache_by_key(&mut self, cache_key: &str) -> Result<i64, String> {
-        // Extract function index from cache key
-        if let Some(bytecode) = self.bytecode_cache.get(cache_key) {
-            if !bytecode.is_empty() {
-                // Execute cached bytecode instead of native for now
-                self.bytecode_executions += 1;
-                return self.execute_bytecode(bytecode);
-            }
-        }
-        
-        // If no cache found, fall back to runtime
-        self.runtime_executions += 1;
-        Ok(0)
-    }
-    
-    /// Identify hot loops in IR (loops that will execute many times)
-    #[allow(dead_code)]
-    fn identify_hot_loops(&mut self, ir: &[IR]) -> Vec<usize> {
-        let mut hot_loops = Vec::new();
-        
-        // Find all loops (Label followed by code followed by Jump back)
-        for i in 0..ir.len() {
-            if let IR::Label(_) = &ir[i] {
-                // Look ahead for a jump back to this label
-                for j in (i + 1)..ir.len().min(i + 200) {
-                    if let IR::Jump(target) = &ir[j] {
-                        if *target == i {
-                            // Found a loop! Mark as hot if it's significant
-                            let loop_size = j - i;
-                            if loop_size > 5 {
-                                // This is a significant loop, mark as hot
-                                hot_loops.push(i);
-                                self.loop_counters.insert(i, self.hot_loop_threshold);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-        
-        hot_loops
-    }
-    
-    /// Apply aggressive optimizations to hot loops
-    #[allow(dead_code)]
-    fn optimize_hot_loops(&self, mut ir: Vec<IR>, hot_loops: &[usize]) -> Vec<IR> {
-        // For each hot loop, apply extra optimizations
-        for &loop_start in hot_loops {
-            // Find loop end
-            if let Some(loop_end) = self.find_loop_end(&ir, loop_start) {
-                // Extract loop body
-                let loop_body: Vec<IR> = ir[loop_start..=loop_end].to_vec();
-                
-                // Apply aggressive optimizations to loop body
-                let optimized_body = self.optimize_loop_body(loop_body);
-                
-                // Replace loop body with optimized version
-                ir.splice(loop_start..=loop_end, optimized_body);
-            }
-        }
-        
-        ir
-    }
-    
-    /// Find the end of a loop starting at given position
-    fn find_loop_end(&self, ir: &[IR], loop_start: usize) -> Option<usize> {
-        for i in (loop_start + 1)..ir.len().min(loop_start + 200) {
-            if let IR::Jump(target) = &ir[i] {
-                if *target == loop_start {
-                    return Some(i);
-                }
-            }
-        }
-        None
-    }
-    
-    /// Optimize a loop body with aggressive techniques
-    #[allow(dead_code)]
-    fn optimize_loop_body(&self, mut body: Vec<IR>) -> Vec<IR> {
-        // Apply all optimizations multiple times for maximum effect
-        for _ in 0..3 {
-            body = self.fold_constants(body);
-            body = self.peephole_optimize(body);
-            body = self.strength_reduction(body);
-            body = self.algebraic_simplification(body);
-        }
-        body
-    }
-    
-    /// Optimize IR before execution (Level 0 or Level 2 only)
-    #[allow(dead_code)]
-    fn optimize_ir(&self, ir: &[IR]) -> Vec<IR> {
-        let mut optimized = ir.to_vec();
-        
-        // Level 0: No optimization (return as-is)
-        if self.optimization_level == 0 {
-            return optimized;
-        }
-        
-        // Level 2: Standard optimizations (best performance)
-        if self.optimization_level >= 2 {
-            optimized = self.fold_constants(optimized);
-            optimized = self.eliminate_dead_code(optimized);
-            optimized = self.strength_reduction(optimized);
-            optimized = self.algebraic_simplification(optimized);
-        }
-        
-        // Levels 3-4 are commented out (not used, Level 2 is optimal)
-        // if self.optimization_level >= 3 {
-        //     optimized = self.peephole_optimize(optimized);
-        //     optimized = self.loop_unrolling(optimized);
-        //     optimized = self.invariant_code_motion(optimized);
-        //     optimized = self.advanced_peephole(optimized);
-        //     optimized = self.stack_optimization(optimized);
-        //     optimized = self.redundant_load_elimination(optimized);
-        //     optimized = self.dead_store_elimination(optimized);
-        // }
-        
-        optimized
-    }
-    
-    /// Constant folding: Evaluate constant expressions at compile time
-    #[allow(dead_code)]
-    fn fold_constants(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: PushNumber, PushNumber, BinaryOp -> PushNumber(result)
-            if i + 2 < ir.len() {
-                match (&ir[i], &ir[i + 1], &ir[i + 2]) {
-                    (IR::PushNumber(a), IR::PushNumber(b), IR::Add) => {
-                        result.push(IR::PushNumber(a + b));
-                        i += 3;
-                        continue;
-                    }
-                    (IR::PushNumber(a), IR::PushNumber(b), IR::Subtract) => {
-                        result.push(IR::PushNumber(a - b));
-                        i += 3;
-                        continue;
-                    }
-                    (IR::PushNumber(a), IR::PushNumber(b), IR::Multiply) => {
-                        result.push(IR::PushNumber(a * b));
-                        i += 3;
-                        continue;
-                    }
-                    (IR::PushNumber(a), IR::PushNumber(b), IR::Divide) if *b != 0.0 => {
-                        result.push(IR::PushNumber(a / b));
-                        i += 3;
-                        continue;
-                    }
-                    _ => {}
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Dead code elimination: Remove unreachable code
-    #[allow(dead_code)]
-    fn eliminate_dead_code(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut skip_until_label = false;
-        
-        for inst in ir.iter() {
-            match inst {
-                IR::Return | IR::Jump(_) => {
-                    result.push(inst.clone());
-                    skip_until_label = true;
-                }
-                IR::Label(_) | IR::DefineFunction(_, _) => {
-                    result.push(inst.clone());
-                    skip_until_label = false;
-                }
-                _ => {
-                    if !skip_until_label {
-                        result.push(inst.clone());
-                    }
-                }
-            }
-        }
-        
-        result
-    }
-    
-    /// Peephole optimizations: Local instruction patterns
-    #[allow(dead_code)]
-    fn peephole_optimize(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: Push, Pop -> nothing (dead store)
-            if i + 1 < ir.len() {
-                if matches!(&ir[i], IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_) | IR::PushNull)
-                    && matches!(&ir[i + 1], IR::Pop)
-                {
-                    i += 2;
-                    continue;
-                }
-            }
-            
-            // Pattern: LoadVar(x), StoreVar(x) -> Dup, StoreVar(x)
-            if i + 1 < ir.len() {
-                if let (IR::LoadVar(name1), IR::StoreVar(name2)) = (&ir[i], &ir[i + 1]) {
-                    if name1 == name2 {
-                        result.push(IR::Dup);
-                        result.push(IR::StoreVar(name1.clone()));
-                        i += 2;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Strength reduction: Replace expensive operations with cheaper ones
-    #[allow(dead_code)]
-    fn strength_reduction(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: x * 2 -> x + x (addition is faster than multiplication)
-            if i + 2 < ir.len() {
-                if let (IR::PushNumber(n), IR::Multiply) = (&ir[i], &ir[i + 1]) {
-                    if *n == 2.0 {
-                        result.push(IR::Dup); // Duplicate value
-                        result.push(IR::Add); // Add to itself
-                        i += 2;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Algebraic simplification: Apply mathematical identities
-    #[allow(dead_code)]
-    fn algebraic_simplification(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: x + 0 -> x
-            if i + 2 < ir.len() {
-                if let (IR::PushNumber(n), IR::Add) = (&ir[i], &ir[i + 1]) {
-                    if *n == 0.0 {
-                        i += 2; // Skip the push and add
-                        continue;
-                    }
-                }
-            }
-            
-            // Pattern: x * 1 -> x
-            if i + 2 < ir.len() {
-                if let (IR::PushNumber(n), IR::Multiply) = (&ir[i], &ir[i + 1]) {
-                    if *n == 1.0 {
-                        i += 2; // Skip the push and multiply
-                        continue;
-                    }
-                }
-            }
-            
-            // Pattern: x * 0 -> 0
-            if i + 2 < ir.len() {
-                if let (IR::PushNumber(n), IR::Multiply) = (&ir[i], &ir[i + 1]) {
-                    if *n == 0.0 {
-                        result.push(IR::Pop); // Remove x
-                        result.push(IR::PushNumber(0.0)); // Push 0
-                        i += 2;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Tier 4: Loop unrolling - Expand small loops for better CPU pipelining
-    /// Only unrolls loops WITHOUT side effects to preserve correctness
-    #[allow(dead_code)]
-    fn loop_unrolling(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Find small loops (< 10 instructions) and unroll them
-            if let IR::Label(_) = &ir[i] {
-                if let Some(loop_end) = self.find_loop_end(&ir, i) {
-                    let loop_size = loop_end - i;
-                    
-                    // Check if loop has side effects
-                    let has_side_effects = self.loop_has_side_effects(&ir, i, loop_end);
-                    
-                    // Only unroll small loops WITHOUT side effects
-                    if loop_size < 10 && loop_size > 2 && !has_side_effects {
-                        // Duplicate loop body 2x for unrolling
-                        let loop_body: Vec<IR> = ir[(i+1)..loop_end].to_vec();
-                        result.push(ir[i].clone()); // Label
-                        result.extend(loop_body.clone());
-                        result.extend(loop_body); // Unrolled iteration
-                        result.push(ir[loop_end].clone()); // Jump
-                        i = loop_end + 1;
-                        continue;
-                    } else {
-                        // Has side effects or too large - keep as-is
-                        for j in i..=loop_end {
-                            result.push(ir[j].clone());
-                        }
-                        i = loop_end + 1;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Tier 4: Invariant code motion - Move loop-invariant code outside loops
-    /// Only moves PURE operations (no side effects like println, file I/O, etc)
-    #[allow(dead_code)]
-    fn invariant_code_motion(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            if let IR::Label(_) = &ir[i] {
-                if let Some(loop_end) = self.find_loop_end(&ir, i) {
-                    let mut invariants = Vec::new();
-                    let mut loop_body = Vec::new();
-                    
-                    // Check if loop has side effects
-                    let has_side_effects = self.loop_has_side_effects(&ir, i, loop_end);
-                    
-                    if !has_side_effects {
-                        // Safe to optimize - identify invariant instructions
-                        for j in (i+1)..loop_end {
-                            match &ir[j] {
-                                // Pure operations that can be moved
-                                IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_) => {
-                                    invariants.push(ir[j].clone());
-                                }
-                                _ => {
-                                    loop_body.push(ir[j].clone());
-                                }
-                            }
-                        }
-                        
-                        // Move invariants before loop
-                        result.extend(invariants);
-                        result.push(ir[i].clone()); // Label
-                        result.extend(loop_body);
-                        result.push(ir[loop_end].clone()); // Jump
-                        i = loop_end + 1;
-                        continue;
-                    } else {
-                        // Has side effects - keep loop as-is
-                        for j in i..=loop_end {
-                            result.push(ir[j].clone());
-                        }
-                        i = loop_end + 1;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Check if a loop has side effects (I/O, function calls, etc)
-    #[allow(dead_code)]
-    fn loop_has_side_effects(&self, ir: &[IR], loop_start: usize, loop_end: usize) -> bool {
-        for i in loop_start..=loop_end {
-            match &ir[i] {
-                // Side effects: function calls (includes println, print, etc)
-                IR::Call(_, _) => {
-                    return true;
-                }
-                // Store operations modify state (variables have side effects in loops)
-                IR::StoreVar(_) | IR::SetGlobal(_) => {
-                    return true;
-                }
-                _ => {}
-            }
-        }
-        false
-    }
-    
-    /// Tier 5: Escape analysis - Determine if variables escape their scope
-    #[allow(dead_code)]
-    fn escape_analysis(&mut self, ir: &[IR]) {
-        for (i, inst) in ir.iter().enumerate() {
-            match inst {
-                IR::StoreVar(name) => {
-                    // Check if variable escapes (used outside its scope)
-                    let escapes = self.variable_escapes(ir, name, i);
-                    self.escape_analysis_cache.insert(i, escapes);
-                    
-                    if !escapes {
-                        // Can be stack-allocated
-                        self.stack_allocated_vars.insert(name.clone(), true);
-                    }
-                }
-                _ => {}
-            }
-        }
-    }
-    
-    /// Check if a variable escapes its scope
-    #[allow(dead_code)]
-    fn variable_escapes(&self, ir: &[IR], var_name: &str, def_pos: usize) -> bool {
-        // Simple heuristic: if variable is used after a function call or return, it escapes
-        for (i, inst) in ir.iter().enumerate() {
-            if i <= def_pos {
-                continue;
-            }
-            
-            match inst {
-                IR::LoadVar(name) if name == var_name => {
-                    // Check if there's a Call or Return before this use
-                    for j in def_pos..i {
-                        if matches!(ir[j], IR::Call(_, _) | IR::Return) {
-                            return true; // Escapes
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-        
-        false
-    }
-    
-    /// Tier 5: Dead store elimination - Remove redundant stores
-    #[allow(dead_code)]
-    fn dead_store_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut last_store: HashMap<String, usize> = HashMap::new();
-        
-        for (_i, inst) in ir.iter().enumerate() {
-            match inst {
-                IR::StoreVar(name) => {
-                    // If this variable is stored again before being loaded, previous store is dead
-                    if let Some(&prev_idx) = last_store.get(name) {
-                        // Mark previous store as dead (we'll skip it)
-                        if result.len() > prev_idx {
-                            // Remove the dead store
-                            result.remove(prev_idx);
-                        }
-                    }
-                    last_store.insert(name.clone(), result.len());
-                    result.push(inst.clone());
-                }
-                IR::LoadVar(name) => {
-                    // Variable is used, so previous store is not dead
-                    last_store.remove(name);
-                    result.push(inst.clone());
-                }
-                _ => {
-                    result.push(inst.clone());
-                }
-            }
-        }
-        
-        result
-    }
-    
-    /// Tier 4: Inline caching - Cache frequently accessed patterns
-    #[allow(dead_code)]
-    fn apply_inline_caching(&mut self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        
-        for (_i, inst) in ir.iter().enumerate() {
-            match inst {
-                IR::LoadVar(name) => {
-                    // Check if we have a cached version of this load
-                    let cache_key = format!("load_{}", name);
-                    if let Some(cached) = self.inline_cache.get(&cache_key) {
-                        // Use cached version (monomorphic fast path)
-                        result.extend(cached.clone());
-                    } else {
-                        // First time seeing this, cache it
-                        self.inline_cache.insert(cache_key, vec![inst.clone()]);
-                        result.push(inst.clone());
-                    }
-                }
-                IR::Call(name, argc) => {
-                    // Cache function calls for faster dispatch
-                    let cache_key = format!("call_{}_{}", name, argc);
-                    if let Some(cached) = self.inline_cache.get(&cache_key) {
-                        result.extend(cached.clone());
-                    } else {
-                        self.inline_cache.insert(cache_key, vec![inst.clone()]);
-                        result.push(inst.clone());
-                    }
-                }
-                _ => {
-                    result.push(inst.clone());
-                }
-            }
-        }
-        
-        result
-    }
-    
-    /// Tier 4: Collect type feedback for specialization
-    #[allow(dead_code)]
-    fn collect_type_feedback(&mut self, ir: &[IR]) {
-        for (i, inst) in ir.iter().enumerate() {
-            match inst {
-                IR::PushNumber(_) => {
-                    self.type_feedback.insert(i, "number".to_string());
-                }
-                IR::PushString(_) => {
-                    self.type_feedback.insert(i, "string".to_string());
-                }
-                IR::PushBoolean(_) => {
-                    self.type_feedback.insert(i, "boolean".to_string());
-                }
-                IR::Add | IR::Subtract | IR::Multiply | IR::Divide => {
-                    // Track that arithmetic operations are used
-                    self.type_feedback.insert(i, "arithmetic".to_string());
-                }
-                _ => {}
-            }
-        }
-    }
-    
     /// Get optimization statistics for debugging
     pub fn get_stats(&self) -> JITStats {
         JITStats {
             optimization_level: self.optimization_level,
-            hot_loops_detected: self.loop_counters.len(),
-            cached_traces: self.optimized_traces.len(),
-            inline_cache_size: self.inline_cache.len(),
-            type_feedback_entries: self.type_feedback.len(),
-            stack_allocated_vars: self.stack_allocated_vars.len(),
+            inline_cache_size: self.cache_manager.inline_cache.len(),
+            type_feedback_entries: self.cache_manager.type_feedback.len(),
             native_executions: self.native_executions,
             bytecode_executions: self.bytecode_executions,
             runtime_executions: self.runtime_executions,
@@ -1094,140 +616,22 @@ impl JIT {
         }
     }
     
-    /// Advanced peephole optimization - More aggressive pattern matching
-    #[allow(dead_code)]
-    fn advanced_peephole(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: LoadVar(x), LoadVar(x) -> LoadVar(x), Dup
-            if i + 1 < ir.len() {
-                if let (IR::LoadVar(name1), IR::LoadVar(name2)) = (&ir[i], &ir[i + 1]) {
-                    if name1 == name2 {
-                        result.push(IR::LoadVar(name1.clone()));
-                        result.push(IR::Dup);
-                        i += 2;
-                        continue;
-                    }
-                }
-            }
-            
-            // Pattern: PushNumber(x), Pop -> (remove both)
-            if i + 1 < ir.len() {
-                if let (IR::PushNumber(_), IR::Pop) = (&ir[i], &ir[i + 1]) {
-                    i += 2;
-                    continue;
-                }
-            }
-            
-            // Pattern: Dup, Pop -> (remove both)
-            if i + 1 < ir.len() {
-                if let (IR::Dup, IR::Pop) = (&ir[i], &ir[i + 1]) {
-                    i += 2;
-                    continue;
-                }
-            }
-            
-            // Pattern: StoreVar(x), LoadVar(x) -> StoreVar(x), Dup
-            if i + 1 < ir.len() {
-                if let (IR::StoreVar(name1), IR::LoadVar(name2)) = (&ir[i], &ir[i + 1]) {
-                    if name1 == name2 {
-                        result.push(IR::StoreVar(name1.clone()));
-                        result.push(IR::Dup);
-                        i += 2;
-                        continue;
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Stack optimization - Reduce unnecessary stack operations
-    #[allow(dead_code)]
-    fn stack_optimization(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: Push, Swap, Pop -> Pop
-            if i + 2 < ir.len() {
-                if matches!(ir[i], IR::PushNumber(_) | IR::PushString(_) | IR::PushBoolean(_)) {
-                    if let (IR::Swap, IR::Pop) = (&ir[i + 1], &ir[i + 2]) {
-                        result.push(IR::Pop);
-                        i += 3;
-                        continue;
-                    }
-                }
-            }
-            
-            // Pattern: Dup, Dup -> Dup, Dup (keep for now, but track)
-            // Pattern: Pop, Pop -> (can be optimized in some cases)
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
-    /// Redundant load elimination - Cache loaded values
-    #[allow(dead_code)]
-    fn redundant_load_elimination(&self, ir: Vec<IR>) -> Vec<IR> {
-        let mut result = Vec::new();
-        let mut i = 0;
-        
-        while i < ir.len() {
-            // Pattern: LoadVar(x), ..., LoadVar(x) with no StoreVar(x) in between
-            if let IR::LoadVar(name) = &ir[i] {
-                // Look ahead to see if same variable is loaded again
-                // Look ahead to see if same variable is loaded again
-                for j in (i + 1)..ir.len().min(i + 10) {
-                    match &ir[j] {
-                        IR::StoreVar(store_name) if store_name == name => {
-                            break; // Variable modified, can't optimize
-                        }
-                        IR::LoadVar(_load_name) if _load_name == name => {
-                            // Found redundant load, but we need to check if value is still on stack
-                            // For now, keep as-is (complex analysis needed)
-                            break;
-                        }
-                        IR::Call(_, _) => {
-                            break; // Function call might modify state
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            
-            result.push(ir[i].clone());
-            i += 1;
-        }
-        
-        result
-    }
-    
     /// Compile IR to native x86-64 machine code
-    fn compile_to_native(&mut self, ir: &[IR]) -> Result<CompiledFunction, String> {
+    fn compile_to_native(&mut self, ir: &[IR]) -> JITResult<CompiledFunction> {
         let mut assembler = Assembler::new()
-            .map_err(|e| format!("Failed to create assembler: {}", e))?;
+            .map_err(|e| JITError::CompilationFailed(format!("Failed to create assembler: {}", e)))?;
         
         // Pre-scan to allocate variable slots
         for instruction in ir {
             match instruction {
                 IR::StoreVar(name) | IR::LoadVar(name) => {
-                    self.get_or_allocate_native_slot(name);
+                    self.variable_manager.get_or_allocate_native_slot(name);
                 }
                 _ => {}
             }
         }
         
-        let variable_count = self.next_native_slot;
+        let variable_count = self.variable_manager.get_native_slot_count();
         
         // Function prologue - rdx contains variables array pointer
         dynasm!(assembler
@@ -1501,7 +905,7 @@ impl JIT {
                 
                 // === VARIABLE OPERATIONS (Native) ===
                 IR::StoreVar(name) => {
-                    if let Some(&slot) = self.native_variables.get(name) {
+                    if let Some(&slot) = self.variable_manager.native_variables.get(name) {
                         let offset = (slot * 8) as i32;
                         dynasm!(assembler
                             ; pop rax                    // Get value from stack
@@ -1511,7 +915,7 @@ impl JIT {
                 }
                 
                 IR::LoadVar(name) => {
-                    if let Some(&slot) = self.native_variables.get(name) {
+                    if let Some(&slot) = self.variable_manager.native_variables.get(name) {
                         let offset = (slot * 8) as i32;
                         dynasm!(assembler
                             ; mov rax, QWORD [r15 + offset]  // Load from variables array
@@ -1550,7 +954,7 @@ impl JIT {
         
         // Finalize the code
         let code = assembler.finalize()
-            .map_err(|e| format!("Failed to finalize assembly: {:?}", e))?;
+            .map_err(|e| JITError::CompilationFailed(format!("Failed to finalize assembly: {:?}", e)))?;
         
         let entry_point: extern "C" fn(*mut f64, usize, *mut f64) -> i64 = unsafe {
             mem::transmute(code.ptr(dynasmrt::AssemblyOffset(0)))
@@ -1620,12 +1024,12 @@ impl JIT {
                 
                 // Variable operations with register allocation
                 IR::StoreVar(name) => {
-                    let reg = self.get_or_allocate_register(name);
+                    let reg = self.variable_manager.get_or_allocate_register(name);
                     bytecode.push(ByteCode::StoreVar(reg));
                 }
                 
                 IR::LoadVar(name) => {
-                    let reg = self.get_or_allocate_register(name);
+                    let reg = self.variable_manager.get_or_allocate_register(name);
                     bytecode.push(ByteCode::LoadVar(reg));
                 }
                 
@@ -1650,7 +1054,7 @@ impl JIT {
     }
     
     /// Execute bytecode using fast interpreter
-    fn execute_bytecode(&self, bytecode: &[ByteCode]) -> Result<i64, String> {
+    fn execute_bytecode(&self, bytecode: &[ByteCode]) -> JITResult<i64> {
         let mut stack: Vec<f64> = Vec::new();
         let mut registers = vec![0.0f64; 256]; // 256 registers
         
@@ -1701,7 +1105,7 @@ impl JIT {
                         if b != 0.0 {
                             stack.push(a / b);
                         } else {
-                            return Err("Division by zero".to_string());
+                            return Err(JITError::ExecutionFailed("Division by zero in bytecode execution".to_string()));
                         }
                     }
                 }
@@ -1713,7 +1117,7 @@ impl JIT {
                         if b != 0.0 {
                             stack.push(a % b);
                         } else {
-                            return Err("Modulo by zero".to_string());
+                            return Err(JITError::ExecutionFailed("Modulo by zero in bytecode execution".to_string()));
                         }
                     }
                 }
@@ -1862,29 +1266,6 @@ impl JIT {
         Ok(stack.last().copied().unwrap_or(0.0) as i64)
     }
     
-    /// Get or allocate a register for a variable
-    fn get_or_allocate_register(&mut self, var_name: &str) -> u8 {
-        if let Some(&reg) = self.variable_registers.get(var_name) {
-            reg
-        } else {
-            let reg = self.next_register;
-            self.variable_registers.insert(var_name.to_string(), reg);
-            self.next_register += 1;
-            reg
-        }
-    }
-    
-    /// Get or allocate a native variable slot
-    fn get_or_allocate_native_slot(&mut self, var_name: &str) -> usize {
-        if let Some(&slot) = self.native_variables.get(var_name) {
-            slot
-        } else {
-            let slot = self.next_native_slot;
-            self.native_variables.insert(var_name.to_string(), slot);
-            self.next_native_slot += 1;
-            slot
-        }
-    }
     
     /// Generate a cache key based on IR content and type
     fn generate_cache_key(&self, ir: &[IR], cache_type: &str) -> String {
@@ -1917,11 +1298,8 @@ impl JIT {
 /// Statistics about RAJIT optimization and real JIT performance
 pub struct JITStats {
     pub optimization_level: u8,
-    pub hot_loops_detected: usize,
-    pub cached_traces: usize,
     pub inline_cache_size: usize,
     pub type_feedback_entries: usize,
-    pub stack_allocated_vars: usize,
     
     // Real JIT performance counters
     pub native_executions: usize,
