@@ -1,0 +1,44 @@
+// Pure computation test for enhanced JIT (no I/O)
+fun main() {
+    var result = 0
+    var a = 15
+    var b = 7
+    var c = 3
+    var d = 2
+    
+    // Pure computational operations (should trigger native/bytecode compilation)
+    result = a + b
+    result = result * c
+    result = result - d
+    result = result / b
+    result = result % c
+    result = result + a
+    result = result * b
+    result = result - c
+    result = result + d
+    result = result * a
+    result = result - b
+    result = result + c
+    result = result / d
+    result = result % a
+    result = result + b
+    result = result * c
+    result = result - d
+    result = result + a
+    result = result / b
+    result = result % c
+    
+    // Bitwise operations
+    var x = result
+    x = x & a
+    x = x | b
+    x = x ^ c
+    x = x << 1
+    x = x >> 1
+    
+    // Final computation
+    result = result + x
+    
+    // Only output at the end to minimize I/O impact
+    println(f"Pure computation result: {result}")
+}

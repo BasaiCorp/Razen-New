@@ -58,7 +58,7 @@ use std::mem;
 use std::fmt;
 
 // Real JIT dependencies for machine code generation
-use dynasmrt::{dynasm, DynasmApi};
+use dynasmrt::{dynasm, DynasmApi, DynasmLabelApi};
 use dynasmrt::x64::Assembler;
 
 /// JIT-specific error types for better error handling
@@ -143,6 +143,27 @@ struct PerformanceProfiler {
     operation_counts: HashMap<String, usize>,
     hot_operations: Vec<String>,
     total_operations: usize,
+    function_call_counts: HashMap<String, usize>,
+    loop_iterations: HashMap<usize, usize>, // Loop ID -> iteration count
+}
+
+/// Function inlining candidate
+#[derive(Debug, Clone)]
+struct InlineCandidate {
+    function_name: String,
+    call_count: usize,
+    ir_size: usize,
+    complexity_score: usize,
+}
+
+/// Loop optimization information
+#[derive(Debug, Clone)]
+struct LoopInfo {
+    start_pc: usize,
+    end_pc: usize,
+    iteration_count: usize,
+    contains_calls: bool,
+    arithmetic_ops: usize,
 }
 
 impl PerformanceProfiler {
@@ -151,6 +172,8 @@ impl PerformanceProfiler {
             operation_counts: HashMap::new(),
             hot_operations: Vec::new(),
             total_operations: 0,
+            function_call_counts: HashMap::new(),
+            loop_iterations: HashMap::new(),
         }
     }
     
@@ -177,6 +200,26 @@ impl PerformanceProfiler {
     
     fn get_hot_operations(&self) -> &[String] {
         &self.hot_operations
+    }
+    
+    fn record_function_call(&mut self, function_name: &str) {
+        *self.function_call_counts.entry(function_name.to_string()).or_insert(0) += 1;
+    }
+    
+    fn record_loop_iteration(&mut self, loop_id: usize) {
+        *self.loop_iterations.entry(loop_id).or_insert(0) += 1;
+    }
+    
+    fn get_inline_candidates(&self, threshold: usize) -> Vec<InlineCandidate> {
+        self.function_call_counts.iter()
+            .filter(|&(_, &count)| count >= threshold)
+            .map(|(name, &count)| InlineCandidate {
+                function_name: name.clone(),
+                call_count: count,
+                ir_size: 0, // Will be filled by caller
+                complexity_score: 0, // Will be calculated by caller
+            })
+            .collect()
     }
 }
 
@@ -306,6 +349,11 @@ pub struct JIT {
     compiled_functions: Vec<CompiledFunction>,
     variable_manager: VariableManager,
     
+    // Performance profiling and optimization
+    profiler: PerformanceProfiler,
+    inline_candidates: Vec<InlineCandidate>,
+    loop_info: Vec<LoopInfo>,
+    
     // Performance counters
     native_executions: usize,
     bytecode_executions: usize,
@@ -323,6 +371,11 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             variable_manager: VariableManager::new(),
+            
+            // Performance profiling and optimization
+            profiler: PerformanceProfiler::new(),
+            inline_candidates: Vec::new(),
+            loop_info: Vec::new(),
             
             // Performance counters
             native_executions: 0,
@@ -350,6 +403,11 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             variable_manager: VariableManager::new(),
+            
+            // Performance profiling and optimization
+            profiler: PerformanceProfiler::new(),
+            inline_candidates: Vec::new(),
+            loop_info: Vec::new(),
             
             // Performance counters
             native_executions: 0,
@@ -967,22 +1025,29 @@ impl JIT {
                     }
                 }
                 
-                // === COMPLEX OPERATIONS (Runtime Fallback) ===
-                // These operations require runtime support for full functionality
-                IR::PushString(_) | IR::SetGlobal(_) |
-                IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
-                IR::Call(_, _) | IR::MethodCall(_, _) | IR::Return |
-                IR::Print | IR::ReadInput | IR::Exit |
-                IR::CreateArray(_) | IR::GetIndex | IR::SetIndex |
-                IR::CreateMap(_) | IR::GetKey | IR::SetKey |
-                IR::DefineFunction(_, _) | IR::Label(_) |
-                IR::Power | IR::FloorDiv | IR::Sleep | IR::LibraryCall(_, _, _) |
-                IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
-                    // These operations are too complex for native compilation
-                    // They will be handled by the hybrid runtime system
+                // === FLOATING POINT OPERATIONS (Enhanced Native Support) ===
+                IR::Power => {
+                    // x^y using simplified power calculation (integer only)
                     dynasm!(assembler
-                        ; nop  // Placeholder - runtime will handle this
+                        ; pop rcx    // Exponent
+                        ; pop rax    // Base
+                        ; mov rdx, 1 // Result = 1
+                        ; test rcx, rcx
+                        ; jz >done   // If exponent is 0, result is 1
+                        ; power_loop:
+                        ; imul rdx, rax  // result *= base
+                        ; dec rcx
+                        ; jnz <power_loop // Continue if exponent > 0
+                        ; done:
+                        ; push rdx   // Push result
                     );
+                }
+                
+                
+                // === COMPLEX OPERATIONS (Runtime Fallback) ===
+                _ => {
+                    // All other operations fall back to runtime
+                    // This ensures correctness while maintaining performance for supported ops
                 }
             }
         }

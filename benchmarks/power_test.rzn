@@ -1,0 +1,20 @@
+// Power operation test for enhanced native compilation
+fun main() {
+    var base = 2
+    var exp = 3
+    var result = 0
+    
+    // Test power operations (should trigger native compilation with new Power support)
+    result = base ** exp  // 2^3 = 8
+    println(f"Power test: {base}^{exp} = {result}")
+    
+    // More power operations
+    var x = 3
+    var y = 4
+    var power_result = x ** y  // 3^4 = 81
+    println(f"Enhanced power: {x}^{y} = {power_result}")
+    
+    // Combined with arithmetic
+    var final_result = (base ** exp) + (x ** y)  // 8 + 81 = 89
+    println(f"Combined result: {final_result}")
+}
