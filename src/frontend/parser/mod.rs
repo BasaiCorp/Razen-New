@@ -187,10 +187,10 @@ pub fn parse_source_with_debug(source: &str, filename: &str, debug: bool) -> (Op
     let tokens = lexer.lex(source);
     
     if debug {
-        println!("🔧 Debug: Generated {} tokens", tokens.len());
+        println!("[DEBUG] Generated {} tokens", tokens.len());
         // Show first few tokens for debugging
         for (i, token) in tokens.iter().take(20).enumerate() {
-            println!("🔧 Token {}: {:?} at line {}", i, token.kind, token.line);
+            println!("[DEBUG] Token {}: {:?} at line {}", i, token.kind, token.line);
         }
     }
     

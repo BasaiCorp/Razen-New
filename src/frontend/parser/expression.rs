@@ -469,7 +469,7 @@ impl<'a> ExpressionParser<'a> {
                     // Check if this is followed by a struct instantiation: module.Type { ... }
                     if self.check(&TokenKind::LeftBrace) && self.is_likely_struct_initialization() {
                         if self.debug {
-                            println!("🔧 Debug: Found LeftBrace after member expression, parsing as qualified struct instantiation");
+                            println!("[DEBUG] Found LeftBrace after member expression, parsing as qualified struct instantiation");
                         }
                         self.advance(); // consume '{'
                         
@@ -575,14 +575,14 @@ impl<'a> ExpressionParser<'a> {
             let name = self.previous().lexeme.clone();
             
             if self.debug {
-                println!("🔧 Debug: Found identifier '{}' in primary parsing", name);
+                println!("[DEBUG] Found identifier '{}' in primary parsing", name);
             }
             
             // Check if this is a struct instantiation: TypeName { ... }
             // Only parse as struct if we're not in a context where { starts a block
             if self.check(&TokenKind::LeftBrace) && self.is_likely_struct_initialization() {
                 if self.debug {
-                    println!("🔧 Debug: Found LeftBrace after identifier, parsing as struct");
+                    println!("[DEBUG] Found LeftBrace after identifier, parsing as struct");
                 }
                 self.advance(); // consume '{'
                 
@@ -615,7 +615,7 @@ impl<'a> ExpressionParser<'a> {
             
             // f-strings are now handled by the FString token type above
             if self.debug {
-                println!("🔧 Debug: Returning identifier '{}' as simple identifier", name);
+                println!("[DEBUG] Returning identifier '{}' as simple identifier", name);
             }
             return Ok(Expression::Identifier(Identifier::new(name)));
         }

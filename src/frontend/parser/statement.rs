@@ -653,11 +653,11 @@ impl<'a> StatementParser<'a> {
     fn parse_expression(&mut self) -> ParseResult<Expression> {
         // Debug: Show tokens being parsed (only in dev mode)
         if self.debug {
-            println!("🔧 Debug: Parsing expression starting at token {}", self.current);
+            println!("[DEBUG] Parsing expression starting at token {}", self.current);
             if self.current < self.tokens.len() {
-                println!("🔧 Debug: Current token: {:?}", self.tokens[self.current].kind);
+                println!("[DEBUG] Current token: {:?}", self.tokens[self.current].kind);
                 if self.current + 1 < self.tokens.len() {
-                    println!("🔧 Debug: Next token: {:?}", self.tokens[self.current + 1].kind);
+                    println!("[DEBUG] Next token: {:?}", self.tokens[self.current + 1].kind);
                 }
             }
         }

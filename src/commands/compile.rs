@@ -40,10 +40,10 @@ pub fn execute(
     }
     
     println!("=== Razen AOT Compiler ===");
-    println!("📁 Input:  {}", input.display());
-    println!("📦 Output: {}", output_path.display());
-    println!("🔧 Optimization Level: {}", optimization);
-    println!("🐛 Debug Info: {}", if debug { "enabled" } else { "disabled" });
+    println!("Input:  {}", input.display());
+    println!("Output: {}", output_path.display());
+    println!("Optimization Level: {}", optimization);
+    println!("Debug Info: {}", if debug { "enabled" } else { "disabled" });
     println!();
     
     // Read source file
@@ -101,11 +101,11 @@ pub fn execute(
                             info_message(&format!("Generated file size: {} bytes", metadata.len()));
                         }
                         
-                        println!("\n📊 Compilation Summary:");
-                        println!("  ✓ Parsing: OK");
-                        println!("  ✓ Semantic Analysis: OK");
-                        println!("  ✓ AOT Compilation: OK");
-                        println!("  ✓ Output Generation: OK");
+                        println!("\nCompilation Summary:");
+                        println!("  Parsing: OK");
+                        println!("  Semantic Analysis: OK");
+                        println!("  AOT Compilation: OK");
+                        println!("  Output Generation: OK");
                         
                         if optimization > 0 {
                             info_message(&format!("Optimizations applied: Level {}", optimization));

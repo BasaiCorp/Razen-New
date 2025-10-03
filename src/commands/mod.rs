@@ -240,10 +240,10 @@ pub fn handle_error(error: &str) -> ! {
 
 /// Success message with colored output
 pub fn success_message(message: &str) {
-    println!("\x1b[32m✓\x1b[0m {}", message);
+    println!("\x1b[32m[SUCCESS]\x1b[0m {}", message);
 }
 
 /// Info message with colored output
 pub fn info_message(message: &str) {
-    println!("\x1b[34mℹ\x1b[0m {}", message);
+    println!("\x1b[34m[INFO]\x1b[0m {}", message);
 }

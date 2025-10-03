@@ -29,20 +29,20 @@ pub fn execute(name: Option<String>, version: String) -> Result<(), Box<dyn std:
     // Generate razen.toml content
     let toml_content = generate_razen_toml(&project_name, &version);
     fs::write("razen.toml", toml_content)?;
-    println!("✓ Created razen.toml");
+    println!("[SUCCESS] Created razen.toml");
 
     // Create main.rzn if it doesn't exist
     if !Path::new("main.rzn").exists() {
         let main_content = generate_default_main();
         fs::write("main.rzn", main_content)?;
-        println!("✓ Created main.rzn");
+        println!("[SUCCESS] Created main.rzn");
     }
 
     // Create .gitignore if it doesn't exist
     if !Path::new(".gitignore").exists() {
         let gitignore_content = generate_gitignore();
         fs::write(".gitignore", gitignore_content)?;
-        println!("✓ Created .gitignore");
+        println!("[SUCCESS] Created .gitignore");
     }
 
     println!("\nInitialized Razen project '{}'!", project_name);

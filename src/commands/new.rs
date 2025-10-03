@@ -30,7 +30,7 @@ pub fn execute(name: String, main: bool, function: bool) -> Result<(), Box<dyn s
     // Write the file
     fs::write(&filename, content)?;
 
-    println!("✓ Created new Razen file: {}", filename);
+    println!("[SUCCESS] Created new Razen file: {}", filename);
     println!("  Use 'razen run {}' to execute", filename);
 
     Ok(())
