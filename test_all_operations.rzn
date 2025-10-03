@@ -1,0 +1,104 @@
+fun main() {
+    println("=== RAJIT Comprehensive Operations Test ===")
+    
+    // === ARITHMETIC OPERATIONS ===
+    println("--- Arithmetic Operations ---")
+    var a = 15
+    var b = 3
+    
+    var sum = a + b
+    println(f"Addition: 15 + 3 = {sum}")
+    
+    var diff = a - b
+    println(f"Subtraction: 15 - 3 = {diff}")
+    
+    var prod = a * b
+    println(f"Multiplication: 15 * 3 = {prod}")
+    
+    var quot = a / b
+    println(f"Division: 15 / 3 = {quot}")
+    
+    var rem = a % b
+    println(f"Modulo: 15 % 3 = {rem}")
+    
+    var neg = -a
+    println(f"Negation: -15 = {neg}")
+    
+    // === COMPARISON OPERATIONS ===
+    println("--- Comparison Operations ---")
+    
+    var eq = a == b
+    println(f"Equal: 15 == 3 = {eq}")
+    
+    var ne = a != b
+    println(f"Not Equal: 15 != 3 = {ne}")
+    
+    var gt = a > b
+    println(f"Greater Than: 15 > 3 = {gt}")
+    
+    var ge = a >= b
+    println(f"Greater Equal: 15 >= 3 = {ge}")
+    
+    var lt = a < b
+    println(f"Less Than: 15 < 3 = {lt}")
+    
+    var le = a <= b
+    println(f"Less Equal: 15 <= 3 = {le}")
+    
+    // === LOGICAL OPERATIONS ===
+    println("--- Logical Operations ---")
+    
+    var and_op = true && false
+    println(f"Logical AND: true && false = {and_op}")
+    
+    var or_op = true || false
+    println(f"Logical OR: true || false = {or_op}")
+    
+    var not_op = !true
+    println(f"Logical NOT: !true = {not_op}")
+    
+    // === BITWISE OPERATIONS ===
+    println("--- Bitwise Operations ---")
+    var x = 12
+    var y = 5
+    
+    var bit_and = x & y
+    println(f"Bitwise AND: 12 & 5 = {bit_and}")
+    
+    var bit_or = x | y
+    println(f"Bitwise OR: 12 | 5 = {bit_or}")
+    
+    var bit_xor = x ^ y
+    println(f"Bitwise XOR: 12 ^ 5 = {bit_xor}")
+    
+    var bit_not = ~x
+    println(f"Bitwise NOT: ~12 = {bit_not}")
+    
+    var left_shift = x << 2
+    println(f"Left Shift: 12 << 2 = {left_shift}")
+    
+    var right_shift = x >> 1
+    println(f"Right Shift: 12 >> 1 = {right_shift}")
+    
+    // === STACK OPERATIONS ===
+    println("--- Stack Operations ---")
+    
+    var null_val = null
+    println(f"Null value: {null_val}")
+    
+    var bool_val = true
+    println(f"Boolean value: {bool_val}")
+    
+    var int_val = 42
+    println(f"Integer value: {int_val}")
+    
+    var float_val = 3.14
+    println(f"Float value: {float_val}")
+    
+    // === FINAL COMPUTATION ===
+    println("--- Final Computation ---")
+    var final_result = sum + diff + prod + quot + rem + x + y
+    println(f"Final result: {final_result}")
+    
+    println("=== All Operations Test Complete ===")
+}

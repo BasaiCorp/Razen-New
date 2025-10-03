@@ -1,0 +1,44 @@
+fun main() {
+    // Comprehensive test for all native JIT operations
+    
+    // === ARITHMETIC OPERATIONS ===
+    var a = 15
+    var b = 3
+    var sum = a + b          // Native: Add
+    var diff = a - b         // Native: Subtract  
+    var prod = a * b         // Native: Multiply
+    var quot = a / b         // Native: Divide
+    var rem = a % b          // Native: Modulo
+    
+    // === COMPARISON OPERATIONS ===
+    var eq = a == b          // Native: Equal
+    var ne = a != b          // Native: NotEqual
+    var gt = a > b           // Native: GreaterThan
+    var ge = a >= b          // Native: GreaterEqual
+    var lt = a < b           // Native: LessThan
+    var le = a <= b          // Native: LessEqual
+    
+    // === LOGICAL OPERATIONS ===
+    var and_op = true && false    // Native: And
+    var or_op = true || false     // Native: Or
+    var not_op = !true            // Native: Not
+    
+    // === BITWISE OPERATIONS ===
+    var x = 12
+    var y = 5
+    var bit_and = x & y      // Native: BitwiseAnd
+    var bit_or = x | y       // Native: BitwiseOr
+    var bit_xor = x ^ y      // Native: BitwiseXor
+    var bit_not = ~x         // Native: BitwiseNot
+    var left_shift = x << 2  // Native: LeftShift
+    var right_shift = x >> 1 // Native: RightShift
+    
+    // === STACK OPERATIONS ===
+    var null_val = null      // Native: PushNull
+    var bool_val = true      // Native: PushBoolean
+    var int_val = 42         // Native: PushInteger
+    var float_val = 3.14     // Native: PushNumber
+    
+    // This should trigger native compilation due to high arithmetic ratio
+    var final_result = sum + diff + prod + quot + rem + x + y
+}

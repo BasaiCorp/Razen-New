@@ -284,20 +284,47 @@ impl JIT {
         
         for instruction in ir {
             match instruction {
-                IR::Add | IR::Subtract | IR::Multiply | IR::Divide | 
-                IR::PushNumber(_) | IR::PushInteger(_) => {
+                // Native-optimizable operations (fast)
+                IR::Add | IR::Subtract | IR::Multiply | IR::Divide | IR::Modulo | IR::Negate |
+                IR::PushNumber(_) | IR::PushInteger(_) | IR::PushBoolean(_) | IR::PushNull |
+                IR::Pop | IR::Dup | IR::Swap |
+                IR::Equal | IR::NotEqual | IR::GreaterThan | IR::GreaterEqual | 
+                IR::LessThan | IR::LessEqual |
+                IR::And | IR::Or | IR::Not |
+                IR::BitwiseAnd | IR::BitwiseOr | IR::BitwiseXor | IR::BitwiseNot |
+                IR::LeftShift | IR::RightShift => {
                     arithmetic_ops += 1;
                 }
-                IR::Call(_, _) | IR::Print => {
+                
+                // Complex operations (require runtime)
+                IR::Call(_, _) | IR::MethodCall(_, _) | IR::Print | IR::ReadInput | IR::Exit |
+                IR::CreateArray(_) | IR::GetIndex | IR::SetIndex |
+                IR::CreateMap(_) | IR::GetKey | IR::SetKey |
+                IR::Power | IR::FloorDiv | IR::Sleep | IR::LibraryCall(_, _, _) |
+                IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
                     complex_ops += 1;
                 }
-                IR::LoadVar(_) | IR::StoreVar(_) => {
+                
+                // Variable operations (medium complexity)
+                IR::LoadVar(_) | IR::StoreVar(_) | IR::SetGlobal(_) => {
                     variable_ops += 1;
                 }
-                IR::Jump(_) | IR::Label(_) => {
+                
+                // Control flow operations
+                IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
+                IR::Label(_) | IR::Return => {
                     control_flow_ops += 1;
                 }
-                _ => {}
+                
+                // String operations (complex)
+                IR::PushString(_) => {
+                    complex_ops += 1;
+                }
+                
+                // Function definition (complex)
+                IR::DefineFunction(_, _) => {
+                    complex_ops += 1;
+                }
             }
         }
         
@@ -1136,9 +1163,17 @@ impl JIT {
             ; sub rsp, 64  // Stack space for local variables
         );
         
-        // Compile each IR instruction to x86-64
+        // Compile each IR instruction to x86-64 machine code
         for instruction in ir {
             match instruction {
+                // === STACK OPERATIONS (Native) ===
+                IR::PushInteger(value) => {
+                    dynasm!(assembler
+                        ; mov rax, QWORD *value
+                        ; push rax
+                    );
+                }
+                
                 IR::PushNumber(value) => {
                     let bits = value.to_bits() as i64;
                     dynasm!(assembler
@@ -1147,13 +1182,44 @@ impl JIT {
                     );
                 }
                 
-                IR::PushInteger(value) => {
+                IR::PushBoolean(value) => {
+                    let bool_val = if *value { 1i64 } else { 0i64 };
                     dynasm!(assembler
-                        ; mov rax, QWORD *value
+                        ; mov rax, QWORD bool_val
                         ; push rax
                     );
                 }
                 
+                IR::PushNull => {
+                    dynasm!(assembler
+                        ; xor rax, rax  // Push 0 for null
+                        ; push rax
+                    );
+                }
+                
+                IR::Pop => {
+                    dynasm!(assembler
+                        ; add rsp, 8
+                    );
+                }
+                
+                IR::Dup => {
+                    dynasm!(assembler
+                        ; mov rax, QWORD [rsp]
+                        ; push rax
+                    );
+                }
+                
+                IR::Swap => {
+                    dynasm!(assembler
+                        ; pop rax
+                        ; pop rbx
+                        ; push rax
+                        ; push rbx
+                    );
+                }
+                
+                // === ARITHMETIC OPERATIONS (Native) ===
                 IR::Add => {
                     dynasm!(assembler
                         ; pop rbx
@@ -1183,19 +1249,197 @@ impl JIT {
                 
                 IR::Divide => {
                     dynasm!(assembler
-                        ; pop rbx
+                        ; pop rbx    // Divisor
+                        ; pop rax    // Dividend
+                        ; cqo        // Sign extend
+                        ; idiv rbx   // Divide
+                        ; push rax   // Quotient
+                    );
+                }
+                
+                IR::Modulo => {
+                    dynasm!(assembler
+                        ; pop rbx    // Divisor
+                        ; pop rax    // Dividend
+                        ; cqo        // Sign extend
+                        ; idiv rbx   // Divide
+                        ; push rdx   // Remainder
+                    );
+                }
+                
+                IR::Negate => {
+                    dynasm!(assembler
                         ; pop rax
-                        ; cqo
-                        ; idiv rbx
+                        ; neg rax
                         ; push rax
                     );
                 }
                 
-                // For complex operations, we'll add runtime calls later
-                _ => {
-                    // For now, just add a nop for unsupported instructions
+                // === COMPARISON OPERATIONS (Native) ===
+                IR::Equal => {
                     dynasm!(assembler
-                        ; nop
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; sete al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                IR::NotEqual => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; setne al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                IR::GreaterThan => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; setg al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                IR::GreaterEqual => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; setge al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                IR::LessThan => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; setl al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                IR::LessEqual => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; cmp rax, rbx
+                        ; setle al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                // === LOGICAL OPERATIONS (Native) ===
+                IR::And => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; and rax, rbx
+                        ; push rax
+                    );
+                }
+                
+                IR::Or => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; or rax, rbx
+                        ; push rax
+                    );
+                }
+                
+                IR::Not => {
+                    dynasm!(assembler
+                        ; pop rax
+                        ; test rax, rax
+                        ; setz al
+                        ; movzx rax, al
+                        ; push rax
+                    );
+                }
+                
+                // === BITWISE OPERATIONS (Native) ===
+                IR::BitwiseAnd => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; and rax, rbx
+                        ; push rax
+                    );
+                }
+                
+                IR::BitwiseOr => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; or rax, rbx
+                        ; push rax
+                    );
+                }
+                
+                IR::BitwiseXor => {
+                    dynasm!(assembler
+                        ; pop rbx
+                        ; pop rax
+                        ; xor rax, rbx
+                        ; push rax
+                    );
+                }
+                
+                IR::BitwiseNot => {
+                    dynasm!(assembler
+                        ; pop rax
+                        ; not rax
+                        ; push rax
+                    );
+                }
+                
+                IR::LeftShift => {
+                    dynasm!(assembler
+                        ; pop rcx    // Shift count
+                        ; pop rax    // Value to shift
+                        ; shl rax, cl
+                        ; push rax
+                    );
+                }
+                
+                IR::RightShift => {
+                    dynasm!(assembler
+                        ; pop rcx    // Shift count
+                        ; pop rax    // Value to shift
+                        ; shr rax, cl
+                        ; push rax
+                    );
+                }
+                
+                // === COMPLEX OPERATIONS (Runtime Fallback) ===
+                // These operations require runtime support for full functionality
+                IR::PushString(_) | IR::StoreVar(_) | IR::LoadVar(_) | IR::SetGlobal(_) |
+                IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
+                IR::Call(_, _) | IR::MethodCall(_, _) | IR::Return |
+                IR::Print | IR::ReadInput | IR::Exit |
+                IR::CreateArray(_) | IR::GetIndex | IR::SetIndex |
+                IR::CreateMap(_) | IR::GetKey | IR::SetKey |
+                IR::DefineFunction(_, _) | IR::Label(_) |
+                IR::Power | IR::FloorDiv | IR::Sleep | IR::LibraryCall(_, _, _) |
+                IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
+                    // These operations are too complex for native compilation
+                    // They will be handled by the hybrid runtime system
+                    dynasm!(assembler
+                        ; nop  // Placeholder - runtime will handle this
                     );
                 }
             }
@@ -1229,6 +1473,7 @@ impl JIT {
         
         for instruction in ir {
             match instruction {
+                // Stack operations
                 IR::PushNumber(value) => {
                     bytecode.push(ByteCode::PushConst(*value));
                 }
@@ -1237,14 +1482,24 @@ impl JIT {
                     bytecode.push(ByteCode::PushConst(*value as f64));
                 }
                 
+                IR::PushBoolean(value) => {
+                    bytecode.push(ByteCode::PushConst(if *value { 1.0 } else { 0.0 }));
+                }
+                
+                IR::PushNull => {
+                    bytecode.push(ByteCode::PushConst(0.0));
+                }
+                
+                IR::Pop => bytecode.push(ByteCode::Pop),
+                IR::Dup => bytecode.push(ByteCode::Dup),
+                
+                // Arithmetic operations
                 IR::Add => bytecode.push(ByteCode::Add),
                 IR::Subtract => bytecode.push(ByteCode::Sub),
                 IR::Multiply => bytecode.push(ByteCode::Mul),
                 IR::Divide => bytecode.push(ByteCode::Div),
                 
-                IR::Pop => bytecode.push(ByteCode::Pop),
-                IR::Dup => bytecode.push(ByteCode::Dup),
-                
+                // Variable operations with register allocation
                 IR::StoreVar(name) => {
                     let reg = self.get_or_allocate_register(name);
                     bytecode.push(ByteCode::StoreVar(reg));
@@ -1255,9 +1510,24 @@ impl JIT {
                     bytecode.push(ByteCode::LoadVar(reg));
                 }
                 
-                // For other instructions, we'll add them as needed
-                _ => {
-                    // Skip unsupported instructions for now
+                // Complex operations - skip for bytecode, will be handled by runtime
+                IR::PushString(_) | IR::SetGlobal(_) |
+                IR::Modulo | IR::Power | IR::FloorDiv | IR::Negate |
+                IR::Equal | IR::NotEqual | IR::GreaterThan | IR::GreaterEqual | 
+                IR::LessThan | IR::LessEqual |
+                IR::And | IR::Or | IR::Not |
+                IR::BitwiseAnd | IR::BitwiseOr | IR::BitwiseXor | IR::BitwiseNot |
+                IR::LeftShift | IR::RightShift |
+                IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
+                IR::Call(_, _) | IR::MethodCall(_, _) | IR::Return |
+                IR::Print | IR::ReadInput | IR::Exit |
+                IR::CreateArray(_) | IR::GetIndex | IR::SetIndex |
+                IR::CreateMap(_) | IR::GetKey | IR::SetKey |
+                IR::DefineFunction(_, _) | IR::Label(_) | IR::Swap |
+                IR::Sleep | IR::LibraryCall(_, _, _) |
+                IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
+                    // These operations are handled by runtime for bytecode execution
+                    // Skip them in bytecode compilation
                 }
             }
         }
