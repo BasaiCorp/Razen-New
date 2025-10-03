@@ -62,17 +62,18 @@ use dynasmrt::x64::Assembler;
 
 /// Compiled native function with executable machine code
 pub struct CompiledFunction {
-    #[allow(dead_code)]
     code: dynasmrt::ExecutableBuffer,
-    entry_point: extern "C" fn(*mut f64, usize) -> i64, // Stack pointer, stack size -> result
+    entry_point: extern "C" fn(*mut f64, usize, *mut f64) -> i64, // Stack pointer, stack size, variables -> result
+    variable_count: usize,
 }
 
 impl CompiledFunction {
     /// Execute the compiled native function
-    pub fn execute(&self, stack: &mut Vec<f64>) -> i64 {
+    pub fn execute(&self, stack: &mut Vec<f64>, variables: &mut Vec<f64>) -> i64 {
         let stack_ptr = stack.as_mut_ptr();
         let stack_size = stack.len();
-        (self.entry_point)(stack_ptr, stack_size)
+        let vars_ptr = variables.as_mut_ptr();
+        (self.entry_point)(stack_ptr, stack_size, vars_ptr)
     }
 }
 
@@ -89,6 +90,29 @@ pub enum ByteCode {
     Sub,
     Mul,
     Div,
+    Mod,
+    Neg,
+    
+    // Comparison operations
+    Equal,
+    NotEqual,
+    GreaterThan,
+    GreaterEqual,
+    LessThan,
+    LessEqual,
+    
+    // Logical operations
+    And,
+    Or,
+    Not,
+    
+    // Bitwise operations
+    BitwiseAnd,
+    BitwiseOr,
+    BitwiseXor,
+    BitwiseNot,
+    LeftShift,
+    RightShift,
     
     // Variables (register-allocated)
     LoadVar(u8),  // Register index
@@ -133,8 +157,11 @@ pub struct JIT {
     // Real JIT: Machine code generation
     compiled_functions: Vec<CompiledFunction>,
     bytecode_cache: HashMap<String, Vec<ByteCode>>,
+    native_function_cache: HashMap<String, usize>, // Cache key -> Function index
     variable_registers: HashMap<String, u8>, // Variable -> Register mapping
     next_register: u8,
+    native_variables: HashMap<String, usize>, // Variable -> Native slot mapping
+    next_native_slot: usize,
     
     // Performance counters
     native_executions: usize,
@@ -159,8 +186,11 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             bytecode_cache: HashMap::new(),
+            native_function_cache: HashMap::new(),
             variable_registers: HashMap::new(),
             next_register: 0,
+            native_variables: HashMap::new(),
+            next_native_slot: 0,
             
             // Performance counters
             native_executions: 0,
@@ -194,8 +224,11 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             bytecode_cache: HashMap::new(),
+            native_function_cache: HashMap::new(),
             variable_registers: HashMap::new(),
             next_register: 0,
+            native_variables: HashMap::new(),
+            next_native_slot: 0,
             
             // Performance counters
             native_executions: 0,
@@ -359,13 +392,22 @@ impl JIT {
     
     /// Compile IR to native x86-64 machine code and execute
     fn compile_and_execute_native(&mut self, ir: &[IR]) -> Result<i64, String> {
-        // Check cache first
-        let cache_key = format!("native_{}", ir.len());
-        if self.bytecode_cache.contains_key(&cache_key) {
-            if !self.runtime.is_clean_output() {
-                println!("DEBUG JIT: Using cached native compilation");
+        // Generate better cache key based on IR content hash
+        let cache_key = self.generate_cache_key(ir, "native");
+        
+        // Check native function cache first
+        if let Some(&fn_index) = self.native_function_cache.get(&cache_key) {
+            if fn_index < self.compiled_functions.len() {
+                if !self.runtime.is_clean_output() {
+                    println!("DEBUG JIT: Using cached native function at index {}", fn_index);
+                }
+                self.native_executions += 1;
+                let mut stack = Vec::new();
+                let variable_count = self.compiled_functions[fn_index].variable_count;
+                let mut variables = vec![0.0f64; variable_count.max(1)];
+                let result = self.compiled_functions[fn_index].execute(&mut stack, &mut variables);
+                return Ok(result);
             }
-            return self.execute_native_from_cache_by_key(&cache_key);
         }
         
         // Compile to native machine code
@@ -384,20 +426,27 @@ impl JIT {
                 self.compiled_functions.push(compiled_fn);
                 let fn_index = self.compiled_functions.len() - 1;
                 
+                // Cache the compiled function
+                self.native_function_cache.insert(cache_key, fn_index);
+                
                 // Execute the compiled function
                 self.native_executions += 1;
                 let mut stack = Vec::new();
+                let variable_count = self.compiled_functions[self.compiled_functions.len() - 1].variable_count;
+                let mut variables = vec![0.0f64; variable_count.max(1)];
                 
                 if !self.runtime.is_clean_output() {
                     println!("DEBUG JIT: Executing native machine code...");
+                    println!("DEBUG JIT: Variables allocated: {}", variables.len());
                 }
                 
-                let result = self.compiled_functions[fn_index].execute(&mut stack);
+                let result = self.compiled_functions[fn_index].execute(&mut stack, &mut variables);
                 
                 if !self.runtime.is_clean_output() {
                     println!("DEBUG JIT: Native execution completed");
                     println!("DEBUG JIT: Result: {}", result);
                     println!("DEBUG JIT: Stack final size: {}", stack.len());
+                    println!("DEBUG JIT: Variables used: {}", variables.len());
                 }
                 
                 Ok(result)
@@ -417,12 +466,15 @@ impl JIT {
     
     /// Compile IR to optimized bytecode and execute
     fn compile_and_execute_bytecode(&mut self, ir: &[IR]) -> Result<i64, String> {
+        // Generate better cache key based on IR content hash
+        let cache_key = self.generate_cache_key(ir, "bytecode");
+        
         // Check cache first
-        let cache_key = format!("bytecode_{}", ir.len());
         if let Some(cached_bytecode) = self.bytecode_cache.get(&cache_key) {
             if !self.runtime.is_clean_output() {
-                println!("DEBUG JIT: Using cached bytecode");
+                println!("DEBUG JIT: Using cached bytecode (key: {})", cache_key);
             }
+            self.bytecode_executions += 1;
             return self.execute_bytecode(cached_bytecode);
         }
         
@@ -470,8 +522,17 @@ impl JIT {
     }
     
     /// Execute cached native code by key
-    fn execute_native_from_cache_by_key(&mut self, _cache_key: &str) -> Result<i64, String> {
-        // For now, fall back to runtime (native cache execution will be implemented)
+    fn execute_native_from_cache_by_key(&mut self, cache_key: &str) -> Result<i64, String> {
+        // Extract function index from cache key
+        if let Some(bytecode) = self.bytecode_cache.get(cache_key) {
+            if !bytecode.is_empty() {
+                // Execute cached bytecode instead of native for now
+                self.bytecode_executions += 1;
+                return self.execute_bytecode(bytecode);
+            }
+        }
+        
+        // If no cache found, fall back to runtime
         self.runtime_executions += 1;
         Ok(0)
     }
@@ -1152,15 +1213,28 @@ impl JIT {
     }
     
     /// Compile IR to native x86-64 machine code
-    fn compile_to_native(&self, ir: &[IR]) -> Result<CompiledFunction, String> {
+    fn compile_to_native(&mut self, ir: &[IR]) -> Result<CompiledFunction, String> {
         let mut assembler = Assembler::new()
             .map_err(|e| format!("Failed to create assembler: {}", e))?;
         
-        // Function prologue
+        // Pre-scan to allocate variable slots
+        for instruction in ir {
+            match instruction {
+                IR::StoreVar(name) | IR::LoadVar(name) => {
+                    self.get_or_allocate_native_slot(name);
+                }
+                _ => {}
+            }
+        }
+        
+        let variable_count = self.next_native_slot;
+        
+        // Function prologue - rdx contains variables array pointer
         dynasm!(assembler
             ; push rbp
             ; mov rbp, rsp
             ; sub rsp, 64  // Stack space for local variables
+            ; mov r15, rdx  // Store variables pointer in r15
         );
         
         // Compile each IR instruction to x86-64 machine code
@@ -1425,9 +1499,30 @@ impl JIT {
                     );
                 }
                 
+                // === VARIABLE OPERATIONS (Native) ===
+                IR::StoreVar(name) => {
+                    if let Some(&slot) = self.native_variables.get(name) {
+                        let offset = (slot * 8) as i32;
+                        dynasm!(assembler
+                            ; pop rax                    // Get value from stack
+                            ; mov QWORD [r15 + offset], rax  // Store in variables array
+                        );
+                    }
+                }
+                
+                IR::LoadVar(name) => {
+                    if let Some(&slot) = self.native_variables.get(name) {
+                        let offset = (slot * 8) as i32;
+                        dynasm!(assembler
+                            ; mov rax, QWORD [r15 + offset]  // Load from variables array
+                            ; push rax                       // Push to stack
+                        );
+                    }
+                }
+                
                 // === COMPLEX OPERATIONS (Runtime Fallback) ===
                 // These operations require runtime support for full functionality
-                IR::PushString(_) | IR::StoreVar(_) | IR::LoadVar(_) | IR::SetGlobal(_) |
+                IR::PushString(_) | IR::SetGlobal(_) |
                 IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
                 IR::Call(_, _) | IR::MethodCall(_, _) | IR::Return |
                 IR::Print | IR::ReadInput | IR::Exit |
@@ -1457,13 +1552,14 @@ impl JIT {
         let code = assembler.finalize()
             .map_err(|e| format!("Failed to finalize assembly: {:?}", e))?;
         
-        let entry_point: extern "C" fn(*mut f64, usize) -> i64 = unsafe {
+        let entry_point: extern "C" fn(*mut f64, usize, *mut f64) -> i64 = unsafe {
             mem::transmute(code.ptr(dynasmrt::AssemblyOffset(0)))
         };
         
         Ok(CompiledFunction {
             code,
             entry_point,
+            variable_count,
         })
     }
     
@@ -1498,6 +1594,29 @@ impl JIT {
                 IR::Subtract => bytecode.push(ByteCode::Sub),
                 IR::Multiply => bytecode.push(ByteCode::Mul),
                 IR::Divide => bytecode.push(ByteCode::Div),
+                IR::Modulo => bytecode.push(ByteCode::Mod),
+                IR::Negate => bytecode.push(ByteCode::Neg),
+                
+                // Comparison operations
+                IR::Equal => bytecode.push(ByteCode::Equal),
+                IR::NotEqual => bytecode.push(ByteCode::NotEqual),
+                IR::GreaterThan => bytecode.push(ByteCode::GreaterThan),
+                IR::GreaterEqual => bytecode.push(ByteCode::GreaterEqual),
+                IR::LessThan => bytecode.push(ByteCode::LessThan),
+                IR::LessEqual => bytecode.push(ByteCode::LessEqual),
+                
+                // Logical operations
+                IR::And => bytecode.push(ByteCode::And),
+                IR::Or => bytecode.push(ByteCode::Or),
+                IR::Not => bytecode.push(ByteCode::Not),
+                
+                // Bitwise operations
+                IR::BitwiseAnd => bytecode.push(ByteCode::BitwiseAnd),
+                IR::BitwiseOr => bytecode.push(ByteCode::BitwiseOr),
+                IR::BitwiseXor => bytecode.push(ByteCode::BitwiseXor),
+                IR::BitwiseNot => bytecode.push(ByteCode::BitwiseNot),
+                IR::LeftShift => bytecode.push(ByteCode::LeftShift),
+                IR::RightShift => bytecode.push(ByteCode::RightShift),
                 
                 // Variable operations with register allocation
                 IR::StoreVar(name) => {
@@ -1512,12 +1631,7 @@ impl JIT {
                 
                 // Complex operations - skip for bytecode, will be handled by runtime
                 IR::PushString(_) | IR::SetGlobal(_) |
-                IR::Modulo | IR::Power | IR::FloorDiv | IR::Negate |
-                IR::Equal | IR::NotEqual | IR::GreaterThan | IR::GreaterEqual | 
-                IR::LessThan | IR::LessEqual |
-                IR::And | IR::Or | IR::Not |
-                IR::BitwiseAnd | IR::BitwiseOr | IR::BitwiseXor | IR::BitwiseNot |
-                IR::LeftShift | IR::RightShift |
+                IR::Power | IR::FloorDiv |
                 IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
                 IR::Call(_, _) | IR::MethodCall(_, _) | IR::Return |
                 IR::Print | IR::ReadInput | IR::Exit |
@@ -1592,6 +1706,143 @@ impl JIT {
                     }
                 }
                 
+                ByteCode::Mod => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        if b != 0.0 {
+                            stack.push(a % b);
+                        } else {
+                            return Err("Modulo by zero".to_string());
+                        }
+                    }
+                }
+                
+                ByteCode::Neg => {
+                    if let Some(value) = stack.pop() {
+                        stack.push(-value);
+                    }
+                }
+                
+                // Comparison operations
+                ByteCode::Equal => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a == b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::NotEqual => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a != b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::GreaterThan => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a > b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::GreaterEqual => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a >= b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::LessThan => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a < b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::LessEqual => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a <= b { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                // Logical operations
+                ByteCode::And => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a != 0.0 && b != 0.0 { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::Or => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        stack.push(if a != 0.0 || b != 0.0 { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                ByteCode::Not => {
+                    if let Some(value) = stack.pop() {
+                        stack.push(if value == 0.0 { 1.0 } else { 0.0 });
+                    }
+                }
+                
+                // Bitwise operations (treating floats as integers)
+                ByteCode::BitwiseAnd => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap() as i64;
+                        let a = stack.pop().unwrap() as i64;
+                        stack.push((a & b) as f64);
+                    }
+                }
+                
+                ByteCode::BitwiseOr => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap() as i64;
+                        let a = stack.pop().unwrap() as i64;
+                        stack.push((a | b) as f64);
+                    }
+                }
+                
+                ByteCode::BitwiseXor => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap() as i64;
+                        let a = stack.pop().unwrap() as i64;
+                        stack.push((a ^ b) as f64);
+                    }
+                }
+                
+                ByteCode::BitwiseNot => {
+                    if let Some(value) = stack.pop() {
+                        stack.push((!(value as i64)) as f64);
+                    }
+                }
+                
+                ByteCode::LeftShift => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap() as i64;
+                        let a = stack.pop().unwrap() as i64;
+                        stack.push((a << b) as f64);
+                    }
+                }
+                
+                ByteCode::RightShift => {
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap() as i64;
+                        let a = stack.pop().unwrap() as i64;
+                        stack.push((a >> b) as f64);
+                    }
+                }
+                
                 ByteCode::StoreVar(reg) => {
                     if let Some(value) = stack.pop() {
                         registers[*reg as usize] = value;
@@ -1621,6 +1872,45 @@ impl JIT {
             self.next_register += 1;
             reg
         }
+    }
+    
+    /// Get or allocate a native variable slot
+    fn get_or_allocate_native_slot(&mut self, var_name: &str) -> usize {
+        if let Some(&slot) = self.native_variables.get(var_name) {
+            slot
+        } else {
+            let slot = self.next_native_slot;
+            self.native_variables.insert(var_name.to_string(), slot);
+            self.next_native_slot += 1;
+            slot
+        }
+    }
+    
+    /// Generate a cache key based on IR content and type
+    fn generate_cache_key(&self, ir: &[IR], cache_type: &str) -> String {
+        use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
+        
+        let mut hasher = DefaultHasher::new();
+        
+        // Hash the IR instructions
+        for instruction in ir {
+            match instruction {
+                IR::PushInteger(v) => { "PushInteger".hash(&mut hasher); v.hash(&mut hasher); }
+                IR::PushNumber(v) => { "PushNumber".hash(&mut hasher); v.to_bits().hash(&mut hasher); }
+                IR::PushString(s) => { "PushString".hash(&mut hasher); s.hash(&mut hasher); }
+                IR::PushBoolean(b) => { "PushBoolean".hash(&mut hasher); b.hash(&mut hasher); }
+                IR::StoreVar(name) => { "StoreVar".hash(&mut hasher); name.hash(&mut hasher); }
+                IR::LoadVar(name) => { "LoadVar".hash(&mut hasher); name.hash(&mut hasher); }
+                _ => { format!("{:?}", instruction).hash(&mut hasher); }
+            }
+        }
+        
+        // Include cache type and IR length
+        cache_type.hash(&mut hasher);
+        ir.len().hash(&mut hasher);
+        
+        format!("{}_{:x}", cache_type, hasher.finish())
     }
 }
 
