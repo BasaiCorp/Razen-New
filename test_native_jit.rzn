@@ -1,0 +1,31 @@
+// Test file for native JIT compilation
+fun main() {
+    println("=== Testing Native JIT Compilation ===")
+    
+    // Test basic arithmetic
+    var x = 10
+    var y = 20
+    var result = x + y * 2
+    println(f"Arithmetic test: {x} + {y} * 2 = {result}")
+    
+    // Test more operations
+    var a = 15
+    var b = 3
+    println(f"Addition: {a} + {b} = {a + b}")
+    println(f"Subtraction: {a} - {b} = {a - b}")
+    println(f"Multiplication: {a} * {b} = {a * b}")
+    println(f"Division: {a} / {b} = {a / b}")
+    
+    // Test comparisons
+    println(f"Greater than: {a} > {b} = {a > b}")
+    println(f"Less than: {a} < {b} = {a < b}")
+    println(f"Equal: {a} == {b} = {a == b}")
+    
+    // Test with floats
+    var pi = 3.14159
+    var radius = 5.0
+    var area = pi * radius * radius
+    println(f"Circle area: π * {radius}² = {area}")
+    
+    println("=== Native JIT Test Complete ===")
+}

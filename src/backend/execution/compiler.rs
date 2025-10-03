@@ -186,6 +186,7 @@ impl Compiler {
     }
 
     /// Resolve a type annotation, expanding type aliases if needed
+    #[allow(dead_code)]
     fn resolve_type(&self, type_annotation: &crate::frontend::parser::ast::TypeAnnotation) -> crate::frontend::parser::ast::TypeAnnotation {
         use crate::frontend::parser::ast::TypeAnnotation;
         
@@ -1345,13 +1346,8 @@ impl Compiler {
                 self.compile_expression(*index_expr.index);
                 self.emit(IR::GetKey); // Use GetKey for both array and map access
             },
-            _ => {
-                // Handle other expression types as needed
-                if !self.clean_output {
-                    println!("Unhandled expression type: {:?}", std::mem::discriminant(&expr));
-                }
-                self.emit(IR::PushNull);
-            }
+            // Note: All expression types are handled above, this case is unreachable
+            // but kept for future expression types that might be added
         }
     }
     

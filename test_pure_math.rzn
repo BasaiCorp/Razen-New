@@ -1,0 +1,27 @@
+fun main() {
+    // Pure mathematical computation - should trigger native compilation
+    var a = 10
+    var b = 20
+    var c = 30
+    var d = 40
+    var e = 50
+    
+    // Lots of arithmetic operations to trigger native compilation
+    var result1 = a + b + c + d + e
+    var result2 = a * b * c
+    var result3 = result1 + result2
+    var result4 = result3 * 2
+    var result5 = result4 / 3
+    var result6 = result5 + 100
+    var result7 = result6 - 50
+    var result8 = result7 * result1
+    var result9 = result8 + result2
+    var final_result = result9 / 10
+    
+    // More pure computation
+    var x = 1.5
+    var y = 2.5
+    var z = x * y * x * y * x * y
+    var w = z + z + z + z
+    var final_math = w * final_result
+}
