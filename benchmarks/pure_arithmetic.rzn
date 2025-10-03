@@ -1,0 +1,49 @@
+// Pure arithmetic benchmark designed to trigger native compilation
+fun main() {
+    var result = 0
+    var a = 15
+    var b = 3
+    var c = 7
+    var d = 2
+    
+    // Pure arithmetic operations (should trigger native compilation)
+    // High arithmetic ratio, low complexity
+    result = a + b
+    result = result * c
+    result = result - d
+    result = result + a
+    result = result * b
+    result = result - c
+    result = result + d
+    result = result * a
+    result = result - b
+    result = result + c
+    result = result * d
+    result = result - a
+    result = result + b
+    result = result * c
+    result = result - d
+    result = result + a
+    result = result * b
+    result = result - c
+    result = result + d
+    result = result * a
+    result = result - b
+    result = result + c
+    result = result * d
+    result = result - a
+    result = result + b
+    result = result * c
+    result = result - d
+    
+    // More arithmetic to increase the ratio
+    var temp1 = a * b + c - d
+    var temp2 = temp1 + a * c - b * d
+    var temp3 = temp2 * a + b - c + d
+    var temp4 = temp3 - a + b * c - d
+    var temp5 = temp4 + a - b + c * d
+    
+    result = result + temp1 + temp2 + temp3 + temp4 + temp5
+    
+    println(f"Pure arithmetic result: {result}")
+}

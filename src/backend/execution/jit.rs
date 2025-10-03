@@ -137,6 +137,49 @@ struct VariableManager {
     next_native_slot: usize,
 }
 
+/// Performance profiler for hot path analysis
+#[derive(Debug)]
+struct PerformanceProfiler {
+    operation_counts: HashMap<String, usize>,
+    hot_operations: Vec<String>,
+    total_operations: usize,
+}
+
+impl PerformanceProfiler {
+    fn new() -> Self {
+        Self {
+            operation_counts: HashMap::new(),
+            hot_operations: Vec::new(),
+            total_operations: 0,
+        }
+    }
+    
+    fn record_operation(&mut self, operation: &str) {
+        *self.operation_counts.entry(operation.to_string()).or_insert(0) += 1;
+        self.total_operations += 1;
+        
+        // Update hot operations list (operations > 10% of total)
+        if self.total_operations % 100 == 0 {
+            self.update_hot_operations();
+        }
+    }
+    
+    fn update_hot_operations(&mut self) {
+        self.hot_operations.clear();
+        let threshold = self.total_operations / 10; // 10% threshold
+        
+        for (op, &count) in &self.operation_counts {
+            if count > threshold {
+                self.hot_operations.push(op.clone());
+            }
+        }
+    }
+    
+    fn get_hot_operations(&self) -> &[String] {
+        &self.hot_operations
+    }
+}
+
 impl VariableManager {
     fn new() -> Self {
         Self {
@@ -461,11 +504,11 @@ impl JIT {
             println!("  Complexity score: {}", complexity_score);
         }
         
-        // Decision logic for compilation strategy
-        if arithmetic_ops > 10 && complex_ops < 3 && arithmetic_ratio > 0.6 {
-            CompilationStrategy::Native // Pure computation -> native code
-        } else if ir.len() > 20 && arithmetic_ops > 5 && complexity_score < 10 {
-            CompilationStrategy::Bytecode // Mixed code -> bytecode
+        // Enhanced decision logic for compilation strategy (optimized thresholds)
+        if arithmetic_ops > 8 && complex_ops < 5 && arithmetic_ratio > 0.5 {
+            CompilationStrategy::Native // Pure computation -> native code (lowered threshold)
+        } else if ir.len() > 15 && arithmetic_ops > 3 && complexity_score < 15 {
+            CompilationStrategy::Bytecode // Mixed code -> bytecode (more aggressive)
         } else {
             CompilationStrategy::Runtime // Simple code or high complexity -> runtime
         }
@@ -1053,12 +1096,18 @@ impl JIT {
         bytecode
     }
     
-    /// Execute bytecode using fast interpreter
+    /// Execute bytecode using fast interpreter with hot path optimizations
     fn execute_bytecode(&self, bytecode: &[ByteCode]) -> JITResult<i64> {
         let mut stack: Vec<f64> = Vec::new();
         let mut registers = vec![0.0f64; 256]; // 256 registers
         
-        for instruction in bytecode {
+        // Pre-allocate stack capacity for better performance
+        stack.reserve(64);
+        
+        // Hot path: use direct indexing for better performance
+        let mut pc = 0; // Program counter for potential jump optimizations
+        while pc < bytecode.len() {
+            let instruction = &bytecode[pc];
             match instruction {
                 ByteCode::PushConst(value) => {
                     stack.push(*value);
@@ -1074,26 +1123,34 @@ impl JIT {
                     }
                 }
                 
+                // Hot path optimizations for arithmetic operations
                 ByteCode::Add => {
-                    if stack.len() >= 2 {
-                        let b = stack.pop().unwrap();
-                        let a = stack.pop().unwrap();
+                    // Unsafe fast path for hot arithmetic operations
+                    let len = stack.len();
+                    if len >= 2 {
+                        let b = unsafe { *stack.get_unchecked(len - 1) };
+                        let a = unsafe { *stack.get_unchecked(len - 2) };
+                        stack.truncate(len - 2);
                         stack.push(a + b);
                     }
                 }
                 
                 ByteCode::Sub => {
-                    if stack.len() >= 2 {
-                        let b = stack.pop().unwrap();
-                        let a = stack.pop().unwrap();
+                    let len = stack.len();
+                    if len >= 2 {
+                        let b = unsafe { *stack.get_unchecked(len - 1) };
+                        let a = unsafe { *stack.get_unchecked(len - 2) };
+                        stack.truncate(len - 2);
                         stack.push(a - b);
                     }
                 }
                 
                 ByteCode::Mul => {
-                    if stack.len() >= 2 {
-                        let b = stack.pop().unwrap();
-                        let a = stack.pop().unwrap();
+                    let len = stack.len();
+                    if len >= 2 {
+                        let b = unsafe { *stack.get_unchecked(len - 1) };
+                        let a = unsafe { *stack.get_unchecked(len - 2) };
+                        stack.truncate(len - 2);
                         stack.push(a * b);
                     }
                 }
@@ -1261,6 +1318,7 @@ impl JIT {
                     // Skip unsupported bytecode for now
                 }
             }
+            pc += 1;
         }
         
         Ok(stack.last().copied().unwrap_or(0.0) as i64)

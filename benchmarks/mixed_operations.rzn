@@ -1,0 +1,57 @@
+// Mixed operations benchmark to test bytecode compilation
+fun main() {
+    var result = 0
+    var x = 12
+    var y = 5
+    var flag = true
+    
+    // Mixed operations (should trigger bytecode compilation)
+    for i in 1..=500 {
+        // Arithmetic
+        result = result + (x + y)
+        result = result - (x - y)
+        result = result + (x * y)
+        result = result + (x / y)
+        result = result + (x % y)
+        
+        // Bitwise
+        result = result + (x & y)
+        result = result + (x | y)
+        result = result + (x ^ y)
+        result = result + (x << 1)
+        result = result + (x >> 1)
+        
+        // Comparisons
+        if x > y {
+            result = result + 1
+        }
+        if x == y {
+            result = result + 2
+        }
+        if x != y {
+            result = result + 3
+        }
+        
+        // Logical
+        if flag && (x > 0) {
+            result = result + 4
+        }
+        if flag || (x < 0) {
+            result = result + 5
+        }
+        
+        // Variable updates
+        x = x + 1
+        y = y - 1
+        if i % 100 == 0 {
+            x = 12
+            y = 5
+        }
+        // Prevent division by zero
+        if y == 0 {
+            y = 1
+        }
+    }
+    
+    println(f"Mixed operations benchmark result: {result}")
+}

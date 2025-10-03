@@ -1,0 +1,27 @@
+// Arithmetic-heavy benchmark to test native compilation
+fun main() {
+    var result = 0
+    var a = 15
+    var b = 3
+    
+    // Heavy arithmetic operations (should trigger native compilation)
+    for i in 1..=1000 {
+        result = result + (a * b)
+        result = result - (a / b)
+        result = result + (a % b)
+        result = result * 2
+        result = result / 2
+        result = result + a
+        result = result - b
+        result = result * a
+        result = result / b
+        result = result % 10
+        result = result + (i * 2)
+        result = result - (i / 2)
+        result = result + (i % 3)
+        result = result * (i + 1)
+        result = result / (i + 1)
+    }
+    
+    println(f"Arithmetic benchmark result: {result}")
+}

@@ -1,0 +1,17 @@
+// Simple operations benchmark to test runtime execution
+fun main() {
+    var result = 0
+    var name = "Razen"
+    var version = "1.0"
+    
+    // Simple operations with I/O (should trigger runtime execution)
+    for i in 1..=100 {
+        result = result + i
+        if i % 20 == 0 {
+            println(f"Progress: {i}/100")
+        }
+    }
+    
+    println(f"Language: {name} v{version}")
+    println(f"Simple runtime benchmark result: {result}")
+}

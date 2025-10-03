@@ -6,6 +6,7 @@
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
+pub mod benchmark;
 pub mod build;
 pub mod compile;
 pub mod create;
@@ -159,6 +160,22 @@ pub enum Commands {
         #[arg(short, long, default_value = "0.1.0")]
         version: String,
     },
+
+    /// Run JIT performance benchmarks
+    #[command(about = "Run comprehensive JIT performance benchmarks")]
+    Benchmark {
+        /// Number of iterations per benchmark
+        #[arg(short, long, default_value = "3")]
+        iterations: usize,
+
+        /// Specific benchmark to run (optional)
+        #[arg(short, long)]
+        name: Option<String>,
+
+        /// Output results to file
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+    },
 }
 
 /// Execute the CLI command
@@ -188,6 +205,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
         Commands::New { name, main, function } => new::execute(name, main, function),
         Commands::Create { name, template } => create::execute(name, template),
         Commands::Init { name, version } => init::execute(name, version),
+        Commands::Benchmark { iterations, name, output } => benchmark::execute(iterations, name, output),
     }
 }
 
