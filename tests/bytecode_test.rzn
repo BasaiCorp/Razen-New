@@ -1,0 +1,7 @@
+fun main() {
+    var x = 10
+    var y = 20
+    var z = x + y * 2
+    var result = z - 5
+    printlnc(result, "red")
+}

@@ -1,0 +1,163 @@
+// Advanced Parser Edge Cases - Testing the most complex scenarios
+// This tests deeply nested expressions, complex type inference, and edge cases
+
+fun main() {
+    println("[INFO] Testing advanced parser edge cases...")
+    
+    // Test 1: Deeply nested arithmetic with all operator types
+    var complex1 = ((10 + 5) * (3 - 1)) / ((8 - 2) + 4) + (15 % 4) - (2 ** 3)
+    println(f"Test 1 - Deep arithmetic: {complex1}")
+    
+    // Test 2: Complex logical expressions with multiple levels
+    var a = true
+    var b = false
+    var c = true
+    var d = false
+    var complex2 = ((a && b) || (c && !d)) && (!(b || d) || (a && c))
+    println(f"Test 2 - Deep logical: {complex2}")
+    
+    // Test 3: Mixed bitwise and arithmetic
+    var num1 = 15
+    var num2 = 7
+    var complex3 = ((num1 & num2) << 2) | ((num1 ^ num2) >> 1) + (num1 * 2)
+    println(f"Test 3 - Bitwise + arithmetic: {complex3}")
+    
+    // Test 4: Array with nested expressions
+    var arr1 = [
+        10 + 5,
+        (20 * 2) - 10,
+        (30 / 3) + (5 % 2),
+        ((40 - 10) * 2) / 3
+    ]
+    println(f"Test 4 - Array expressions: {arr1[0]}, {arr1[1]}, {arr1[2]}, {arr1[3]}")
+    
+    // Test 5: Nested array access
+    var matrix = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    var val5 = matrix[1][2]
+    println(f"Test 5 - Nested array: {val5}")
+    
+    // Test 6: Complex comparison chains
+    var x = 10
+    var y = 20
+    var z = 15
+    var complex6 = (x < y) && (y > z) && (z >= x) && (x != z)
+    println(f"Test 6 - Comparison chain: {complex6}")
+    
+    // Test 7: Unary operators with complex expressions
+    var complex7 = -(((x + y) * 2) - (z / 3))
+    println(f"Test 7 - Unary complex: {complex7}")
+    
+    // Test 8: Multiple assignment operators
+    var val8 = 100
+    val8 += 50
+    val8 -= 20
+    val8 *= 2
+    val8 /= 3
+    val8 %= 7
+    println(f"Test 8 - Multiple assignments: {val8}")
+    
+    // Test 9: Bitwise assignment operators
+    var bits = 12
+    bits &= 7
+    bits |= 3
+    bits ^= 5
+    bits <<= 1
+    bits >>= 1
+    println(f"Test 9 - Bitwise assignments: {bits}")
+    
+    // Test 10: F-string with complex nested expressions
+    println(f"Test 10 - Complex f-string: sum={(x+y+z)}, prod={(x*y)}, avg={(x+y+z)/3}")
+    
+    // Test 11: Method chaining in expressions
+    var str1 = "123"
+    var str2 = "456"
+    var chain11 = str1.toint() + str2.toint()
+    println(f"Test 11 - Method chain: {chain11}")
+    
+    // Test 12: Parenthesized expressions in all contexts
+    var paren12 = (((((10))))) + (((20)))
+    println(f"Test 12 - Deep parens: {paren12}")
+    
+    // Test 13: Range with complex expressions
+    var start = 5
+    var end = 10
+    for i in (start - 3)..(end + 2) {
+        if i == 5 {
+            println(f"Test 13 - Range expr: {i}")
+            break
+        }
+    }
+    
+    // Test 14: Nested loops with complex conditions
+    var count14 = 0
+    for i in 1..3 {
+        for j in 1..3 {
+            if (i * j) > 2 {
+                count14 += 1
+            }
+        }
+    }
+    println(f"Test 14 - Nested loops: {count14}")
+    
+    // Test 15: Complex boolean with all operators
+    var bool15 = ((a || b) && (c || d)) || (!(a && b) && (c || !d))
+    println(f"Test 15 - Complex boolean: {bool15}")
+    
+    // Test 16: Pre/post increment in complex expressions
+    var counter = 10
+    var pre = ++counter + 5
+    var post = counter++ + 5
+    println(f"Test 16 - Inc in expr: pre={pre}, post={post}, final={counter}")
+    
+    // Test 17: Negative numbers in expressions
+    var neg17 = -10 + -5 * -2
+    println(f"Test 17 - Negatives: {neg17}")
+    
+    // Test 18: Power operator in complex expressions
+    var pow18 = (2 ** 3) + (3 ** 2) - (4 ** 1)
+    println(f"Test 18 - Power ops: {pow18}")
+    
+    // Test 19: All comparison operators
+    var cmp19a = (10 == 10) && (5 != 3)
+    var cmp19b = (7 < 9) && (9 > 7)
+    var cmp19c = (5 <= 5) && (10 >= 10)
+    var cmp19 = cmp19a && cmp19b && cmp19c
+    println(f"Test 19 - All comparisons: {cmp19}")
+    
+    // Test 20: Complex map operations
+    var map20 = {"a": 1, "b": 2, "c": 3}
+    var mapval = map20["b"]
+    println(f"Test 20 - Map access: {mapval}")
+    
+    // Test 21: Struct with complex field values
+    struct Point {
+        x: int,
+        y: int
+    }
+    
+    var p1 = Point { x: 10 + 5, y: 20 * 2 }
+    println(f"Test 21 - Struct fields: x={p1.x}, y={p1.y}")
+    
+    // Test 22: Multiple expressions in single line
+    var m1 = 10
+    var m2 = 20
+    var m3 = 30
+    var multi22 = m1 + m2 + m3
+    println(f"Test 22 - Multi vars: {multi22}")
+    
+    // Test 23: Escape sequences in strings
+    var esc23 = "Line1\nLine2\tTabbed"
+    println(f"Test 23 - Escapes: {esc23}")
+    
+    // Test 24: Float operations
+    var f1 = 3.14
+    var f2 = 2.5
+    var float24 = (f1 + f2) * 2.0
+    println(f"Test 24 - Floats: {float24}")
+    
+    // Test 25: Mixed int and float
+    var mixed25 = 10 + 3.5
+    println(f"Test 25 - Mixed types: {mixed25}")
+    
+    println("[SUCCESS] All advanced parser edge cases passed!")
+}

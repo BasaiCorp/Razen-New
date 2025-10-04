@@ -1,0 +1,106 @@
+// Parser Edge Cases Test - Testing complex nested expressions and f-strings
+// This file tests the remaining 2% edge cases in the parser
+
+fun main() {
+    // Test 1: Complex nested expressions with multiple operators
+    var result1 = ((10 + 5) * 3 - (8 / 2)) % 7
+    println(f"Test 1 - Complex nested arithmetic: {result1}")
+    
+    // Test 2: Deeply nested logical expressions
+    var a = true
+    var b = false
+    var c = true
+    var result2 = (a && b) || (c && !b) || (a && c)
+    println(f"Test 2 - Nested logical: {result2}")
+    
+    // Test 3: Mixed operators with different precedence
+    var result3 = 5 + 3 * 2 - 8 / 4 + 10 % 3
+    println(f"Test 3 - Mixed precedence: {result3}")
+    
+    // Test 4: Complex f-string with nested expressions
+    var x = 10
+    var y = 20
+    println(f"Test 4 - Complex f-string: {x + y} and {x * y} and {(x + y) * 2}")
+    
+    // Test 5: F-string with function calls
+    println(f"Test 5 - F-string with typeof: {typeof(x)} and {typeof(y)}")
+    
+    // Test 6: Nested array access with expressions
+    var arr = [1, 2, 3, 4, 5]
+    var idx = 2
+    var result6 = arr[idx + 1]
+    println(f"Test 6 - Array access with expression: {result6}")
+    
+    // Test 7: Complex assignment expressions
+    var val = 10
+    val += 5 * 2
+    val -= 3
+    val *= 2
+    println(f"Test 7 - Compound assignments: {val}")
+    
+    // Test 8: Bitwise operations with grouping
+    var bit1 = 12
+    var bit2 = 5
+    var result8 = (bit1 & bit2) | ((bit1 ^ bit2) << 1)
+    println(f"Test 8 - Bitwise with grouping: {result8}")
+    
+    // Test 9: Conditional assignment
+    var max = 0
+    if x > y {
+        max = x
+    } else {
+        max = y
+    }
+    println(f"Test 9 - Conditional max: {max}")
+    
+    // Test 10: String concatenation in f-string
+    var name = "Razen"
+    var version = "0.1"
+    var fullname = name + " v" + version
+    println(f"Test 10 - String concat: {fullname}")
+    
+    // Test 11: Multiple levels of parentheses
+    var result11 = (((10 + 5) * (3 - 1)) / ((8 - 2) + 4))
+    println(f"Test 11 - Deep parentheses: {result11}")
+    
+    // Test 12: Array with complex expressions
+    var arr2 = [x + y, x * y, x - y, x / 2]
+    println(f"Test 12 - Array with expressions: {arr2[0]}, {arr2[1]}")
+    
+    // Test 13: Comparison chains
+    var result13 = (x > 5) && (y < 30) && (x != y)
+    println(f"Test 13 - Comparison chain: {result13}")
+    
+    // Test 14: Unary operators with complex expressions
+    var result14 = -(x + y) * 2
+    println(f"Test 14 - Unary with expression: {result14}")
+    
+    // Test 15: F-string with multiple complex expressions
+    println(f"Test 15 - Multi-expr f-string: x={x}, y={y}, sum={x+y}, prod={x*y}, diff={x-y}")
+    
+    // Test 16: Nested function calls in expressions
+    var str_val = "123"
+    var result16 = str_val.toint() + 10
+    println(f"Test 16 - Method call in expression: {result16}")
+    
+    // Test 17: Complex boolean expressions
+    var result17 = !(a && b) || (c && (a || b))
+    println(f"Test 17 - Complex boolean: {result17}")
+    
+    // Test 18: Bitwise NOT with expressions
+    var result18 = ~(bit1 & bit2)
+    println(f"Test 18 - Bitwise NOT: {result18}")
+    
+    // Test 19: Pre/post increment in expressions
+    var counter = 5
+    var result19a = counter++
+    var result19b = ++counter
+    println(f"Test 19 - Inc/Dec: post={result19a}, pre={result19b}, final={counter}")
+    
+    // Test 20: Range expressions in complex contexts
+    for i in (1 + 1)..=(10 - 5) {
+        println(f"Test 20 - Range with expressions: {i}")
+    }
+    
+    println("[SUCCESS] All parser edge case tests completed!")
+}

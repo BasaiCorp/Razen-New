@@ -1017,6 +1017,7 @@ impl Compiler {
                     crate::frontend::parser::ast::BinaryOperator::Multiply => self.emit(IR::Multiply),
                     crate::frontend::parser::ast::BinaryOperator::Divide => self.emit(IR::Divide),
                     crate::frontend::parser::ast::BinaryOperator::Modulo => self.emit(IR::Modulo),
+                    crate::frontend::parser::ast::BinaryOperator::Power => self.emit(IR::Power),
                     crate::frontend::parser::ast::BinaryOperator::Equal => self.emit(IR::Equal),
                     crate::frontend::parser::ast::BinaryOperator::NotEqual => self.emit(IR::NotEqual),
                     crate::frontend::parser::ast::BinaryOperator::Greater => self.emit(IR::GreaterThan),

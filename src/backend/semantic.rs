@@ -844,7 +844,8 @@ impl SemanticAnalyzer {
                     | BinaryOperator::Subtract
                     | BinaryOperator::Multiply
                     | BinaryOperator::Divide
-                    | BinaryOperator::Modulo => {
+                    | BinaryOperator::Modulo
+                    | BinaryOperator::Power => {
                         if let (Some(left), Some(right)) = (&left_type, &right_type) {
                             // Allow "any" type to be compatible with anything
                             if left == "any" || right == "any" {

@@ -337,7 +337,7 @@ impl TypeChecker {
             }
             
             BinaryOperator::Subtract | BinaryOperator::Multiply | 
-            BinaryOperator::Divide | BinaryOperator::Modulo => {
+            BinaryOperator::Divide | BinaryOperator::Modulo | BinaryOperator::Power => {
                 match (left, right) {
                     (Type::Int, Type::Int) => Type::Int,
                     (Type::Float, Type::Float) => Type::Float,

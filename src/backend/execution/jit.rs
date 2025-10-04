@@ -642,13 +642,23 @@ impl JIT {
             println!("  Complexity score: {}", complexity_score);
         }
         
-        // More aggressive bytecode strategy to reach 50%+ usage
+        // Balanced strategy: Choose fastest execution method while maintaining safety
+        // Native: Pure computation (fastest for heavy math)
+        // Bytecode: Mixed operations without I/O (fast interpreter)
+        // Runtime: Complex operations, I/O, control flow (safe and complete)
+        
         if arithmetic_ops > 15 && complex_ops < 3 && arithmetic_ratio > 0.7 {
-            CompilationStrategy::Native // Pure computation -> native code (higher threshold)
-        } else if ir.len() > 8 && (arithmetic_ops > 1 || variable_ops > 3) && complexity_score < 25 {
-            CompilationStrategy::Bytecode // More aggressive bytecode usage
+            // Heavy computation with minimal complexity -> Native JIT (fastest)
+            CompilationStrategy::Native
+        } else if complex_ops > 5 || control_flow_ops > 3 {
+            // High complexity or control flow -> Runtime (safe and complete)
+            CompilationStrategy::Runtime
+        } else if ir.len() > 8 && arithmetic_ops > 2 && complexity_score < 10 {
+            // Medium complexity, good arithmetic -> Bytecode (balanced speed)
+            CompilationStrategy::Bytecode
         } else {
-            CompilationStrategy::Runtime // Simple code or high complexity -> runtime
+            // Default to runtime for safety
+            CompilationStrategy::Runtime
         }
     }
     
@@ -733,12 +743,13 @@ impl JIT {
         let cache_key = self.generate_cache_key(ir, "bytecode");
         
         // Check cache first
-        if let Some(cached_bytecode) = self.cache_manager.get_bytecode(&cache_key) {
+        let cached_bytecode = self.cache_manager.get_bytecode(&cache_key).cloned();
+        if let Some(cached_bytecode) = cached_bytecode {
             if !self.runtime.is_clean_output() {
                 println!("DEBUG JIT: Using cached bytecode (key: {})", cache_key);
             }
             self.bytecode_executions += 1;
-            return self.execute_bytecode(cached_bytecode);
+            return self.execute_bytecode(&cached_bytecode, ir);
         }
         
         // Compile to bytecode
@@ -767,7 +778,7 @@ impl JIT {
             println!("DEBUG JIT: Executing optimized bytecode...");
         }
         
-        let result = self.execute_bytecode(&bytecode);
+        let result = self.execute_bytecode(&bytecode, ir);
         
         if !self.runtime.is_clean_output() {
             match &result {
@@ -1309,7 +1320,7 @@ impl JIT {
                     bytecode.push(ByteCode::FloorDiv);
                 }
                 
-                // Complex operations - skip for bytecode, will be handled by runtime
+                // Complex operations - mark for runtime fallback
                 IR::SetGlobal(_) |
                 IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
                 IR::MethodCall(_, _) | IR::Return |
@@ -1318,8 +1329,8 @@ impl JIT {
                 IR::DefineFunction(_, _) | IR::Label(_) | IR::Swap |
                 IR::Sleep | IR::LibraryCall(_, _, _) |
                 IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
-                    // These operations are handled by runtime for bytecode execution
-                    // Skip them in bytecode compilation
+                    // Mark that we need runtime fallback for these operations
+                    bytecode.push(ByteCode::CallBuiltin("__runtime_fallback__".to_string(), 0));
                 }
             }
         }
@@ -1328,7 +1339,8 @@ impl JIT {
     }
     
     /// Execute bytecode using fast interpreter with hot path optimizations
-    fn execute_bytecode(&self, bytecode: &[ByteCode]) -> JITResult<i64> {
+    /// Falls back to runtime dynamically when encountering unsupported operations
+    fn execute_bytecode(&mut self, bytecode: &[ByteCode], ir: &[IR]) -> JITResult<i64> {
         let mut stack: Vec<f64> = Vec::new();
         let mut registers = vec![0.0f64; 256]; // 256 registers
         
@@ -1597,30 +1609,26 @@ impl JIT {
                     }
                 }
                 
-                ByteCode::Print => {
-                    if let Some(_value) = stack.pop() {
-                        // Print without newline (simplified - just consume value)
-                        // In real implementation, this would call print function
-                        stack.push(0.0); // Return null
+                ByteCode::Print | ByteCode::PrintLn => {
+                    // Bytecode cannot handle print operations properly - fall back to runtime
+                    if !self.runtime.is_clean_output() {
+                        println!("DEBUG JIT: Bytecode encountered Print operation, falling back to runtime");
                     }
+                    self.runtime_executions += 1;
+                    return self.runtime.execute(ir)
+                        .map_err(|e| JITError::RuntimeError(format!("Runtime fallback failed: {}", e)))
+                        .map(|_| 0);
                 }
                 
-                ByteCode::PrintLn => {
-                    if let Some(_value) = stack.pop() {
-                        // Print with newline (simplified - just consume value)
-                        // In real implementation, this would call println function
-                        stack.push(0.0); // Return null
+                ByteCode::CallBuiltin(_func_name, _arg_count) => {
+                    // Complex built-in functions need runtime - fall back dynamically
+                    if !self.runtime.is_clean_output() {
+                        println!("DEBUG JIT: Bytecode encountered complex builtin, falling back to runtime");
                     }
-                }
-                
-                ByteCode::CallBuiltin(_func_name, arg_count) => {
-                    // Handle other built-in functions by calling runtime
-                    // Pop arguments from stack
-                    for _ in 0..*arg_count {
-                        stack.pop();
-                    }
-                    // Push default return value
-                    stack.push(0.0);
+                    self.runtime_executions += 1;
+                    return self.runtime.execute(ir)
+                        .map_err(|e| JITError::RuntimeError(format!("Runtime fallback failed: {}", e)))
+                        .map(|_| 0);
                 }
                 
                 // Array operations (Real Bytecode Execution)
@@ -1706,7 +1714,14 @@ impl JIT {
                 }
                 
                 _ => {
-                    // Skip unsupported bytecode for now
+                    // Unsupported bytecode operation - fall back to runtime
+                    if !self.runtime.is_clean_output() {
+                        println!("DEBUG JIT: Bytecode encountered unsupported operation, falling back to runtime");
+                    }
+                    self.runtime_executions += 1;
+                    return self.runtime.execute(ir)
+                        .map_err(|e| JITError::RuntimeError(format!("Runtime fallback failed: {}", e)))
+                        .map(|_| 0);
                 }
             }
             pc += 1;
