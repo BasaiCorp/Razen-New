@@ -1,0 +1,74 @@
+// Comprehensive math operations test for bytecode
+fun main() {
+    println("=== Math Operations Test ===")
+    
+    // Test 1: Basic arithmetic
+    var a = 10
+    var b = 5
+    var add_result = a + b
+    var sub_result = a - b
+    var mul_result = a * b
+    var div_result = a / b
+    var mod_result = a % b
+    
+    println(f"Test 1: Basic arithmetic - add={add_result}, sub={sub_result}, mul={mul_result}, div={div_result}, mod={mod_result}")
+    
+    // Test 2: Complex expressions
+    var complex1 = (a + b) * (a - b)
+    var complex2 = a * b + a / b
+    var complex3 = (a * 2) - (b * 3)
+    
+    println(f"Test 2: Complex expressions - c1={complex1}, c2={complex2}, c3={complex3}")
+    
+    // Test 3: Math in loops
+    var sum = 0
+    var product = 1
+    
+    for i in 1..=10 {
+        sum = sum + i
+        product = product * 2
+    }
+    
+    println(f"Test 3: Math in loops - sum={sum}, product={product}")
+    
+    // Test 4: Nested arithmetic
+    var x = 5
+    var y = 3
+    var z = 2
+    var nested = ((x + y) * z) - (x / z)
+    
+    println(f"Test 4: Nested arithmetic - nested={nested}")
+    
+    // Test 5: Division and modulo
+    var num1 = 100
+    var num2 = 7
+    var div_test = num1 / num2
+    var mod_test = num1 % num2
+    
+    println(f"Test 5: Division/Modulo - div={div_test}, mod={mod_test}")
+    
+    // Test 6: Negative numbers
+    var neg1 = -10
+    var neg2 = -5
+    var neg_add = neg1 + neg2
+    var neg_mul = neg1 * neg2
+    
+    println(f"Test 6: Negative numbers - add={neg_add}, mul={neg_mul}")
+    
+    // Test 7: Float operations
+    var float1 = 10.5
+    var float2 = 2.5
+    var float_add = float1 + float2
+    var float_mul = float1 * float2
+    
+    println(f"Test 7: Float operations - add={float_add}, mul={float_mul}")
+    
+    // Test 8: Mixed int and float
+    var int_val = 10
+    var float_val = 2.5
+    var mixed = int_val * float_val
+    
+    println(f"Test 8: Mixed operations - mixed={mixed}")
+    
+    println("=== All Math Tests Complete ===")
+}

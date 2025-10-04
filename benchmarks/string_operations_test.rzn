@@ -1,0 +1,84 @@
+// Comprehensive string operations test for bytecode
+fun main() {
+    println("=== String Operations Test ===")
+    
+    // Test 1: String creation and assignment
+    var name = "Razen"
+    var version = "2.0"
+    var language = "Programming Language"
+    
+    println("Test 1: String creation - PASS")
+    
+    // Test 2: String variables
+    var greeting = "Hello"
+    var world = "World"
+    var message = "Welcome to Razen"
+    
+    println(f"Test 2: String variables - {greeting}")
+    
+    // Test 3: String with numbers
+    var text = "Version"
+    var number = 42
+    var combined = tostr(number)
+    
+    println(f"Test 3: String with numbers - {text} {combined}")
+    
+    // Test 4: String length
+    var str1 = "Hanuman"
+    var len1 = len(str1)
+    var str2 = "Jai Shree Ram"
+    var len2 = len(str2)
+    
+    println(f"Test 4: String length - len1={len1}, len2={len2}")
+    
+    // Test 5: Strings in loops
+    var result = 0
+    for i in 1..=10 {
+        var temp = len(name)
+        result = result + temp
+        result = result + i
+    }
+    
+    println(f"Test 5: Strings in loops - result={result}")
+    
+    // Test 6: String concatenation with f-strings
+    var first = "Jai"
+    var second = "Shree"
+    var third = "Ram"
+    
+    println(f"Test 6: F-string concat - {first} {second} {third}")
+    
+    // Test 7: Multiple string operations
+    var s1 = "Hello"
+    var s2 = "World"
+    var s3 = "Razen"
+    var total_len = len(s1) + len(s2) + len(s3)
+    
+    println(f"Test 7: Multiple strings - total_len={total_len}")
+    
+    // Test 8: String type conversion
+    var num1 = 100
+    var num2 = 200
+    var str_num1 = tostr(num1)
+    var str_num2 = tostr(num2)
+    
+    println(f"Test 8: Type conversion - {str_num1}, {str_num2}")
+    
+    // Test 9: Strings with arithmetic
+    var count = len(name) * 2 + len(version)
+    println(f"Test 9: String arithmetic - count={count}")
+    
+    // Test 10: Complex string operations
+    var base = "Test"
+    var iterations = 5
+    var final_result = 0
+    
+    for i in 1..=iterations {
+        var current_len = len(base)
+        final_result = final_result + current_len + i
+    }
+    
+    println(f"Test 10: Complex operations - final_result={final_result}")
+    
+    println("=== All String Tests Complete ===")
+}

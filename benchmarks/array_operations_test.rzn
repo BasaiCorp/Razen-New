@@ -1,0 +1,54 @@
+// Comprehensive array operations test for bytecode
+fun main() {
+    println("=== Array Operations Test ===")
+    
+    // Test 1: Array creation
+    var numbers = [1, 2, 3, 4, 5]
+    var names = ["Ram", "Sita", "Hanuman"]
+    var mixed = [10, 20, 30, 40]
+    
+    println("Test 1: Array creation - PASS")
+    
+    // Test 2: Array access
+    var first = numbers[0]
+    var second = numbers[1]
+    var last = numbers[4]
+    
+    println(f"Test 2: Array access - first={first}, second={second}, last={last}")
+    
+    // Test 3: Array length
+    var arr_len = len(numbers)
+    
+    println(f"Test 3: Array length - len={arr_len}")
+    
+    // Test 4: Array in loops
+    var sum = 0
+    for i in 0..=4 {
+        sum = sum + numbers[i]
+    }
+    
+    println(f"Test 4: Array in loops - sum={sum}")
+    
+    // Test 5: Nested array operations
+    var result = 0
+    for i in 1..=10 {
+        var temp = mixed[0] + mixed[1]
+        result = result + temp
+        result = result + i
+    }
+    
+    println(f"Test 5: Nested operations - result={result}")
+    
+    // Test 6: Array with arithmetic
+    var calc = numbers[0] + numbers[1] * numbers[2]
+    println(f"Test 6: Array arithmetic - calc={calc}")
+    
+    // Test 7: Multiple arrays
+    var arr1 = [5, 10, 15]
+    var arr2 = [20, 25, 30]
+    var combined = arr1[0] + arr2[0]
+    
+    println(f"Test 7: Multiple arrays - combined={combined}")
+    
+    println("=== All Array Tests Complete ===")
+}

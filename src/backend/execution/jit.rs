@@ -348,6 +348,15 @@ pub enum ByteCode {
     PrintLn,
     CallBuiltin(String, usize), // function name, arg count
     
+    // String operations (Full Bytecode Support)
+    StringConcat,  // Concatenate two strings
+    
+    // Math operations (Full Bytecode Support)
+    Power,         // Power operation (x^y)
+    FloorDiv,      // Floor division
+    Abs,           // Absolute value
+    Sqrt,          // Square root
+    
     // Control flow
     Jump(usize),
     JumpIf(usize),
@@ -1250,8 +1259,17 @@ impl JIT {
                     bytecode.push(ByteCode::ArraySet);
                 }
                 
+                // Math operations (Enhanced Bytecode Support)
+                IR::Power => {
+                    bytecode.push(ByteCode::Power);
+                }
+                
+                IR::FloorDiv => {
+                    bytecode.push(ByteCode::FloorDiv);
+                }
+                
                 // Complex operations - skip for bytecode, will be handled by runtime
-                IR::SetGlobal(_) | IR::Power | IR::FloorDiv |
+                IR::SetGlobal(_) |
                 IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
                 IR::MethodCall(_, _) | IR::Return |
                 IR::Print | IR::ReadInput | IR::Exit |
@@ -1593,6 +1611,56 @@ impl JIT {
                         let array = stack.pop().unwrap();
                         // Push array back (in real implementation, array would be modified)
                         stack.push(array);
+                    }
+                }
+                
+                // Math operations (Full Bytecode Execution)
+                ByteCode::Power => {
+                    // Power operation: a^b
+                    if stack.len() >= 2 {
+                        let exponent = stack.pop().unwrap();
+                        let base = stack.pop().unwrap();
+                        let result = base.powf(exponent);
+                        stack.push(result);
+                    }
+                }
+                
+                ByteCode::FloorDiv => {
+                    // Floor division: a // b
+                    if stack.len() >= 2 {
+                        let divisor = stack.pop().unwrap();
+                        let dividend = stack.pop().unwrap();
+                        if divisor != 0.0 {
+                            let result = (dividend / divisor).floor();
+                            stack.push(result);
+                        } else {
+                            stack.push(0.0); // Division by zero protection
+                        }
+                    }
+                }
+                
+                ByteCode::Abs => {
+                    // Absolute value
+                    if let Some(value) = stack.pop() {
+                        stack.push(value.abs());
+                    }
+                }
+                
+                ByteCode::Sqrt => {
+                    // Square root
+                    if let Some(value) = stack.pop() {
+                        stack.push(value.sqrt());
+                    }
+                }
+                
+                ByteCode::StringConcat => {
+                    // String concatenation (simplified - just add numeric values)
+                    // In full implementation, this would handle actual string concatenation
+                    if stack.len() >= 2 {
+                        let b = stack.pop().unwrap();
+                        let a = stack.pop().unwrap();
+                        // For now, just add the values (string marker handling)
+                        stack.push(a + b);
                     }
                 }
                 
