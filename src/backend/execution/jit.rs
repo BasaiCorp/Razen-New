@@ -295,7 +295,8 @@ impl CompiledFunction {
 pub enum ByteCode {
     // Stack operations
     PushConst(f64),
-    PushString(String),  // String constant support
+    PushString(String),  // String constant support (will be optimized with string pool)
+    PushStringId(usize), // String ID from string pool (optimized)
     Pop,
     Dup,
     
@@ -373,6 +374,37 @@ enum CompilationStrategy {
     Runtime,   // Use runtime interpreter
 }
 
+/// String pool for string interning optimization
+#[derive(Debug)]
+struct StringPool {
+    strings: HashMap<String, usize>,  // String -> ID mapping
+    pool: Vec<String>,                 // ID -> String storage
+}
+
+impl StringPool {
+    fn new() -> Self {
+        Self {
+            strings: HashMap::new(),
+            pool: Vec::new(),
+        }
+    }
+    
+    fn intern(&mut self, s: String) -> usize {
+        if let Some(&id) = self.strings.get(&s) {
+            id
+        } else {
+            let id = self.pool.len();
+            self.pool.push(s.clone());
+            self.strings.insert(s, id);
+            id
+        }
+    }
+    
+    fn get(&self, id: usize) -> Option<&String> {
+        self.pool.get(id)
+    }
+}
+
 /// RAJIT - World-class JIT compiler with real machine code generation
 pub struct JIT {
     runtime: Runtime,
@@ -384,6 +416,9 @@ pub struct JIT {
     // Real JIT: Machine code generation
     compiled_functions: Vec<CompiledFunction>,
     variable_manager: VariableManager,
+    
+    // String optimization (String Pooling/Interning)
+    string_pool: StringPool,
     
     // Performance profiling and optimization (for future advanced optimizations)
     #[allow(dead_code)]
@@ -410,6 +445,9 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             variable_manager: VariableManager::new(),
+            
+            // String optimization
+            string_pool: StringPool::new(),
             
             // Performance profiling and optimization
             profiler: PerformanceProfiler::new(),
@@ -442,6 +480,9 @@ impl JIT {
             // Real JIT initialization
             compiled_functions: Vec::new(),
             variable_manager: VariableManager::new(),
+            
+            // String optimization
+            string_pool: StringPool::new(),
             
             // Performance profiling and optimization
             profiler: PerformanceProfiler::new(),
