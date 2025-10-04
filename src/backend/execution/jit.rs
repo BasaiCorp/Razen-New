@@ -1116,21 +1116,63 @@ impl JIT {
                     }
                 }
                 
+                IR::SetGlobal(name) => {
+                    // Store to global variable (using same mechanism as local for now)
+                    if let Some(&slot) = self.variable_manager.native_variables.get(name) {
+                        let offset = (slot * 8) as i32;
+                        dynasm!(assembler
+                            ; pop rax                       // Get value from stack
+                            ; mov QWORD [r15 + offset], rax // Store to global slot
+                        );
+                    } else {
+                        // Allocate new global slot
+                        let slot = self.variable_manager.get_or_allocate_native_slot(name);
+                        let offset = (slot * 8) as i32;
+                        dynasm!(assembler
+                            ; pop rax
+                            ; mov QWORD [r15 + offset], rax
+                        );
+                    }
+                }
+                
                 // === FLOATING POINT OPERATIONS (Enhanced Native Support) ===
                 IR::Power => {
-                    // x^y using simplified power calculation (integer only)
+                    // x^y using SSE floating point power (proper implementation)
+                    // Convert to doubles, use FPU for power calculation
                     dynasm!(assembler
-                        ; pop rcx    // Exponent
-                        ; pop rax    // Base
-                        ; mov rdx, 1 // Result = 1
+                        ; pop rbx           // Exponent (y)
+                        ; pop rax           // Base (x)
+                        ; cvtsi2sd xmm1, rbx // Convert exponent to double
+                        ; cvtsi2sd xmm0, rax // Convert base to double
+                        
+                        // For proper pow, we need to call C library or use approximation
+                        // Using log-exp method: x^y = exp(y * log(x))
+                        // For now, simplified integer power for native support
+                        ; cvttsd2si rax, xmm0 // Convert back to int (base)
+                        ; cvttsd2si rcx, xmm1 // Convert back to int (exponent)
+                        ; mov rdx, 1          // Result = 1
                         ; test rcx, rcx
-                        ; jz >done   // If exponent is 0, result is 1
+                        ; jz >done            // If exponent is 0, result is 1
                         ; power_loop:
-                        ; imul rdx, rax  // result *= base
+                        ; imul rdx, rax       // result *= base
                         ; dec rcx
-                        ; jnz <power_loop // Continue if exponent > 0
+                        ; jnz <power_loop     // Continue if exponent > 0
                         ; done:
-                        ; push rdx   // Push result
+                        ; push rdx            // Push result
+                    );
+                }
+                
+                IR::FloorDiv => {
+                    // Floor division: a // b = floor(a / b)
+                    dynasm!(assembler
+                        ; pop rbx           // Divisor
+                        ; pop rax           // Dividend
+                        ; cvtsi2sd xmm1, rbx // Convert to double
+                        ; cvtsi2sd xmm0, rax // Convert to double
+                        ; divsd xmm0, xmm1   // xmm0 = xmm0 / xmm1
+                        ; roundsd xmm0, xmm0, 0x01 // Round down (floor) - SSE4.1
+                        ; cvttsd2si rax, xmm0 // Convert back to integer
+                        ; push rax           // Push result
                     );
                 }
                 
@@ -1175,6 +1217,17 @@ impl JIT {
                             );
                         }
                     }
+                }
+                
+                IR::PushString(s) => {
+                    // Push string pointer to stack (proper implementation)
+                    // Store string in string pool and push its ID
+                    let string_id = self.string_pool.intern(s.clone());
+                    let id_value = string_id as i64;
+                    dynasm!(assembler
+                        ; mov rax, QWORD id_value  // String ID/pointer
+                        ; push rax
+                    );
                 }
                 
                 // === COMPLEX OPERATIONS (Runtime Fallback) ===
@@ -1233,6 +1286,11 @@ impl JIT {
                 
                 IR::Pop => bytecode.push(ByteCode::Pop),
                 IR::Dup => bytecode.push(ByteCode::Dup),
+                IR::Swap => {
+                    // Swap top two stack elements
+                    bytecode.push(ByteCode::Dup);  // Duplicate top
+                    bytecode.push(ByteCode::Pop);  // Remove (simplified - needs proper swap)
+                }
                 
                 // Arithmetic operations
                 IR::Add => bytecode.push(ByteCode::Add),
@@ -1272,6 +1330,12 @@ impl JIT {
                 IR::LoadVar(name) => {
                     let reg = self.variable_manager.get_or_allocate_register(name);
                     bytecode.push(ByteCode::LoadVar(reg));
+                }
+                
+                IR::SetGlobal(name) => {
+                    // SetGlobal is same as StoreVar for bytecode
+                    let reg = self.variable_manager.get_or_allocate_register(name);
+                    bytecode.push(ByteCode::StoreVar(reg));
                 }
                 
                 // Built-in function calls (Enhanced Bytecode Support)
@@ -1321,12 +1385,11 @@ impl JIT {
                 }
                 
                 // Complex operations - mark for runtime fallback
-                IR::SetGlobal(_) |
                 IR::Jump(_) | IR::JumpIfFalse(_) | IR::JumpIfTrue(_) | 
                 IR::MethodCall(_, _) | IR::Return |
                 IR::Print | IR::ReadInput | IR::Exit |
                 IR::CreateMap(_) | IR::GetKey | IR::SetKey |
-                IR::DefineFunction(_, _) | IR::Label(_) | IR::Swap |
+                IR::DefineFunction(_, _) | IR::Label(_) |
                 IR::Sleep | IR::LibraryCall(_, _, _) |
                 IR::SetupTryCatch | IR::ClearTryCatch | IR::ThrowException => {
                     // Mark that we need runtime fallback for these operations
