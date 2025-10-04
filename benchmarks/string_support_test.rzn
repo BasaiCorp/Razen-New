@@ -1,0 +1,19 @@
+// Simple string support test for bytecode
+fun main() {
+    var name = "Razen"
+    var version = "2.0"
+    var result = 0
+    
+    // Simple operations that should trigger bytecode compilation
+    for i in 1..=20 {
+        result = result + i
+        result = result * 2
+        result = result - 1
+    }
+    
+    // String operations (basic support)
+    var greeting = name
+    var full_version = version
+    
+    println(f"String test result: {result}")
+}

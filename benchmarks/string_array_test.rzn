@@ -1,0 +1,40 @@
+// String and array operations test for enhanced bytecode usage
+fun main() {
+    var name = "Razen"
+    var version = "2.0"
+    var numbers = [1, 2, 3, 4, 5]
+    var result = 0
+    
+    // String operations (should trigger bytecode compilation)
+    var greeting = name + " v" + version
+    var length = len(name)
+    
+    // Array operations (should trigger bytecode compilation)
+    var first = numbers[0]
+    var last = numbers[4]
+    
+    // Mixed operations with variables
+    for i in 1..=50 {
+        result = result + i
+        result = result + length
+        result = result + first
+        result = result - last
+        
+        // Type conversions
+        var str_i = tostr(i)
+        var int_result = toint(result)
+        
+        if i % 10 == 0 {
+            var temp_name = name + tostr(i)
+            var temp_len = len(temp_name)
+            result = result + temp_len
+        }
+    }
+    
+    // Final computation with strings and arrays
+    var final_name = name + " Final"
+    var final_length = len(final_name)
+    var final_result = result + final_length + first + last
+    
+    println(f"String and array test result: {final_result}")
+}
