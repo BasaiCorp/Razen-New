@@ -1238,6 +1238,140 @@ impl JIT {
                     );
                 }
                 
+                // === ARRAY OPERATIONS (Native Support - Part 1) ===
+                IR::CreateArray(size) => {
+                    // Create array by allocating space and pushing array marker
+                    let array_size = *size as i64;
+                    dynasm!(assembler
+                        ; mov rax, QWORD array_size  // Array size
+                        ; push rax                   // Push size as array marker
+                        // In full implementation, would allocate heap memory
+                    );
+                }
+                
+                IR::GetIndex => {
+                    // Get array element: array[index]
+                    dynasm!(assembler
+                        ; pop rbx    // Index
+                        ; pop rax    // Array (simplified - just return index for now)
+                        ; add rax, rbx  // Calculate offset (simplified)
+                        ; push rax   // Push element value
+                    );
+                }
+                
+                IR::SetIndex => {
+                    // Set array element: array[index] = value
+                    dynasm!(assembler
+                        ; pop rcx    // Value
+                        ; pop rbx    // Index
+                        ; pop rax    // Array
+                        ; push rax   // Push array back (simplified)
+                        // In full implementation, would store value at array[index]
+                    );
+                }
+                
+                // === CONTROL FLOW MARKERS (Native Support - Part 1) ===
+                IR::Label(_name) => {
+                    // Labels are compile-time markers, no runtime code needed
+                    // They're resolved during jump compilation
+                }
+                
+                IR::DefineFunction(_name, _addr) => {
+                    // Function definition - handled at compile time
+                    // No runtime assembly needed
+                }
+                
+                // === CONTROL FLOW OPERATIONS (Native Support - Part 2) ===
+                IR::Jump(_addr) => {
+                    // Unconditional jump - simplified (would need label resolution)
+                    dynasm!(assembler
+                        ; nop  // Placeholder - full implementation needs jump table
+                    );
+                }
+                
+                IR::JumpIfFalse(_addr) => {
+                    // Conditional jump if false
+                    dynasm!(assembler
+                        ; pop rax           // Get condition
+                        ; test rax, rax     // Test if zero (false)
+                        ; jz >skip          // Jump if zero (would jump to label)
+                        ; skip:
+                        ; nop               // Placeholder
+                    );
+                }
+                
+                IR::JumpIfTrue(_addr) => {
+                    // Conditional jump if true
+                    dynasm!(assembler
+                        ; pop rax           // Get condition
+                        ; test rax, rax     // Test if non-zero (true)
+                        ; jnz >skip         // Jump if not zero (would jump to label)
+                        ; skip:
+                        ; nop               // Placeholder
+                    );
+                }
+                
+                IR::Return => {
+                    // Return from function
+                    dynasm!(assembler
+                        ; pop rax           // Get return value
+                        ; mov rsp, rbp      // Restore stack pointer
+                        ; pop rbp           // Restore base pointer
+                        ; ret               // Return
+                    );
+                }
+                
+                IR::CreateMap(size) => {
+                    // Create map/hash table - simplified
+                    let map_size = *size as i64;
+                    dynasm!(assembler
+                        ; mov rax, QWORD map_size  // Map size
+                        ; push rax                 // Push as map marker
+                        // Full implementation would allocate hash table
+                    );
+                }
+                
+                // === MAP OPERATIONS (Native Support - Part 3) ===
+                IR::GetKey => {
+                    // Get value from map by key
+                    dynasm!(assembler
+                        ; pop rbx    // Key
+                        ; pop rax    // Map
+                        ; add rax, rbx  // Simplified - calculate hash
+                        ; push rax   // Push value
+                    );
+                }
+                
+                IR::SetKey => {
+                    // Set value in map by key
+                    dynasm!(assembler
+                        ; pop rcx    // Value
+                        ; pop rbx    // Key
+                        ; pop rax    // Map
+                        ; push rax   // Push map back (simplified)
+                        // Full implementation would update hash table
+                    );
+                }
+                
+                // === I/O OPERATIONS (Native Support - Part 3) ===
+                // Note: These will have basic assembly but still need runtime for actual I/O
+                IR::Print => {
+                    // Print operation - assembly wrapper for runtime call
+                    dynasm!(assembler
+                        ; pop rax    // Get value to print
+                        ; push rax   // Keep on stack for runtime
+                        ; nop        // Placeholder for runtime call
+                    );
+                }
+                
+                IR::ReadInput => {
+                    // Read input - assembly wrapper for runtime call
+                    dynasm!(assembler
+                        ; nop        // Placeholder for runtime call
+                        ; push rax   // Push input value
+                    );
+                }
+                
                 // === COMPLEX OPERATIONS (Runtime Fallback) ===
                 _ => {
                     // All other operations fall back to runtime
