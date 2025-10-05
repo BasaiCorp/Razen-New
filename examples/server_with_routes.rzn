@@ -1,5 +1,5 @@
 // Web Server with Custom Routes Example
-// 
+//
 // This example shows how to register custom routes
 // Similar to Express.js app.get() and Go's http.HandleFunc()
 //
@@ -20,23 +20,21 @@ use server
 fun main() {
     println("[INFO] Razen Web Server with Custom Routes")
     println("")
-    
+
     // Register custom routes (like Express.js or Go)
     // Syntax: server.get(path, file_to_serve)
     server.get("/", "./public/index.html")
     server.get("/about", "./public/about.html")
     server.get("/api", "./public/api.html")
     server.get("/style.css", "./public/style.css")
-    
+
     println("")
     println("[INFO] Routes registered successfully")
     println("[INFO] Starting server on port 3000...")
     println("[INFO] Visit: http://127.0.0.1:3000")
     println("")
-    
+
     // Start server with static file fallback
     // If route not found, will try to serve from ./public directory
     server.listen(3000, "./public")
 }
-
-main()

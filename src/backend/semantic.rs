@@ -1282,10 +1282,14 @@ impl SemanticAnalyzer {
                         }
                     }
                     
-                    let diagnostic = helpers::unused_variable(
-                        name,
-                        Span::new(symbol.defined_at, symbol.defined_at),
-                    );
+                    // Create span with proper source file information
+                    let (line, column) = self.find_identifier_position(name);
+                    let start_pos = Position::new(line, column, 0);
+                    let end_pos = Position::new(line, column + name.len(), name.len());
+                    let span = Span::new(start_pos, end_pos)
+                        .with_source(self.current_file.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "source".to_string()));
+                    
+                    let diagnostic = helpers::unused_variable(name, span);
                     self.diagnostics.add(diagnostic);
                 }
             }
@@ -1313,10 +1317,14 @@ impl SemanticAnalyzer {
                         }
                     }
                     
-                    let diagnostic = helpers::unused_variable(
-                        name,
-                        Span::new(symbol.defined_at, symbol.defined_at),
-                    );
+                    // Create span with proper source file information
+                    let (line, column) = self.find_identifier_position(name);
+                    let start_pos = Position::new(line, column, 0);
+                    let end_pos = Position::new(line, column + name.len(), name.len());
+                    let span = Span::new(start_pos, end_pos)
+                        .with_source(self.current_file.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "source".to_string()));
+                    
+                    let diagnostic = helpers::unused_variable(name, span);
                     self.diagnostics.add(diagnostic);
                 }
             }

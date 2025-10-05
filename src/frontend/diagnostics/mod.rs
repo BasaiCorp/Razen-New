@@ -269,7 +269,7 @@ pub mod helpers {
     pub fn unused_variable<S: Into<String>>(name: S, span: Span) -> Diagnostic {
         let name_str = name.into();
         let mut diagnostic = Diagnostic::new(DiagnosticKind::unused_variable(name_str.clone()))
-            .with_label(Label::primary(span))
+            .with_label(Label::new(span).with_severity(Severity::Warning))
             .with_code("W0001")
             .with_help(format!("Prefix with underscore if intentional: `_{}`", name_str));
         
@@ -284,7 +284,7 @@ pub mod helpers {
     /// Create a variable shadowing warning
     pub fn shadowed_variable<S: Into<String>>(name: S, span: Span, previous_line: usize) -> Diagnostic {
         Diagnostic::new(DiagnosticKind::shadowed_variable(name, previous_line))
-            .with_label(Label::primary(span))
+            .with_label(Label::new(span).with_severity(Severity::Warning))
             .with_code("W0002")
             .with_help("Consider using a different variable name to avoid confusion")
     }
@@ -295,7 +295,7 @@ pub mod helpers {
         let style_str = expected_style.into();
         
         Diagnostic::new(DiagnosticKind::naming_convention(name_str.clone(), style_str.clone()))
-            .with_label(Label::primary(span))
+            .with_label(Label::new(span).with_severity(Severity::Warning))
             .with_code("W0003")
             .with_help(format!("{} names should follow {} convention", 
                               if name_str.chars().next().map_or(false, |c| c.is_uppercase()) { "Type" } else { "Variable" },
@@ -305,7 +305,7 @@ pub mod helpers {
     /// Create a performance warning for large functions
     pub fn large_function(lines: usize, span: Span) -> Diagnostic {
         Diagnostic::new(DiagnosticKind::large_function(lines))
-            .with_label(Label::primary(span))
+            .with_label(Label::new(span).with_severity(Severity::Warning))
             .with_code("W0004")
             .with_help("Consider breaking this function into smaller, more focused functions")
     }
@@ -313,7 +313,7 @@ pub mod helpers {
     /// Create a warning for deeply nested code
     pub fn deep_nesting(depth: usize, span: Span) -> Diagnostic {
         Diagnostic::new(DiagnosticKind::deep_nesting(depth))
-            .with_label(Label::primary(span))
+            .with_label(Label::new(span).with_severity(Severity::Warning))
             .with_code("W0005")
             .with_help("Consider extracting nested logic into separate functions or using early returns")
     }
