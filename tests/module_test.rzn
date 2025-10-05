@@ -1,0 +1,43 @@
+// Test both stdlib modules (no quotes) and file modules (with quotes)
+
+use string
+use math
+use "./utils"
+
+fun main() {
+    println("[INFO] Testing Module System")
+    println("")
+    
+    // Test stdlib module (string)
+    println("[TEST] Stdlib Module - string:")
+    var text = "razen"
+    var upper = string.upper(text)
+    println(f"string.upper('{text}'): {upper}")
+    
+    // Test stdlib module (math)
+    println("")
+    println("[TEST] Stdlib Module - math:")
+    var result = math.pow(2, 10)
+    println(f"math.pow(2, 10): {result}")
+    
+    // Test file module (utils)
+    println("")
+    println("[TEST] File Module - utils:")
+    var greeting = utils.greet("Razen")
+    println(f"utils.greet('Razen'): {greeting}")
+    
+    var sum = utils.add(15, 27)
+    println(f"utils.add(15, 27): {sum}")
+    
+    var product = utils.multiply(6, 7)
+    println(f"utils.multiply(6, 7): {product}")
+    
+    println(f"utils.PI: {utils.PI}")
+    println(f"utils.module_name: {utils.module_name}")
+    
+    println("")
+    println("[SUCCESS] Module system test completed!")
+    println("[INFO] Both stdlib and file modules work correctly!")
+}
+
+main()

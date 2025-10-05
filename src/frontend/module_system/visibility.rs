@@ -119,14 +119,35 @@ impl VisibilityChecker {
         }
     }
 
-    /// Register an import statement
     pub fn register_import(&mut self, import_path: &str, alias: Option<&str>, module_name: &str) {
         let import_key = alias.unwrap_or(module_name).to_string();
         self.imports.insert(import_key, import_path.to_string());
     }
 
-    /// Check if a symbol access is valid (e.g., utils.Function())
+    /// Check if a symbol can be accessed from a module
     pub fn check_symbol_access(&self, module_ref: &str, symbol_name: &str) -> Result<&SymbolInfo, ModuleError> {
+        // Check if this is a stdlib module - stdlib modules always allow access to their functions
+        if crate::stdlib::is_stdlib_module(module_ref) {
+            // Verify the function exists in the stdlib module
+            if crate::stdlib::is_stdlib_function(module_ref, symbol_name) {
+                // For stdlib modules, we bypass the symbol table check
+                // Return a reference to a static dummy symbol
+                use std::sync::OnceLock;
+                static STDLIB_SYMBOL: OnceLock<SymbolInfo> = OnceLock::new();
+                return Ok(STDLIB_SYMBOL.get_or_init(|| SymbolInfo {
+                    name: "stdlib_function".to_string(),
+                    visibility: Visibility::Public,
+                    module_path: "stdlib".to_string(),
+                    symbol_type: SymbolType::Function,
+                }));
+            } else {
+                return Err(ModuleError::SymbolNotExported {
+                    symbol: symbol_name.to_string(),
+                    module: module_ref.to_string(),
+                });
+            }
+        }
+
         // Resolve the module reference to actual import path
         let import_path = self.imports.get(module_ref)
             .ok_or_else(|| ModuleError::InvalidPath {

@@ -1,0 +1,77 @@
+// Test stdlib with module syntax: use module, then module.function()
+// Syntax: use string (no quotes for stdlib)
+//         use "path/to/file" (quotes for file modules)
+
+use string
+use math
+use arr
+
+fun main() {
+    println("[INFO] Testing Razen Standard Library")
+    
+    // String functions
+    println("")
+    println("[TEST] String Library:")
+    var text = "razen"
+    var upper_text = string.upper(text)
+    println(f"string.upper('razen'): {upper_text}")
+    
+    var lower_text = string.lower("HELLO")
+    println(f"string.lower('HELLO'): {lower_text}")
+    
+    var trimmed = string.trim("  spaces  ")
+    println(f"string.trim('  spaces  '): '{trimmed}'")
+    
+    var contains_result = string.contains("Hello World", "World")
+    println(f"string.contains('Hello World', 'World'): {contains_result}")
+    
+    var reversed = string.reverse("razen")
+    println(f"string.reverse('razen'): {reversed}")
+    
+    var repeated = string.repeat("Hi", 3)
+    println(f"string.repeat('Hi', 3): {repeated}")
+    
+    // Math functions
+    println("")
+    println("[TEST] Math Library:")
+    var abs_val = math.abs(-42)
+    println(f"math.abs(-42): {abs_val}")
+    
+    var sqrt_val = math.sqrt(16)
+    println(f"math.sqrt(16): {sqrt_val}")
+    
+    var pow_val = math.pow(2, 8)
+    println(f"math.pow(2, 8): {pow_val}")
+    
+    var floor_val = math.floor(3.7)
+    println(f"math.floor(3.7): {floor_val}")
+    
+    var ceil_val = math.ceil(3.2)
+    println(f"math.ceil(3.2): {ceil_val}")
+    
+    var min_val = math.min(10, 5)
+    println(f"math.min(10, 5): {min_val}")
+    
+    var max_val = math.max(10, 5)
+    println(f"math.max(10, 5): {max_val}")
+    
+    // Array functions
+    println("")
+    println("[TEST] Array Library:")
+    var my_arr = [1, 2, 3, 4, 5]
+    println(f"Original array: {my_arr}")
+    
+    var arr_len = arr.len(my_arr)
+    println(f"arr.len: {arr_len}")
+    
+    var first_elem = arr.first(my_arr)
+    println(f"arr.first: {first_elem}")
+    
+    var last_elem = arr.last(my_arr)
+    println(f"arr.last: {last_elem}")
+    
+    println("")
+    println("[SUCCESS] All stdlib module tests completed!")
+}
+
+main()

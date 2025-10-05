@@ -1,0 +1,18 @@
+// tests/utils.rzn
+// A simple user-defined module to test the module system
+
+pub fun greet(name) {
+    return f"Hello, {name}!"
+}
+
+pub fun add(a, b) {
+    return a + b
+}
+
+pub fun multiply(x, y) {
+    return x * y
+}
+
+pub const PI = 3.14159
+
+pub var module_name = "Utils Module"

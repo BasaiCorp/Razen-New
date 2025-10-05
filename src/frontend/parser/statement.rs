@@ -90,12 +90,17 @@ impl<'a> StatementParser<'a> {
         }))
     }
 
-    /// Parse use statement: use "./path/to/module" as alias
+    /// Parse use statement: 
+    /// - use string (stdlib module, no quotes)
+    /// - use "path/to/module" (file module, with quotes)
     fn parse_use_statement(&mut self) -> ParseResult<Statement> {
         self.consume(TokenKind::Use, "Expected 'use'")?;
 
-        // Parse the module path (string literal)
+        // Parse the module path - can be either:
+        // 1. String literal (file module): use "path/to/module"
+        // 2. Identifier (stdlib module): use string, use math
         let path = if let Some(token) = self.match_token_kind(&TokenKind::String("".to_string())) {
+            // File module with quotes
             if let TokenKind::String(value) = &token.kind {
                 value.clone()
             } else {
@@ -104,9 +109,12 @@ impl<'a> StatementParser<'a> {
                     self.peek().line,
                 ));
             }
+        } else if let Ok(ident) = self.consume_identifier("Expected module name or path") {
+            // Stdlib module without quotes (identifier)
+            ident
         } else {
             return Err(ParseError::new(
-                "Expected string literal for module path".to_string(),
+                "Expected module name (stdlib) or string path (file module)".to_string(),
                 self.peek().line,
             ));
         };

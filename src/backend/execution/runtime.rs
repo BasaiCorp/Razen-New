@@ -332,64 +332,46 @@ impl Runtime {
                     // Handle builtin functions
                     if self.is_builtin(name) {
                         self.execute_builtin(name, *arg_count)?;
-                    } else {
-                        // User-defined function call - collect arguments from stack
-                        let mut args = Vec::new();
-                        for _ in 0..*arg_count {
-                            if let Some(arg) = self.stack.pop() {
-                                args.push(arg);
-                            }
-                        }
-                        args.reverse(); // Arguments are pushed in reverse order
-
-                        if !self.clean_output {
-                            println!("Looking for function '{}' in functions: {:?}", name, self.functions.keys().collect::<Vec<_>>());
-                        }
-                        
-                        if let Some(&func_addr) = self.functions.get(name) {
-                            if !self.clean_output {
-                                println!("Found function '{}' at address {}", name, func_addr);
-                            }
-                            // Create new function scope with parameters
-                            let mut func_variables = HashMap::new();
+                    } else if name.contains('.') {
+                        // Check if this is a stdlib function call (module.function)
+                        let parts: Vec<&str> = name.splitn(2, '.').collect();
+                        if parts.len() == 2 {
+                            let module_name = parts[0];
+                            let function_name = parts[1];
                             
-                            // If we have parameter names stored, bind arguments to parameters
-                            if let Some(param_names) = self.function_params.get(name) {
-                                if !self.clean_output {
-                                    println!("DEBUG: Binding {} parameters for function '{}'", param_names.len(), name);
+                            if crate::stdlib::is_stdlib_module(module_name) {
+                                // Collect arguments from stack
+                                let mut args = Vec::new();
+                                for _ in 0..*arg_count {
+                                    if let Some(arg) = self.stack.pop() {
+                                        args.push(arg);
+                                    }
                                 }
-                                for (i, param_name) in param_names.iter().enumerate() {
-                                    if i < args.len() {
-                                        if !self.clean_output {
-                                            println!("DEBUG: Binding param '{}' = '{}'", param_name, args[i]);
-                                        }
-                                        func_variables.insert(param_name.clone(), args[i].clone());
-                                    } else {
-                                        func_variables.insert(param_name.clone(), Value::Null);
+                                args.reverse(); // Arguments are pushed in reverse order
+                                
+                                if !self.clean_output {
+                                    println!("[DEBUG] Calling stdlib function: {}.{}", module_name, function_name);
+                                }
+                                
+                                // Call stdlib function
+                                match crate::stdlib::call_stdlib_function(module_name, function_name, args) {
+                                    Ok(result) => {
+                                        self.stack.push(result);
+                                    }
+                                    Err(e) => {
+                                        return Err(format!("Stdlib function error: {}", e));
                                     }
                                 }
                             } else {
-                                if !self.clean_output {
-                                    println!("DEBUG: No param names registered for function '{}', using generic names", name);
-                                }
-                                // Fallback: create generic parameter names
-                                for (i, arg) in args.iter().enumerate() {
-                                    func_variables.insert(format!("param{}", i), arg.clone());
-                                }
+                                // Not a stdlib module, try user-defined function
+                                self.call_user_function(name, *arg_count, &mut pc)?;
                             }
-                            
-                            // Save current state and jump to function
-                            // Don't replace self.variables - keep global variables intact!
-                            self.call_stack.push((pc + 1, func_variables));
-                            pc = func_addr;
-                            continue;
                         } else {
-                            // Function not found - push null and continue
-                            if !self.clean_output {
-                                println!("Warning: Function '{}' not found", name);
-                            }
-                            self.stack.push(Value::Null);
+                            self.call_user_function(name, *arg_count, &mut pc)?;
                         }
+                    } else {
+                        // User-defined function call
+                        self.call_user_function(name, *arg_count, &mut pc)?;
                     }
                 },
                 IR::MethodCall(method_name, arg_count) => {
@@ -1014,6 +996,68 @@ impl Runtime {
                 self.stack.push(Value::Null);
             }
         }
+        Ok(())
+    }
+
+    /// Helper method to call user-defined functions
+    fn call_user_function(&mut self, name: &str, arg_count: usize, pc: &mut usize) -> Result<(), String> {
+        // User-defined function call - collect arguments from stack
+        let mut args = Vec::new();
+        for _ in 0..arg_count {
+            if let Some(arg) = self.stack.pop() {
+                args.push(arg);
+            }
+        }
+        args.reverse(); // Arguments are pushed in reverse order
+
+        if !self.clean_output {
+            println!("[DEBUG] Looking for function '{}' in functions: {:?}", name, self.functions.keys().collect::<Vec<_>>());
+        }
+        
+        if let Some(&func_addr) = self.functions.get(name) {
+            if !self.clean_output {
+                println!("[DEBUG] Found function '{}' at address {}", name, func_addr);
+            }
+            // Create new function scope with parameters
+            let mut func_variables = HashMap::new();
+            
+            // If we have parameter names stored, bind arguments to parameters
+            if let Some(param_names) = self.function_params.get(name) {
+                if !self.clean_output {
+                    println!("[DEBUG] Binding {} parameters for function '{}'", param_names.len(), name);
+                }
+                for (i, param_name) in param_names.iter().enumerate() {
+                    if i < args.len() {
+                        if !self.clean_output {
+                            println!("[DEBUG] Binding param '{}' = '{}'", param_name, args[i]);
+                        }
+                        func_variables.insert(param_name.clone(), args[i].clone());
+                    } else {
+                        func_variables.insert(param_name.clone(), Value::Null);
+                    }
+                }
+            } else {
+                if !self.clean_output {
+                    println!("[DEBUG] No param names registered for function '{}', using generic names", name);
+                }
+                // Fallback: create generic parameter names
+                for (i, arg) in args.iter().enumerate() {
+                    func_variables.insert(format!("param{}", i), arg.clone());
+                }
+            }
+            
+            // Save current state and jump to function
+            // Don't replace self.variables - keep global variables intact!
+            self.call_stack.push((*pc + 1, func_variables));
+            *pc = func_addr;
+        } else {
+            // Function not found - push null and continue
+            if !self.clean_output {
+                println!("[INFO] Function '{}' not found", name);
+            }
+            self.stack.push(Value::Null);
+        }
+        
         Ok(())
     }
 }

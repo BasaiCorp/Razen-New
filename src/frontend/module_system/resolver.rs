@@ -39,10 +39,16 @@ impl ModuleResolver {
     }
 
     /// Resolve a module from its import path
+    /// Handles both stdlib modules (no quotes) and file modules (with quotes)
     pub fn resolve_module(&mut self, import_path: &str, current_file: &Path) -> Result<ResolvedModule, ModuleError> {
         // Check if already resolved
         if let Some(module) = self.modules.get(import_path) {
             return Ok(module.clone());
+        }
+
+        // Check if this is a stdlib module (no path separators, no ./)
+        if crate::stdlib::is_stdlib_module(import_path) {
+            return self.resolve_stdlib_module(import_path);
         }
 
         // Check for circular dependency
@@ -102,6 +108,37 @@ impl ModuleResolver {
 
         // Cache the resolved module
         self.modules.insert(import_path.to_string(), resolved_module.clone());
+
+        Ok(resolved_module)
+    }
+
+    /// Resolve a stdlib module (built-in native module)
+    fn resolve_stdlib_module(&mut self, module_name: &str) -> Result<ResolvedModule, ModuleError> {
+        // Get stdlib module info
+        let module_info = crate::stdlib::get_module_info(module_name)
+            .ok_or_else(|| ModuleError::ModuleNotFound {
+                path: module_name.to_string(),
+                searched_paths: vec![format!("stdlib:{}", module_name)],
+            })?;
+
+        // Create public symbols from function list
+        let public_symbols: HashSet<String> = module_info.functions
+            .iter()
+            .map(|&f| f.to_string())
+            .collect();
+
+        // Create a virtual resolved module for stdlib
+        let resolved_module = ResolvedModule {
+            name: module_name.to_string(),
+            path: format!("stdlib:{}", module_name),
+            file_path: PathBuf::from(format!("<stdlib:{}>", module_name)),
+            program: Program { statements: vec![] }, // Empty program for stdlib
+            public_symbols,
+            dependencies: vec![],
+        };
+
+        // Cache the resolved module
+        self.modules.insert(module_name.to_string(), resolved_module.clone());
 
         Ok(resolved_module)
     }
