@@ -278,22 +278,55 @@ impl Scanner {
     }
 
     fn number(&mut self) {
+        let mut is_float = false;
+        
+        // Parse integer part
         while self.peek().is_digit(10) {
             self.advance();
         }
 
+        // Parse decimal part
         if self.peek() == '.' && self.peek_next().is_digit(10) {
-            self.advance();
+            is_float = true;
+            self.advance(); // consume '.'
+            while self.peek().is_digit(10) {
+                self.advance();
+            }
+        }
+
+        // Parse scientific notation (e or E)
+        if self.peek() == 'e' || self.peek() == 'E' {
+            is_float = true;
+            self.advance(); // consume 'e' or 'E'
+            
+            // Optional sign
+            if self.peek() == '+' || self.peek() == '-' {
+                self.advance();
+            }
+            
+            // Exponent digits
+            if !self.peek().is_digit(10) {
+                // Invalid scientific notation
+                self.add_token(TokenKind::Illegal);
+                return;
+            }
+            
             while self.peek().is_digit(10) {
                 self.advance();
             }
         }
 
         let text: String = self.source[self.start..self.current].iter().collect();
-        if text.contains('.') {
-            self.add_token(TokenKind::Float(text.parse().unwrap()));
+        if is_float {
+            match text.parse::<f64>() {
+                Ok(value) => self.add_token(TokenKind::Float(value)),
+                Err(_) => self.add_token(TokenKind::Illegal),
+            }
         } else {
-            self.add_token(TokenKind::Integer(text.parse().unwrap()));
+            match text.parse::<i64>() {
+                Ok(value) => self.add_token(TokenKind::Integer(value)),
+                Err(_) => self.add_token(TokenKind::Illegal),
+            }
         }
     }
 

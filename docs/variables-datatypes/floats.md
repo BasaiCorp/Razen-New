@@ -34,7 +34,7 @@ var small = 0.001
 var large = 1000000.0
 ```
 
-### Scientific Notation -
+### Scientific Notation
 
 ```razen
 var scientific = 1.5e10      // 15000000000.0
@@ -101,7 +101,7 @@ var lessOrEqual = a <= b     // true
 var greaterOrEqual = a >= b  // false
 ```
 
-### Comparing Floats -
+### Comparing Floats
 
 Due to precision issues, avoid direct equality comparisons:
 
@@ -282,7 +282,7 @@ var number = tofloat(text)
 println(number)  // 3.14
 ```
 
-### Integer to Float -
+### Integer to Float
 
 ```razen
 var integer = 10
@@ -292,7 +292,7 @@ println(decimal)  // 10.0
 
 ## Common Patterns
 
-### Average Calculation -
+### Average Calculation
 
 ```razen
 fun average(numbers: [float]) -> float {
@@ -314,7 +314,7 @@ fun average(numbers: [float]) -> float {
 var avg = average([10.5, 20.3, 15.7])
 ```
 
-### Distance Calculation -
+### Distance Calculation
 
 ```razen
 fun distance(x1: float, y1: float, x2: float, y2: float) -> float {

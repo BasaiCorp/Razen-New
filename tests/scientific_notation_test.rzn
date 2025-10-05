@@ -1,0 +1,54 @@
+// Test scientific notation support
+
+fun main() {
+    println("[INFO] Testing scientific notation...")
+    
+    // Test 1: Large numbers with positive exponent
+    println("\n[TEST] Large numbers:")
+    var scientific = 1.5e10
+    println(f"1.5e10 = {scientific}")
+    
+    var billion = 1e9
+    println(f"1e9 = {billion}")
+    
+    var large = 6.022e23
+    println(f"6.022e23 (Avogadro) = {large}")
+    
+    // Test 2: Small numbers with negative exponent
+    println("\n[TEST] Small numbers:")
+    var small = 2.5e-3
+    println(f"2.5e-3 = {small}")
+    
+    var tiny = 1e-6
+    println(f"1e-6 = {tiny}")
+    
+    var planck = 6.626e-34
+    println(f"6.626e-34 (Planck) = {planck}")
+    
+    // Test 3: Negative numbers
+    println("\n[TEST] Negative numbers:")
+    var negative = -3.2e5
+    println(f"-3.2e5 = {negative}")
+    
+    var negSmall = -1.6e-19
+    println(f"-1.6e-19 = {negSmall}")
+    
+    // Test 4: Uppercase E
+    println("\n[TEST] Uppercase E notation:")
+    var upperE = 2.5E8
+    println(f"2.5E8 = {upperE}")
+    
+    var upperNeg = 3.14E-2
+    println(f"3.14E-2 = {upperNeg}")
+    
+    // Test 5: Arithmetic with scientific notation
+    println("\n[TEST] Arithmetic operations:")
+    var a = 1e3
+    var b = 2e2
+    var sum = a + b
+    var product = a * b
+    println(f"1e3 + 2e2 = {sum}")
+    println(f"1e3 * 2e2 = {product}")
+    
+    println("\n[SUCCESS] All scientific notation tests completed!")
+}

@@ -1,0 +1,56 @@
+// Test float features including scientific notation
+
+fun main() {
+    println("[INFO] Testing float features...")
+    
+    // Test 1: Basic floats
+    println("\n[TEST] Basic floats:")
+    var price = 19.99
+    var temperature = -5.5
+    println(f"Price: {price}")
+    println(f"Temperature: {temperature}")
+    
+    // Test 2: Float comparison with tolerance
+    println("\n[TEST] Float comparison:")
+    var a = 10.5
+    var b = 20.3
+    var equal = a == b
+    var notEqual = a != b
+    var lessThan = a < b
+    var greaterThan = a > b
+    println(f"{a} == {b}: {equal}")
+    println(f"{a} != {b}: {notEqual}")
+    println(f"{a} < {b}: {lessThan}")
+    println(f"{a} > {b}: {greaterThan}")
+    
+    // Test 3: Integer to Float conversion
+    println("\n[TEST] Integer to Float:")
+    var integer = 10
+    var decimal = tofloat(integer)
+    println(f"Integer {integer} -> Float {decimal}")
+    
+    var int2 = 42
+    var float2 = tofloat(int2)
+    println(f"Integer {int2} -> Float {float2}")
+    
+    // Test 4: String to Float conversion
+    println("\n[TEST] String to Float:")
+    var text = "3.14"
+    var number = tofloat(text)
+    println(f"String \"{text}\" -> Float {number}")
+    
+    // Test 5: Float arithmetic
+    println("\n[TEST] Float arithmetic:")
+    var x = 10.5
+    var y = 2.5
+    var sum = x + y
+    var diff = x - y
+    var prod = x * y
+    var quot = x / y
+    println(f"{x} + {y} = {sum}")
+    println(f"{x} - {y} = {diff}")
+    println(f"{x} * {y} = {prod}")
+    println(f"{x} / {y} = {quot}")
+    
+    println("\n[SUCCESS] All float feature tests completed!")
+}

@@ -136,7 +136,7 @@ for i in 1..=100 {
 println(f"Sum of 1 to 100: {sum}")
 ```
 
-### Index Variables -
+### Index Variables 
 
 ```razen
 var index = 0
@@ -246,7 +246,7 @@ var text = tostr(number)
 println(f"The number is {text}")
 ```
 
-### Integer to Float -
+### Integer to Float
 
 ```razen
 var integer = 10
@@ -254,7 +254,7 @@ var decimal = tofloat(integer)
 println(decimal)  // 10.0
 ```
 
-### String to Integer -
+### String to Integer
 
 ```razen
 var text = "123"

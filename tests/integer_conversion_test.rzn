@@ -1,0 +1,53 @@
+// Test integer type conversions
+
+fun main() {
+    println("[INFO] Testing integer type conversions...")
+    
+    // Test 1: Integer to Float
+    println("\n[TEST] Integer to Float:")
+    var integer1 = 10
+    var decimal1 = tofloat(integer1)
+    println(f"Integer: {integer1}")
+    println(f"Float: {decimal1}")
+    
+    var integer2 = 42
+    var decimal2 = tofloat(integer2)
+    println(f"Integer: {integer2} -> Float: {decimal2}")
+    
+    var integer3 = -15
+    var decimal3 = tofloat(integer3)
+    println(f"Integer: {integer3} -> Float: {decimal3}")
+    
+    // Test 2: String to Integer
+    println("\n[TEST] String to Integer:")
+    var text1 = "123"
+    var number1 = toint(text1)
+    println(f"String: \"{text1}\" -> Integer: {number1}")
+    
+    var text2 = "456"
+    var number2 = toint(text2)
+    println(f"String: \"{text2}\" -> Integer: {number2}")
+    
+    var text3 = "-789"
+    var number3 = toint(text3)
+    println(f"String: \"{text3}\" -> Integer: {number3}")
+    
+    // Test 3: Integer to String (already working)
+    println("\n[TEST] Integer to String:")
+    var num = 42
+    var strValue = tostr(num)
+    println(f"Integer: {num} -> String: \"{strValue}\"")
+    
+    // Test 4: Combined conversions
+    println("\n[TEST] Combined conversions:")
+    var original = "100"
+    var asInt = toint(original)
+    var asFloat = tofloat(asInt)
+    var backToStr = tostr(asInt)
+    println(f"Original string: \"{original}\"")
+    println(f"As integer: {asInt}")
+    println(f"As float: {asFloat}")
+    println(f"Back to string: \"{backToStr}\"")
+    
+    println("\n[SUCCESS] All integer conversion tests completed!")
+}

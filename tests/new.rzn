@@ -1,13 +1,7 @@
-var username = "Hanuman"
-var password = "secret123"
+// Define type alias
+type UserId = int
+type EmailAddress = str
 
-var isValidUsername = len(username) >= 3
-var isValidPassword = len(password) >= 8
-
-var isValid = isValidUsername && isValidPassword
-
-if isValid {
-    println("Credentials are valid")
-} else {
-    println("Invalid credentials")
-}
+// Use aliases
+var id: UserId = 12345
+var email: EmailAddress = "user@example.com"

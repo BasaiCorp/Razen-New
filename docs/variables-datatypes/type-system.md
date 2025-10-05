@@ -382,7 +382,7 @@ if value == null {
 }
 ```
 
-### Type Aliases -
+### Type Aliases
 
 Create meaningful type names:
 
