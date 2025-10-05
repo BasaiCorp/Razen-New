@@ -554,19 +554,17 @@ impl SemanticAnalyzer {
             }
             Statement::BreakStatement(_) => {
                 if !self.in_loop {
-                    let diagnostic = Diagnostic::new(
-                        crate::frontend::diagnostics::DiagnosticKind::BreakOutsideLoop,
-                    )
-                    .with_code("E0009");
+                    let diagnostic = helpers::break_outside_loop(
+                        Span::new(Position::new(1, 1, 0), Position::new(1, 6, 5))
+                    );
                     self.diagnostics.add(diagnostic);
                 }
             }
             Statement::ContinueStatement(_) => {
                 if !self.in_loop {
-                    let diagnostic = Diagnostic::new(
-                        crate::frontend::diagnostics::DiagnosticKind::ContinueOutsideLoop,
-                    )
-                    .with_code("E0010");
+                    let diagnostic = helpers::continue_outside_loop(
+                        Span::new(Position::new(1, 1, 0), Position::new(1, 9, 8))
+                    );
                     self.diagnostics.add(diagnostic);
                 }
             }
@@ -1183,8 +1181,13 @@ impl SemanticAnalyzer {
                 SymbolType::Method => Some("method".to_string()),
             }
         } else {
-            let diagnostic =
-                helpers::undefined_variable(&ident.name, self.create_span_from_identifier(ident));
+            // Collect similar variable names for suggestions
+            let similar_names = self.symbol_table.get_similar_variable_names(&ident.name);
+            let diagnostic = helpers::undefined_variable_with_suggestions(
+                &ident.name,
+                self.create_span_from_identifier(ident),
+                &similar_names
+            );
             self.diagnostics.add(diagnostic);
             None
         };
@@ -1227,9 +1230,12 @@ impl SemanticAnalyzer {
 
                 return_type
             } else {
-                let diagnostic = helpers::undefined_function(
+                // Collect similar function names for suggestions
+                let similar_names = self.symbol_table.get_similar_function_names(&func_name.name);
+                let diagnostic = helpers::undefined_function_with_suggestions(
                     &func_name.name,
                     self.create_span_from_identifier(&func_name),
+                    &similar_names
                 );
                 self.diagnostics.add(diagnostic);
                 None
@@ -1603,6 +1609,68 @@ impl SymbolTable {
             }
         }
     }
+
+    /// Get all variable names in scope for similarity matching
+    fn get_similar_variable_names(&self, target: &str) -> Vec<String> {
+        let mut names = Vec::new();
+        
+        // Collect from all scopes
+        for scope in &self.scopes {
+            for (name, symbol) in scope {
+                if matches!(symbol.symbol_type, SymbolType::Variable(_)) {
+                    names.push(name.clone());
+                }
+            }
+        }
+        
+        // Sort by similarity to target
+        names.sort_by_key(|name| levenshtein_distance(target, name));
+        names.truncate(3); // Return top 3 matches
+        names
+    }
+
+    /// Get all function names for similarity matching
+    fn get_similar_function_names(&self, target: &str) -> Vec<String> {
+        let mut names: Vec<String> = self.functions.keys().cloned().collect();
+        
+        // Sort by similarity to target
+        names.sort_by_key(|name| levenshtein_distance(target, name));
+        names.truncate(3); // Return top 3 matches
+        names
+    }
+}
+
+/// Calculate Levenshtein distance for similarity matching
+fn levenshtein_distance(s1: &str, s2: &str) -> usize {
+    let len1 = s1.chars().count();
+    let len2 = s2.chars().count();
+    
+    if len1 == 0 { return len2; }
+    if len2 == 0 { return len1; }
+    
+    let mut matrix = vec![vec![0; len2 + 1]; len1 + 1];
+
+    for i in 0..=len1 {
+        matrix[i][0] = i;
+    }
+    for j in 0..=len2 {
+        matrix[0][j] = j;
+    }
+
+    for (i, c1) in s1.chars().enumerate() {
+        for (j, c2) in s2.chars().enumerate() {
+            let cost = if c1 == c2 { 0 } else { 1 };
+            matrix[i + 1][j + 1] = std::cmp::min(
+                std::cmp::min(
+                    matrix[i][j + 1] + 1,
+                    matrix[i + 1][j] + 1
+                ),
+                matrix[i][j] + cost
+            );
+        }
+    }
+
+    matrix[len1][len2]
 }
 
 #[cfg(test)]

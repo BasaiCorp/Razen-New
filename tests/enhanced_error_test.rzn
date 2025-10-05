@@ -1,0 +1,21 @@
+// Test enhanced error messages with smart suggestions
+
+fun main() {
+    var username = "Hanuman"
+    var userAge = 25
+    
+    // Test 1: Case-sensitive error (userName vs username)
+    println(userName)
+    
+    // Test 2: Similar name suggestion (userAge vs userage)
+    println(userage)
+    
+    // Test 3: Function name typo (printline vs println)
+    printline("Hello")
+    
+    // Test 4: Type conversion needed
+    var age: int = "25"
+    
+    // Test 5: Wrong argument count
+    println("Name:", "Age:")
+}

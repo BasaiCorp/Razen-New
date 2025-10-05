@@ -163,6 +163,14 @@ pub enum DiagnosticKind {
     MissingDocumentation { item: String },
     LongLine { length: usize, max: usize },
     
+    // Additional helpful errors
+    DivisionByZero,
+    IndexOutOfBounds { index: i64, length: usize },
+    EmptyArray,
+    InvalidArrayAccess { reason: String },
+    MissingField { field: String, type_name: String },
+    ExtraField { field: String, type_name: String },
+    
     // Custom error with message
     Custom { message: String },
 }
@@ -299,6 +307,22 @@ impl DiagnosticKind {
                 format!("line too long ({} characters, maximum is {})", length, max)
             },
             
+            // Additional helpful errors
+            DiagnosticKind::DivisionByZero => "attempt to divide by zero".to_string(),
+            DiagnosticKind::IndexOutOfBounds { index, length } => {
+                format!("index {} out of bounds for array of length {}", index, length)
+            },
+            DiagnosticKind::EmptyArray => "operation on empty array".to_string(),
+            DiagnosticKind::InvalidArrayAccess { reason } => {
+                format!("invalid array access: {}", reason)
+            },
+            DiagnosticKind::MissingField { field, type_name } => {
+                format!("struct `{}` does not have a field named `{}`", type_name, field)
+            },
+            DiagnosticKind::ExtraField { field, type_name } => {
+                format!("struct `{}` does not have a field named `{}`", type_name, field)
+            },
+            
             DiagnosticKind::Custom { message } => message.clone(),
         }
     }
@@ -335,7 +359,12 @@ impl DiagnosticKind {
             | DiagnosticKind::InvalidCondition { .. }
             | DiagnosticKind::ModuleNotFound { .. }
             | DiagnosticKind::CircularImport { .. }
-            | DiagnosticKind::InvalidImport { .. } => Severity::Error,
+            | DiagnosticKind::InvalidImport { .. }
+            | DiagnosticKind::DivisionByZero
+            | DiagnosticKind::IndexOutOfBounds { .. }
+            | DiagnosticKind::InvalidArrayAccess { .. }
+            | DiagnosticKind::MissingField { .. }
+            | DiagnosticKind::ExtraField { .. } => Severity::Error,
             
             // Warnings for code quality and potential issues
             DiagnosticKind::UnreachableCode
@@ -347,7 +376,8 @@ impl DiagnosticKind {
             | DiagnosticKind::DeepNesting { .. }
             | DiagnosticKind::NamingConvention { .. }
             | DiagnosticKind::MissingDocumentation { .. }
-            | DiagnosticKind::LongLine { .. } => Severity::Warning,
+            | DiagnosticKind::LongLine { .. }
+            | DiagnosticKind::EmptyArray => Severity::Warning,
             
             // Style suggestions (optional semicolon in Razen)
             DiagnosticKind::MissingSemicolon => Severity::Note,
