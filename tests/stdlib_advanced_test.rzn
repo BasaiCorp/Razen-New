@@ -1,0 +1,89 @@
+// Advanced stdlib test - Testing all high-priority modules
+
+use time
+use http
+use os
+use regex
+use random
+
+fun main() {
+    println("[INFO] Testing Advanced Stdlib Modules")
+    println("")
+    
+    // Time module tests
+    println("[TEST] Time Module:")
+    var timestamp = time.now()
+    println(f"time.now(): {timestamp}")
+    
+    var current_year = time.year()
+    println(f"time.year(): {current_year}")
+    
+    var current_month = time.month()
+    println(f"time.month(): {current_month}")
+    
+    var current_day = time.day()
+    println(f"time.day(): {current_day}")
+    
+    var future = time.add_days(timestamp, 7)
+    println(f"time.add_days(timestamp, 7): {future}")
+    
+    // OS module tests
+    println("")
+    println("[TEST] OS Module:")
+    var platform = os.platform()
+    println(f"os.platform(): {platform}")
+    
+    var arch = os.arch()
+    println(f"os.arch(): {arch}")
+    
+    var cwd = os.current_dir()
+    println(f"os.current_dir(): {cwd}")
+    
+    var home = os.home_dir()
+    println(f"os.home_dir(): {home}")
+    
+    var username = os.username()
+    println(f"os.username(): {username}")
+    
+    // Regex module tests
+    println("")
+    println("[TEST] Regex Module:")
+    var text = "The quick brown fox jumps over the lazy dog"
+    
+    var is_match = regex.is_match("quick", text)
+    println(f"regex.is_match('quick', text): {is_match}")
+    
+    var found = regex.find("brown.*fox", text)
+    println(f"regex.find('brown.*fox', text): {found}")
+    
+    var replaced = regex.replace("lazy", text, "energetic")
+    println(f"regex.replace('lazy', text, 'energetic'): {replaced}")
+    
+    var words = regex.split(" ", text)
+    println(f"regex.split(' ', text): {words}")
+    
+    // Random module tests
+    println("")
+    println("[TEST] Random Module:")
+    var rand_int = random.integer(100)
+    println(f"random.integer(100): {rand_int}")
+    
+    var rand_float = random.number()
+    println(f"random.number(): {rand_float}")
+    
+    var rand_bool = random.boolean()
+    println(f"random.boolean(): {rand_bool}")
+    
+    var choices = [1, 2, 3, 4, 5]
+    var choice = random.choice(choices)
+    println(f"random.choice([1,2,3,4,5]): {choice}")
+    
+    var shuffled = random.shuffle(choices)
+    println(f"random.shuffle([1,2,3,4,5]): {shuffled}")
+    
+    println("")
+    println("[SUCCESS] All advanced stdlib tests completed!")
+    println("[INFO] Razen now has powerful stdlib capabilities!")
+}
+
+main()

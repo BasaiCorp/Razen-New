@@ -19,6 +19,11 @@ pub mod math_lib;
 pub mod array_lib;
 pub mod file_lib;
 pub mod json_lib;
+pub mod time_lib;
+pub mod http_lib;
+pub mod os_lib;
+pub mod regex_lib;
+pub mod random_lib;
 
 use crate::backend::execution::value::Value;
 
@@ -77,6 +82,11 @@ define_stdlib_modules! {
     ("arr", array_lib, "Array/List manipulation utilities"),
     ("file", file_lib, "File I/O operations"),
     ("json", json_lib, "JSON parsing and serialization"),
+    ("time", time_lib, "Time and date operations"),
+    ("http", http_lib, "HTTP client for web requests"),
+    ("os", os_lib, "Operating system operations"),
+    ("regex", regex_lib, "Regular expression matching"),
+    ("random", random_lib, "Random number generation"),
 }
 
 #[derive(Debug, Clone)]

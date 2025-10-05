@@ -12,5 +12,17 @@ serde = { version = "1.0", features = ["derive"] }
 libc = "0.2.176"
 dynasmrt = "4.0.1"
 
+# Stdlib dependencies
+chrono = "0.4"           # Time and date operations
+ureq = "2.10"            # HTTP client
+url = "2.5"              # URL parsing
+urlencoding = "2.1"      # URL encoding/decoding
+regex = "1.10"           # Regular expressions
+rand = "0.8"             # Random number generation
+dirs = "5.0"             # Home/temp directory paths
+hostname = "0.4"         # System hostname
+whoami = "1.5"           # Username detection
+which = "6.0"            # Find executables in PATH
+
 [dev-dependencies]
 # No dev dependencies needed for now
