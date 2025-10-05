@@ -32,7 +32,7 @@ var greeting = "Hello"
 var farewell = "Goodbye"
 ```
 
-### Strings with Special Characters -
+### Strings with Special Characters
 
 ```razen
 var withQuotes = "She said \"Hello\""
@@ -40,7 +40,7 @@ var withNewline = "Line 1\nLine 2"
 var withTab = "Column1\tColumn2"
 ```
 
-### Escape Sequences -
+### Escape Sequences
 
 ```razen
 var backslash = "Path: C:\\Users\\Name"
@@ -193,7 +193,7 @@ var logMessage = f"[{timestamp}] User {username} {action}"
 println(logMessage)
 ```
 
-### Formatting Output -
+### Formatting Output
 
 ```razen
 var product = "Laptop"
@@ -236,7 +236,7 @@ var url = f"{protocol}://{domain}{path}"
 println(url)  // Output: https://example.com/api/users
 ```
 
-### Formatting Tables -
+### Formatting Tables
 
 ```razen
 var header = "Name\tAge\tCity"
@@ -318,7 +318,7 @@ var line = repeat("-", 20)
 println(line)  // Output: --------------------
 ```
 
-### Padding Strings -
+### Padding Strings
 
 ```razen
 fun padLeft(text: str, width: int, chara: str) -> str {
@@ -334,7 +334,7 @@ var padded = padLeft("42", 5, "0")
 println(padded)  // Output: 00042
 ```
 
-### Joining Strings -
+### Joining Strings
 
 ```razen
 fun join(strings: [str], separator: str) -> str {
@@ -357,7 +357,7 @@ var sentence = join(words, " ")
 println(sentence)  // Output: Hello World Razen
 ```
 
-### Reversing Strings -
+### Reversing Strings
 
 ```razen
 fun reverse(text: str) -> str {

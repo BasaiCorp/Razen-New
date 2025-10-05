@@ -1,0 +1,58 @@
+// Test escape sequences in strings
+
+fun main() {
+    // Test basic escape sequences
+    println("[INFO] Testing escape sequences...")
+    
+    // Newline test
+    var withNewline = "Line 1\nLine 2\nLine 3"
+    println("\n[TEST] Newline escape:")
+    println(withNewline)
+    
+    // Tab test
+    var withTab = "Name:\tJohn\nAge:\t25\nCity:\tNew York"
+    println("\n[TEST] Tab escape:")
+    println(withTab)
+    
+    // Quote test
+    var withQuotes = "She said \"Hello, World!\""
+    println("\n[TEST] Quote escape:")
+    println(withQuotes)
+    
+    // Backslash test
+    var withBackslash = "Path: C:\\Users\\John\\Documents"
+    println("\n[TEST] Backslash escape:")
+    println(withBackslash)
+    
+    // Combined test
+    var combined = "Header:\n\tName:\t\"John Doe\"\n\tPath:\tC:\\Users\\John"
+    println("\n[TEST] Combined escapes:")
+    println(combined)
+    
+    // F-string with escape sequences
+    var name = "Alice"
+    var fstringTest = f"Hello, {name}!\nWelcome to Razen.\nPath:\tC:\\Projects"
+    println("\n[TEST] F-string with escapes:")
+    println(fstringTest)
+    
+    // Table formatting
+    println("\n[TEST] Table formatting:")
+    var header = "Name\tAge\tCity"
+    var row1 = "John\t25\tNew York"
+    var row2 = "Alice\t30\tLondon"
+    var row3 = "Bob\t28\tParis"
+    println(header)
+    println(row1)
+    println(row2)
+    println(row3)
+    
+    // Invoice formatting
+    println("\n[TEST] Invoice formatting:")
+    var product = "Laptop"
+    var price = 999.99
+    var quantity = 2
+    var invoice = f"Product: {product}\nPrice: ${price}\nQuantity: {quantity}\nTotal: ${price * tofloat(quantity)}"
+    println(invoice)
+    
+    println("\n[SUCCESS] All escape sequence tests completed!")
+}

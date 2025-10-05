@@ -257,7 +257,7 @@ impl Scanner {
             c if c.is_alphabetic() || c == '_' => {
                 // Check for f-string
                 if c == 'f' && self.peek() == '"' {
-                    self.advance(); // consume 'f'
+                    // 'f' is already consumed by advance() above
                     self.f_string();
                 } else {
                     self.identifier();
@@ -298,9 +298,29 @@ impl Scanner {
     }
 
     fn string(&mut self) {
+        let mut value = String::new();
+        
         while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' { self.line += 1; }
-            self.advance();
+            if self.peek() == '\\' && !self.is_at_end() {
+                self.advance(); // consume backslash
+                let escaped = self.advance();
+                match escaped {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    'r' => value.push('\r'),
+                    '\\' => value.push('\\'),
+                    '"' => value.push('"'),
+                    '0' => value.push('\0'),
+                    _ => {
+                        // Invalid escape sequence, just include the character
+                        value.push('\\');
+                        value.push(escaped);
+                    }
+                }
+            } else {
+                if self.peek() == '\n' { self.line += 1; }
+                value.push(self.advance());
+            }
         }
 
         if self.is_at_end() {
@@ -311,16 +331,35 @@ impl Scanner {
 
         self.advance(); // The closing ".
 
-        let value: String = self.source[self.start + 1..self.current - 1].iter().collect();
         self.add_token(TokenKind::String(value));
     }
 
     fn f_string(&mut self) {
         self.advance(); // consume opening "
         
+        let mut value = String::new();
+        
         while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' { self.line += 1; }
-            self.advance();
+            if self.peek() == '\\' && !self.is_at_end() {
+                self.advance(); // consume backslash
+                let escaped = self.advance();
+                match escaped {
+                    'n' => value.push('\n'),
+                    't' => value.push('\t'),
+                    'r' => value.push('\r'),
+                    '\\' => value.push('\\'),
+                    '"' => value.push('"'),
+                    '0' => value.push('\0'),
+                    _ => {
+                        // Invalid escape sequence, just include the character
+                        value.push('\\');
+                        value.push(escaped);
+                    }
+                }
+            } else {
+                if self.peek() == '\n' { self.line += 1; }
+                value.push(self.advance());
+            }
         }
 
         if self.is_at_end() {
@@ -331,8 +370,6 @@ impl Scanner {
 
         self.advance(); // The closing ".
 
-        // Extract the f-string content (without f" and ")
-        let value: String = self.source[self.start + 2..self.current - 1].iter().collect();
         self.add_token(TokenKind::FString(value));
     }
 
