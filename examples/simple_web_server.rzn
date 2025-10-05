@@ -1,0 +1,31 @@
+// Simple HTML Web Server Example
+// 
+// This example demonstrates how to create a web server in Razen
+// that serves static HTML, CSS, and other files from a directory.
+//
+// HOW TO RUN:
+// 1. Navigate to the examples directory: cd examples
+// 2. Run: razen run simple_web_server.rzn
+// 3. Open browser: http://127.0.0.1:8080
+// 4. Press Ctrl+C to stop
+//
+// FEATURES:
+// - Serves files from ./public directory
+// - Automatic index.html for / route
+// - Supports HTML, CSS, JS, images, etc.
+// - Multi-threaded request handling
+
+use server
+
+fun main() {
+    println("[INFO] Razen Web Server")
+    println("[INFO] Serving files from: ./public")
+    println("[INFO] Server URL: http://127.0.0.1:8080")
+    println("")
+    
+    // Start server on port 8080, serving files from ./public directory
+    // Syntax: server.listen(port, directory)
+    server.listen(8080, "./public")
+}
+
+main()

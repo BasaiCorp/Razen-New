@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Razen Server</title>
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        .endpoint {
+            background: #f7f7f7;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .method {
+            color: #667eea;
+            font-weight: bold;
+            font-family: monospace;
+        }
+        .path {
+            color: #764ba2;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>API Documentation</h1>
+        
+        <div class="endpoint">
+            <div><span class="method">GET</span> <span class="path">/</span></div>
+            <p>Returns the home page (index.html)</p>
+        </div>
+        
+        <div class="endpoint">
+            <div><span class="method">GET</span> <span class="path">/about.html</span></div>
+            <p>Returns information about Razen</p>
+        </div>
+        
+        <div class="endpoint">
+            <div><span class="method">GET</span> <span class="path">/api.html</span></div>
+            <p>Returns this API documentation</p>
+        </div>
+        
+        <div class="endpoint">
+            <div><span class="method">GET</span> <span class="path">/style.css</span></div>
+            <p>Returns the stylesheet</p>
+        </div>
+        
+        <div class="content-section">
+            <h2>Server Functions</h2>
+            <ul>
+                <li><code>server.listen(port, directory)</code> - Start server and serve files</li>
+                <li><code>server.serve_file(path)</code> - Read and return file content</li>
+                <li><code>server.serve_dir(port, dir)</code> - Serve entire directory</li>
+            </ul>
+        </div>
+        
+        <a href="/" class="back-link">Back to Home</a>
+    </div>
+</body>
+</html>

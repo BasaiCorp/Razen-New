@@ -24,6 +24,7 @@ pub mod http_lib;
 pub mod os_lib;
 pub mod regex_lib;
 pub mod random_lib;
+pub mod server_lib;
 
 use crate::backend::execution::value::Value;
 
@@ -87,6 +88,7 @@ define_stdlib_modules! {
     ("os", os_lib, "Operating system operations"),
     ("regex", regex_lib, "Regular expression matching"),
     ("random", random_lib, "Random number generation"),
+    ("server", server_lib, "HTTP web server like Go and Node.js"),
 }
 
 #[derive(Debug, Clone)]

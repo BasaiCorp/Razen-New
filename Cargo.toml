@@ -23,6 +23,7 @@ dirs = "5.0"             # Home/temp directory paths
 hostname = "0.4"         # System hostname
 whoami = "1.5"           # Username detection
 which = "6.0"            # Find executables in PATH
+lazy_static = "1.4"      # Static globals for route storage
 
 [dev-dependencies]
 # No dev dependencies needed for now

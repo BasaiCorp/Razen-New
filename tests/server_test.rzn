@@ -1,0 +1,29 @@
+// Test server module - Web server like Go and Node.js
+
+use server
+
+fun main() {
+    println("[INFO] Testing Razen Web Server")
+    println("")
+    
+    // Create server
+    println("[TEST] Creating server...")
+    var app = server.create()
+    println("[SUCCESS] Server created")
+    
+    // Get server configuration
+    var server_port = server.port(app)
+    var server_host = server.host(app)
+    println(f"Server configured on {server_host}:{server_port}")
+    
+    println("")
+    println("[INFO] Starting server on port 8080...")
+    println("[INFO] Open http://127.0.0.1:8080 in your browser")
+    println("[INFO] Press Ctrl+C to stop the server")
+    println("")
+    
+    // Start listening (this will block)
+    server.listen(8080)
+}
+
+main()

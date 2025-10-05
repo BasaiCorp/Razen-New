@@ -1,0 +1,47 @@
+// Test os.exec() for executing system commands
+
+use os
+
+fun main() {
+    println("[INFO] Testing os.exec() - Command Execution")
+    println("")
+    
+    // Execute simple command
+    println("[TEST] Executing 'echo Hello from Razen'")
+    var result = os.exec("echo", "Hello from Razen")
+    println(f"Status: {result.status}")
+    println(f"Output: {result.stdout}")
+    
+    // Execute ls command
+    println("")
+    println("[TEST] Executing 'ls -la'")
+    var ls_result = os.exec("ls", "-la")
+    println(f"Status: {ls_result.status}")
+    println(f"Output: {ls_result.stdout}")
+    
+    // Execute pwd command
+    println("")
+    println("[TEST] Executing 'pwd'")
+    var pwd_result = os.exec("pwd")
+    println(f"Status: {pwd_result.status}")
+    println(f"Output: {pwd_result.stdout}")
+    
+    // Execute date command
+    println("")
+    println("[TEST] Executing 'date'")
+    var date_result = os.exec("date")
+    println(f"Status: {date_result.status}")
+    println(f"Output: {date_result.stdout}")
+    
+    // Execute uname command
+    println("")
+    println("[TEST] Executing 'uname -a'")
+    var uname_result = os.exec("uname", "-a")
+    println(f"Status: {uname_result.status}")
+    println(f"Output: {uname_result.stdout}")
+    
+    println("")
+    println("[SUCCESS] os.exec() command execution test completed!")
+}
+
+main()
