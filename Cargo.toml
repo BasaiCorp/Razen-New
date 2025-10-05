@@ -24,6 +24,7 @@ hostname = "0.4"         # System hostname
 whoami = "1.5"           # Username detection
 which = "6.0"            # Find executables in PATH
 lazy_static = "1.4"      # Static globals for route storage
+ctrlc = "3.4"            # Ctrl+C signal handling for graceful shutdown
 
 [dev-dependencies]
 # No dev dependencies needed for now

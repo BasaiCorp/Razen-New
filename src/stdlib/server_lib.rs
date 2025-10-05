@@ -14,11 +14,13 @@ use std::io::{Read, Write};
 use std::thread;
 use std::fs;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // Route storage structure
 lazy_static::lazy_static! {
     static ref ROUTES: Arc<Mutex<HashMap<String, HashMap<String, String>>>> = Arc::new(Mutex::new(HashMap::new()));
     static ref STATIC_DIR: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    static ref SERVER_RUNNING: Arc<AtomicBool> = Arc::new(AtomicBool::new(false));
 }
 
 pub fn has_function(name: &str) -> bool {
@@ -180,13 +182,31 @@ fn listen(args: Vec<Value>) -> Result<Value, String> {
     
     println!("[INFO] Starting server on {}", addr);
     
+    // Set up Ctrl+C handler
+    SERVER_RUNNING.store(true, Ordering::SeqCst);
+    let running = SERVER_RUNNING.clone();
+    ctrlc::set_handler(move || {
+        println!("\n[INFO] Shutting down server...");
+        running.store(false, Ordering::SeqCst);
+        std::process::exit(0);
+    }).expect("Error setting Ctrl-C handler");
+    
     match TcpListener::bind(&addr) {
         Ok(listener) => {
+            // Set non-blocking mode for graceful shutdown
+            listener.set_nonblocking(true).ok();
+            
             println!("[SUCCESS] Server listening on http://{}", addr);
             println!("[INFO] Press Ctrl+C to stop");
             
             // Request handler with routing
             for stream in listener.incoming() {
+                // Check if server should stop
+                if !SERVER_RUNNING.load(Ordering::SeqCst) {
+                    println!("[INFO] Server stopped");
+                    break;
+                }
+                
                 match stream {
                     Ok(mut stream) => {
                         thread::spawn(move || {
@@ -207,11 +227,20 @@ fn listen(args: Vec<Value>) -> Result<Value, String> {
                                         // Check registered routes first
                                         let routes = ROUTES.lock().unwrap();
                                         if let Some(method_routes) = routes.get(method) {
-                                            if let Some(file_path) = method_routes.get(&path) {
+                                            // Try exact path match first
+                                            let mut file_path_opt = method_routes.get(&path).cloned();
+                                            
+                                            // If no exact match, try with .html extension
+                                            if file_path_opt.is_none() && !path.ends_with(".html") && !path.contains('.') {
+                                                let path_with_html = format!("{}.html", path);
+                                                file_path_opt = method_routes.get(&path_with_html).cloned();
+                                            }
+                                            
+                                            if let Some(file_path) = file_path_opt {
                                                 // Serve the file mapped to this route
-                                                match fs::read_to_string(file_path) {
+                                                match fs::read_to_string(&file_path) {
                                                     Ok(content) => {
-                                                        let content_type = get_content_type(file_path);
+                                                        let content_type = get_content_type(&file_path);
                                                         let response = format!(
                                                             "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\n\r\n{}",
                                                             content_type,
@@ -278,6 +307,11 @@ fn listen(args: Vec<Value>) -> Result<Value, String> {
                                 }
                             }
                         });
+                    }
+                    Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                        // Non-blocking mode, no connection available
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        continue;
                     }
                     Err(e) => {
                         eprintln!("[ERROR] Connection failed: {}", e);
