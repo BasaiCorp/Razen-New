@@ -78,6 +78,7 @@ impl Type {
             Expression::IntegerLiteral(_) => Type::Int,
             Expression::FloatLiteral(_) => Type::Float,
             Expression::StringLiteral(_) => Type::String,
+            Expression::CharacterLiteral(_) => Type::Char,
             Expression::BooleanLiteral(_) => Type::Bool,
             Expression::NullLiteral(_) => Type::Null,
             _ => Type::Unknown,

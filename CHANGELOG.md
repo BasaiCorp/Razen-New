@@ -32,6 +32,28 @@ var quote = "She said \"Hello!\""
 var table = "Name\tAge\tCity"
 ```
 
+#### Character Literal Support
+- **Full character literal parsing** with single quote syntax
+- Supported features:
+  - Basic characters: `'A'`, `'5'`, `'@'`, `' '`
+  - Escape sequences: `'\n'`, `'\t'`, `'\r'`, `'\\'`, `'\''`
+  - Character comparison operators: `==`, `!=`, `<`, `>`, `<=`, `>=`
+  - ASCII ordering for comparisons
+- **Type system integration** with `char` type
+- **Seamless string interoperability** for output and conversion
+- Added comprehensive test suite (`tests/character_test.rzn`)
+
+**Example:**
+```razen
+var initial: char = 'J'
+var grade: char = 'A'
+var newline = '\n'
+var tab = '\t'
+
+// Character comparison
+var result = 'A' < 'B'  // true (ASCII order)
+```
+
 #### Scientific Notation Support
 - **Full scientific notation parsing** for floating-point numbers
 - Supported formats:

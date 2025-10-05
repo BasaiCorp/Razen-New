@@ -1,7 +1,3 @@
-// Define type alias
-type UserId = int
-type EmailAddress = str
-
-// Use aliases
-var id: UserId = 12345
-var email: EmailAddress = "user@example.com"
+var initial: char = 'J'
+var grade: char = 'A'
+var symbol: char = '#'

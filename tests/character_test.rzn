@@ -1,0 +1,76 @@
+// Test character literal support
+
+fun main() {
+    println("[INFO] Testing character literals...")
+    
+    // Test 1: Basic character literals
+    println("\n[TEST] Basic characters:")
+    var letter = 'A'
+    var digit = '5'
+    var symbol = '@'
+    var space = ' '
+    println(f"Letter: {letter}")
+    println(f"Digit: {digit}")
+    println(f"Symbol: {symbol}")
+    println(f"Space: '{space}'")
+    
+    // Test 2: Character with type annotation
+    println("\n[TEST] Type annotations:")
+    var initial: char = 'J'
+    var grade: char = 'A'
+    var hash: char = '#'
+    println(f"Initial: {initial}")
+    println(f"Grade: {grade}")
+    println(f"Hash: {hash}")
+    
+    // Test 3: Escape sequences in characters
+    println("\n[TEST] Escape sequences:")
+    var newline = '\n'
+    var tab = '\t'
+    var backslash = '\\'
+    var singleQuote = '\''
+    println(f"Newline char (next line):{newline}Done")
+    println(f"Tab char:\t{tab}After tab")
+    println(f"Backslash: {backslash}")
+    println(f"Single quote: {singleQuote}")
+    
+    // Test 4: Character comparison
+    println("\n[TEST] Character comparison:")
+    var a = 'A'
+    var b = 'B'
+    var equal = a == b
+    var notEqual = a != b
+    var less = a < b
+    var greater = a > b
+    println(f"'{a}' == '{b}': {equal}")
+    println(f"'{a}' != '{b}': {notEqual}")
+    println(f"'{a}' < '{b}': {less}")
+    println(f"'{a}' > '{b}': {greater}")
+    
+    // Test 5: Uppercase vs lowercase
+    println("\n[TEST] Case comparison:")
+    var upper = 'A'
+    var lower = 'a'
+    var caseCompare = lower > upper
+    println(f"'{lower}' > '{upper}': {caseCompare}")
+    
+    // Test 6: Digit characters
+    println("\n[TEST] Digit characters:")
+    var zero = '0'
+    var nine = '9'
+    var digitCompare = zero < nine
+    println(f"'{zero}' < '{nine}': {digitCompare}")
+    
+    // Test 7: Various symbols
+    println("\n[TEST] Symbol characters:")
+    var at = '@'
+    var dollar = '$'
+    var percent = '%'
+    var ampersand = '&'
+    println(f"At: {at}")
+    println(f"Dollar: {dollar}")
+    println(f"Percent: {percent}")
+    println(f"Ampersand: {ampersand}")
+    
+    println("\n[SUCCESS] All character literal tests completed!")
+}

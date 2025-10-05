@@ -564,6 +564,13 @@ impl<'a> ExpressionParser<'a> {
             }
         }
         
+        // Handle character literals
+        if let Some(token) = self.match_token_kind(&TokenKind::Character('\0')) {
+            if let TokenKind::Character(value) = &token.kind {
+                return Ok(Expression::CharacterLiteral(CharacterLiteral::new(*value)));
+            }
+        }
+        
         // Handle f-strings
         if let Some(token) = self.match_token_kind(&TokenKind::FString("".to_string())) {
             if let TokenKind::FString(value) = &token.kind {

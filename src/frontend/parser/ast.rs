@@ -53,6 +53,7 @@ pub enum Expression {
     IntegerLiteral(IntegerLiteral),
     FloatLiteral(FloatLiteral),
     StringLiteral(StringLiteral),
+    CharacterLiteral(CharacterLiteral),
     BooleanLiteral(BooleanLiteral),
     NullLiteral(NullLiteral),
     
@@ -313,6 +314,11 @@ pub struct StringLiteral {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct CharacterLiteral {
+    pub value: char,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct BooleanLiteral {
     pub value: bool,
 }
@@ -514,6 +520,12 @@ impl FloatLiteral {
 impl StringLiteral {
     pub fn new(value: String) -> Self {
         StringLiteral { value }
+    }
+}
+
+impl CharacterLiteral {
+    pub fn new(value: char) -> Self {
+        CharacterLiteral { value }
     }
 }
 

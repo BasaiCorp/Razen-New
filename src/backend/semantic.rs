@@ -661,6 +661,7 @@ impl SemanticAnalyzer {
                                 Expression::IntegerLiteral(_) => "int",
                                 Expression::FloatLiteral(_) => "float",
                                 Expression::StringLiteral(_) => "str",
+                                Expression::CharacterLiteral(_) => "char",
                                 Expression::BooleanLiteral(_) => "bool",
                                 _ => "var",
                             }
@@ -831,6 +832,7 @@ impl SemanticAnalyzer {
             Expression::Identifier(ident) => self.analyze_identifier(ident),
             Expression::IntegerLiteral(_) => Some("int".to_string()),
             Expression::StringLiteral(_) => Some("str".to_string()),
+            Expression::CharacterLiteral(_) => Some("char".to_string()),
             Expression::BooleanLiteral(_) => Some("bool".to_string()),
             Expression::BinaryExpression(bin_expr) => {
                 let left_type = self.analyze_expression(&bin_expr.left);

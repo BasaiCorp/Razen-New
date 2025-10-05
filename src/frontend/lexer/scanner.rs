@@ -253,6 +253,7 @@ impl Scanner {
             ' ' | '\r' | '\t' => (),
             '\n' => self.line += 1,
             '"' => self.string(),
+            '\'' => self.character(),
             c if c.is_digit(10) => self.number(),
             c if c.is_alphabetic() || c == '_' => {
                 // Check for f-string
@@ -404,6 +405,51 @@ impl Scanner {
         self.advance(); // The closing ".
 
         self.add_token(TokenKind::FString(value));
+    }
+
+    fn character(&mut self) {
+        // Character literal must have exactly one character between single quotes
+        if self.is_at_end() {
+            self.add_token(TokenKind::Illegal);
+            return;
+        }
+
+        let ch;
+        
+        // Handle escape sequences
+        if self.peek() == '\\' {
+            self.advance(); // consume backslash
+            if self.is_at_end() {
+                self.add_token(TokenKind::Illegal);
+                return;
+            }
+            let escaped = self.advance();
+            ch = match escaped {
+                'n' => '\n',
+                't' => '\t',
+                'r' => '\r',
+                '\\' => '\\',
+                '\'' => '\'',
+                '0' => '\0',
+                _ => {
+                    // Invalid escape sequence
+                    self.add_token(TokenKind::Illegal);
+                    return;
+                }
+            };
+        } else {
+            ch = self.advance();
+        }
+
+        // Must have closing single quote
+        if self.peek() != '\'' {
+            self.add_token(TokenKind::Illegal);
+            return;
+        }
+
+        self.advance(); // consume closing '
+
+        self.add_token(TokenKind::Character(ch));
     }
 
     fn match_char(&mut self, expected: char) -> bool {

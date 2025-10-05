@@ -974,6 +974,10 @@ impl Compiler {
             Expression::StringLiteral(str_lit) => {
                 self.emit(IR::PushString(str_lit.value));
             },
+            Expression::CharacterLiteral(char_lit) => {
+                // Store character as a single-character string
+                self.emit(IR::PushString(char_lit.value.to_string()));
+            },
             Expression::IntegerLiteral(int_lit) => {
                 self.emit(IR::PushInteger(int_lit.value));
             },
