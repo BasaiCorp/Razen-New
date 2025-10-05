@@ -1,0 +1,17 @@
+// Test file to demonstrate new Razen error messages
+
+fun main() {
+    var username = "Hanuman"
+    var password = input("Enter password: ")
+    
+    // Error: userName is not defined (case-sensitive)
+    if checkAuth(userName, password) {
+        println("Welcome!")
+    }
+    
+    // Error: undefined function
+    var result = add(5, "hello")
+    
+    // Warning: unused variable
+    var age = 25
+}

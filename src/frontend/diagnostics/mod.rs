@@ -66,11 +66,11 @@ pub mod helpers {
 
         // Add helpful suggestions based on common mistakes
         if expected_str.contains(&"fun".to_string()) && found_str == "function" {
-            diagnostic = diagnostic.with_help("help: use `fun` instead of `function` in Razen");
+            diagnostic = diagnostic.with_help("Use `fun` instead of `function` in Razen");
         } else if expected_str.contains(&"var".to_string()) && found_str == "let" {
-            diagnostic = diagnostic.with_help("help: use `var` instead of `let` in Razen");
+            diagnostic = diagnostic.with_help("Use `var` instead of `let` in Razen");
         } else if expected_str.contains(&"{".to_string()) {
-            diagnostic = diagnostic.with_help("help: expected opening brace `{` to start a block");
+            diagnostic = diagnostic.with_help("Expected opening brace `{` to start a block");
         }
 
         diagnostic
@@ -85,9 +85,9 @@ pub mod helpers {
 
         // Add context-specific help
         match expected_str.as_str() {
-            ")" => diagnostic = diagnostic.with_help("help: missing closing parenthesis"),
-            "}" => diagnostic = diagnostic.with_help("help: missing closing brace"),
-            ";" => diagnostic = diagnostic.with_note("note: semicolons are optional in Razen but can help with clarity"),
+            ")" => diagnostic = diagnostic.with_help("Missing closing parenthesis"),
+            "}" => diagnostic = diagnostic.with_help("Missing closing brace"),
+            ";" => diagnostic = diagnostic.with_note("Semicolons are optional in Razen but can help with clarity"),
             _ => {}
         }
 
@@ -103,16 +103,16 @@ pub mod helpers {
 
         // Add smart suggestions based on variable name
         if name_str.chars().next().map_or(false, |c| c.is_uppercase()) {
-            diagnostic = diagnostic.with_help("help: variable names should start with lowercase in Razen");
+            diagnostic = diagnostic.with_help("Variable names should start with lowercase in Razen");
         }
         
         // Check for common typos
         if name_str.contains("_") {
             let camel_case = name_str.replace("_", "");
-            diagnostic = diagnostic.with_help(format!("help: did you mean `{}`? Razen uses camelCase for variables", camel_case));
+            diagnostic = diagnostic.with_help(format!("Did you mean `{}`? Razen uses camelCase for variables", camel_case));
         }
         
-        diagnostic = diagnostic.with_help(format!("help: declare `{}` with `var {} = value` before using it", name_str, name_str));
+        diagnostic = diagnostic.with_help(format!("Declare `{}` with `var {} = value` before using it", name_str, name_str));
         
         diagnostic
     }
@@ -127,19 +127,19 @@ pub mod helpers {
         // Suggest common built-in functions if similar
         match name_str.as_str() {
             "print_line" | "printline" | "print_ln" => {
-                diagnostic = diagnostic.with_help("help: did you mean `println`?");
+                diagnostic = diagnostic.with_help("Did you mean `println`?");
             }
             "printf" | "print_f" => {
-                diagnostic = diagnostic.with_help("help: use `print` or `println` for output in Razen");
+                diagnostic = diagnostic.with_help("Use `print` or `println` for output in Razen");
             }
             "console.log" | "console_log" => {
-                diagnostic = diagnostic.with_help("help: use `println` for console output in Razen");
+                diagnostic = diagnostic.with_help("Use `println` for console output in Razen");
             }
             "puts" | "echo" => {
-                diagnostic = diagnostic.with_help("help: use `println` for output in Razen");
+                diagnostic = diagnostic.with_help("Use `println` for output in Razen");
             }
             _ => {
-                diagnostic = diagnostic.with_help(format!("help: define function `{}` with `fun {}() {{ ... }}` or check if it's imported", name_str, name_str));
+                diagnostic = diagnostic.with_help(format!("Define function `{}` with `fun {}() {{ ... }}` or check if it's imported", name_str, name_str));
             }
         }
 
@@ -158,25 +158,25 @@ pub mod helpers {
         // Add conversion suggestions
         match (expected_str.as_str(), found_str.as_str()) {
             ("str", "int") => {
-                diagnostic = diagnostic.with_help("help: convert with string interpolation: `f\"{value}\"` or `.toString()`");
+                diagnostic = diagnostic.with_help("Convert with string interpolation: `f\"{value}\"` or `.toString()`");
             }
             ("int", "str") => {
-                diagnostic = diagnostic.with_help("help: convert with `.toInt()` or `parseInt(value)`");
+                diagnostic = diagnostic.with_help("Convert with `toint(value)`");
             }
             ("float", "int") => {
-                diagnostic = diagnostic.with_help("help: convert with `.toFloat()` or add decimal point: `1.0`");
+                diagnostic = diagnostic.with_help("Convert with `tofloat(value)` or add decimal point: `1.0`");
             }
             ("int", "float") => {
-                diagnostic = diagnostic.with_help("help: convert with `.toInt()` or use integer literal");
+                diagnostic = diagnostic.with_help("Convert with `toint(value)` or use integer literal");
             }
             ("bool", _) => {
-                diagnostic = diagnostic.with_help("help: use comparison operators (==, !=, <, >) to create boolean values");
+                diagnostic = diagnostic.with_help("Use comparison operators (==, !=, <, >) to create boolean values");
             }
             ("str", "bool") => {
-                diagnostic = diagnostic.with_help("help: convert with `value ? \"true\" : \"false\"` or `.toString()`");
+                diagnostic = diagnostic.with_help("Convert with `tostr(value)`");
             }
             _ => {
-                diagnostic = diagnostic.with_help(format!("help: cannot automatically convert from `{}` to `{}`", found_str, expected_str));
+                diagnostic = diagnostic.with_help(format!("Cannot automatically convert from `{}` to `{}`", found_str, expected_str));
             }
         }
 
@@ -188,7 +188,7 @@ pub mod helpers {
         let mut diagnostic = Diagnostic::new(DiagnosticKind::duplicate_definition(name))
             .with_label(Label::primary(span).with_message("redefined here"))
             .with_code("E0007")
-            .with_help("help: consider using a different name or removing one of the definitions");
+            .with_help("Consider using a different name or removing one of the definitions");
 
         if let Some(prev_span) = previous_span {
             diagnostic = diagnostic.with_label(
@@ -204,7 +204,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::wrong_argument_count(expected, found))
             .with_label(Label::primary(span))
             .with_code("E0008")
-            .with_help(format!("help: this function expects {} argument{}", 
+            .with_help(format!("This function expects {} argument{}", 
                               expected, if expected == 1 { "" } else { "s" }))
     }
 
@@ -214,7 +214,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::unused_variable(name_str.clone()))
             .with_label(Label::primary(span))
             .with_code("W0001")
-            .with_help(format!("help: if this is intentional, prefix the name with `_` (e.g., `_{}`)", name_str))
+            .with_help(format!("If this is intentional, prefix the name with `_` (e.g., `_{}`)", name_str))
     }
 
     /// Create a variable shadowing warning
@@ -222,7 +222,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::shadowed_variable(name, previous_line))
             .with_label(Label::primary(span))
             .with_code("W0002")
-            .with_help("help: consider using a different variable name to avoid confusion")
+            .with_help("Consider using a different variable name to avoid confusion")
     }
 
     /// Create a naming convention warning
@@ -233,7 +233,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::naming_convention(name_str.clone(), style_str.clone()))
             .with_label(Label::primary(span))
             .with_code("W0003")
-            .with_help(format!("help: {} names should follow {} convention", 
+            .with_help(format!("{} names should follow {} convention", 
                               if name_str.chars().next().map_or(false, |c| c.is_uppercase()) { "Type" } else { "Variable" },
                               style_str))
     }
@@ -243,7 +243,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::large_function(lines))
             .with_label(Label::primary(span))
             .with_code("W0004")
-            .with_help("help: consider breaking this function into smaller, more focused functions")
+            .with_help("Consider breaking this function into smaller, more focused functions")
     }
 
     /// Create a warning for deeply nested code
@@ -251,7 +251,7 @@ pub mod helpers {
         Diagnostic::new(DiagnosticKind::deep_nesting(depth))
             .with_label(Label::primary(span))
             .with_code("W0005")
-            .with_help("help: consider extracting nested logic into separate functions or using early returns")
+            .with_help("Consider extracting nested logic into separate functions or using early returns")
     }
 
     /// Create a general warning diagnostic

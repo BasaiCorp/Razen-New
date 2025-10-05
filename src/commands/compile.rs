@@ -77,7 +77,7 @@ pub fn execute(
         let semantic_diagnostics = semantic_analyzer.analyze_with_source(&program, &source);
         
         if !semantic_diagnostics.is_empty() {
-            let sources = vec![("source".to_string(), source.clone())];
+            let sources = vec![(filename.clone(), source.clone())];
             let rendered = render_diagnostics(&semantic_diagnostics, &sources);
             eprintln!("{}", rendered);
             

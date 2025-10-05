@@ -197,30 +197,22 @@ impl DiagnosticRenderer {
         let reset_color = if self.config.use_colors { "\x1b[0m" } else { "" };
         let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
 
-        // Format: error[E0001]: message
-        if let Some(ref code) = diagnostic.code {
-            output.push_str(&format!(
-                "{}{}[{}]{}: {}{}{}\n",
-                severity_color,
-                bold,
-                code,
-                reset_color,
-                bold,
-                diagnostic.title(),
-                reset_color
-            ));
-        } else {
-            output.push_str(&format!(
-                "{}{}{}{}: {}{}{}\n",
-                severity_color,
-                bold,
-                diagnostic.severity,
-                reset_color,
-                bold,
-                diagnostic.title(),
-                reset_color
-            ));
-        }
+        // Format: [ERROR] message (Razen clean style)
+        let severity_label = match diagnostic.severity {
+            Severity::Error => "ERROR",
+            Severity::Warning => "WARNING",
+            Severity::Note => "NOTE",
+            Severity::Help => "HELP",
+        };
+
+        output.push_str(&format!(
+            "{}{}[{}]{} {}\n",
+            severity_color,
+            bold,
+            severity_label,
+            reset_color,
+            diagnostic.title()
+        ));
     }
 
     fn write_labels(&self, output: &mut String, labels: &[Label]) {
@@ -238,7 +230,21 @@ impl DiagnosticRenderer {
 
     fn write_source_snippet(&self, output: &mut String, source_id: &Option<String>, labels: Vec<&Label>) {
         let source_file = match source_id {
-            Some(id) => self.source_manager.get_source(id),
+            Some(id) => {
+                // Try exact match first
+                if let Some(sf) = self.source_manager.get_source(id) {
+                    Some(sf)
+                } else {
+                    // Try all registered sources to find a match
+                    // This handles cases where the path format might differ slightly
+                    self.source_manager.sources.values()
+                        .find(|sf| {
+                            sf.name == *id || 
+                            sf.name.ends_with(id) || 
+                            id.ends_with(&sf.name)
+                        })
+                }
+            },
             None => None,
         };
 
@@ -261,33 +267,30 @@ impl DiagnosticRenderer {
         
         let start_line = min_line.saturating_sub(self.config.context_lines).max(1);
         let end_line = (max_line + self.config.context_lines).min(source_file.line_count());
-
         // Calculate line number width for alignment
         let line_num_width = end_line.to_string().len();
 
         // Colors
-        let blue = if self.config.use_colors { "\x1b[34m" } else { "" };
+        let dim_gray = if self.config.use_colors { "\x1b[90m" } else { "" };
         let reset = if self.config.use_colors { "\x1b[0m" } else { "" };
 
-        // File location header
+        // File location header - clean Razen style
         output.push_str(&format!(
-            "{}  --> {}{}:{}\n",
-            blue,
+            "  {}:{}:{}\n",
             source_file.name,
-            reset,
-            min_line
+            min_line,
+            labels.first().map(|l| l.span.start.column).unwrap_or(1)
         ));
 
-        // Empty line with gutter
-        output.push_str(&format!("{}   {}\n", blue, reset));
+        output.push_str("\n");
 
         // Display lines with annotations
         for line_num in start_line..=end_line {
             if let Some(line_content) = source_file.get_line(line_num) {
-                // Line number and content
+                // Line number and content - simple format without | decoration
                 output.push_str(&format!(
-                    "{}{:width$} |{} {}\n",
-                    blue,
+                    "{}    {:width$}  {}{}\n",
+                    dim_gray,
                     line_num,
                     reset,
                     line_content,
@@ -330,15 +333,14 @@ impl DiagnosticRenderer {
         annotations.sort_by_key(|(start, _, _)| *start);
 
         // Colors
-        let blue = if self.config.use_colors { "\x1b[34m" } else { "" };
-        let _red = if self.config.use_colors { "\x1b[31m" } else { "" };
+        let dim_gray = if self.config.use_colors { "\x1b[90m" } else { "" };
         let reset = if self.config.use_colors { "\x1b[0m" } else { "" };
 
-        // Create annotation line
+        // Create annotation line - clean style without decorations
         let mut annotation_line = String::new();
-        annotation_line.push_str(&format!("{}   {}", blue, reset));
+        annotation_line.push_str(&format!("{}    {}", dim_gray, reset));
         annotation_line.push_str(&" ".repeat(line_num_width));
-        annotation_line.push_str(&format!("{} |{} ", blue, reset));
+        annotation_line.push_str("  ");
 
         // Add spaces and carets
         let mut pos = 0;
@@ -349,47 +351,32 @@ impl DiagnosticRenderer {
                 pos += 1;
             }
 
-            // Add carets or underlines
-            let annotation_char = match label.severity {
-                Severity::Error => '^',
-                Severity::Warning => '~',
-                Severity::Note => '-',
-                Severity::Help => '?',
-            };
-
+            // Always use ^ for highlighting (simple and clean)
             let color = label.severity.color_code();
             let color_str = if self.config.use_colors { color } else { "" };
 
             if start_col == end_col || *end_col <= start_col + 1 {
-                annotation_line.push_str(&format!("{}{}{}", color_str, annotation_char, reset));
+                annotation_line.push_str(&format!("{}{}{}", color_str, '^', reset));
                 pos += 1;
             } else {
                 for _ in *start_col..*end_col {
-                    annotation_line.push_str(&format!("{}{}{}", color_str, annotation_char, reset));
+                    annotation_line.push_str(&format!("{}{}{}", color_str, '^', reset));
                     pos += 1;
                 }
             }
         }
 
         output.push_str(&annotation_line);
-        output.push('\n');
-
-        // Add label messages
+        
+        // Add inline message if present
         for (_, _, label) in &annotations {
             if let Some(ref message) = label.message {
-                let color = if self.config.use_colors { label.severity.color_code() } else { "" };
-                output.push_str(&format!(
-                    "{}   {}{} |{} {}{}{}\n",
-                    blue,
-                    " ".repeat(line_num_width),
-                    blue,
-                    reset,
-                    color,
-                    message,
-                    reset
-                ));
+                output.push_str(&format!(" {}", message));
+                break; // Only show first message inline
             }
         }
+        
+        output.push('\n');
     }
 
     fn write_source_without_file(&self, output: &mut String, source_id: &Option<String>, labels: Vec<&Label>) {
@@ -417,7 +404,7 @@ impl DiagnosticRenderer {
         let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
 
         output.push_str(&format!(
-            "{}{}note{}: {}\n",
+            "{}{}[NOTE]{} {}\n",
             blue, bold, reset, note
         ));
     }
@@ -428,7 +415,7 @@ impl DiagnosticRenderer {
         let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
 
         output.push_str(&format!(
-            "{}{}help{}: {}\n",
+            "{}{}[HELP]{} {}\n",
             cyan, bold, reset, help
         ));
     }
@@ -447,71 +434,34 @@ impl DiagnosticRenderer {
             output.push('\n');
         }
 
-        let mut parts = Vec::new();
-
         if error_count > 0 {
-            let plural = if error_count == 1 { "" } else { "s" };
-            parts.push(format!("{}{}{} error{}{}", red, bold, error_count, plural, reset));
-        }
-
-        if warning_count > 0 {
-            let plural = if warning_count == 1 { "" } else { "s" };
-            parts.push(format!("{}{}{} warning{}{}", yellow, bold, warning_count, plural, reset));
-        }
-
-        if !parts.is_empty() {
-            if error_count > 0 {
-                output.push_str(&format!("{}{}compilation failed{} due to {}\n", 
-                                       red, bold, reset, parts.join(", ")));
+            let error_plural = if error_count == 1 { "error" } else { "errors" };
+            if warning_count > 0 {
+                let warning_plural = if warning_count == 1 { "warning" } else { "warnings" };
+                output.push_str(&format!(
+                    "{}{}[INFO]{} Compilation failed with {} {}, {} {}\n",
+                    red, bold, reset, error_count, error_plural, warning_count, warning_plural
+                ));
             } else {
-                output.push_str(&format!("{}{}compilation completed{} with {}\n", 
-                                       yellow, bold, reset, parts.join(", ")));
+                output.push_str(&format!(
+                    "{}{}[INFO]{} Compilation failed with {} {}\n",
+                    red, bold, reset, error_count, error_plural
+                ));
             }
+        } else if warning_count > 0 {
+            let warning_plural = if warning_count == 1 { "warning" } else { "warnings" };
+            output.push_str(&format!(
+                "{}{}[INFO]{} Compilation completed with {} {}\n",
+                yellow, bold, reset, warning_count, warning_plural
+            ));
         } else {
-            output.push_str(&format!("{}{}compilation successful{}\n", green, bold, reset));
-        }
-
-        // Add helpful tips for common issues
-        if self.config.show_suggestions && error_count > 0 {
-            output.push('\n');
-            self.write_compilation_tips(output, diagnostics);
+            output.push_str(&format!("{}{}[SUCCESS]{} Compilation completed\n", green, bold, reset));
         }
     }
 
-    fn write_compilation_tips(&self, output: &mut String, diagnostics: &Diagnostics) {
-        let cyan = if self.config.use_colors { "\x1b[36m" } else { "" };
-        let reset = if self.config.use_colors { "\x1b[0m" } else { "" };
-        let bold = if self.config.use_colors { "\x1b[1m" } else { "" };
-
-        // Analyze common error patterns and provide tips
-        let has_undefined_vars = diagnostics.diagnostics.iter()
-            .any(|d| matches!(d.kind, super::error::DiagnosticKind::UndefinedVariable { .. }));
-        
-        let has_type_mismatches = diagnostics.diagnostics.iter()
-            .any(|d| matches!(d.kind, super::error::DiagnosticKind::TypeMismatch { .. }));
-
-        let has_syntax_errors = diagnostics.diagnostics.iter()
-            .any(|d| matches!(d.kind, super::error::DiagnosticKind::UnexpectedToken { .. } | 
-                                     super::error::DiagnosticKind::MissingToken { .. }));
-
-        if has_undefined_vars || has_type_mismatches || has_syntax_errors {
-            output.push_str(&format!("{}{}tips{}: ", cyan, bold, reset));
-            
-            let mut tips = Vec::new();
-            
-            if has_syntax_errors {
-                tips.push("check your syntax - Razen uses `fun` for functions and `var` for variables");
-            }
-            if has_undefined_vars {
-                tips.push("make sure all variables are declared before use");
-            }
-            if has_type_mismatches {
-                tips.push("check that your types match - use explicit conversions if needed");
-            }
-
-            output.push_str(&tips.join(", "));
-            output.push('\n');
-        }
+    fn write_compilation_tips(&self, _output: &mut String, _diagnostics: &Diagnostics) {
+        // Removed compilation tips for cleaner output
+        // Tips are now integrated into individual error messages
     }
 }
 

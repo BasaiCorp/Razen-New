@@ -82,7 +82,8 @@ fn run_single_test(
         
         if !semantic_diagnostics.is_empty() && semantic_diagnostics.has_errors() {
             if verbose {
-                let sources = vec![("source".to_string(), source.clone())];
+                let filename = file.to_string_lossy().to_string();
+                let sources = vec![(filename, source.clone())];
                 let rendered = render_diagnostics(&semantic_diagnostics, &sources);
                 eprintln!("{}", rendered);
             }
