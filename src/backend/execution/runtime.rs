@@ -778,7 +778,7 @@ impl Runtime {
     }
 
     fn is_builtin(&self, name: &str) -> bool {
-        matches!(name, "print" | "println" | "printc" | "printlnc" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "typeof" | "create_range" | "array_get" | "concat_string" | "load_var_by_name")
+        matches!(name, "print" | "println" | "printc" | "printlnc" | "input" | "read" | "write" | "len" | "append" | "remove" | "toint" | "tofloat" | "tostr" | "tobool" | "typeof" | "create_range" | "array_get" | "concat_string" | "load_var_by_name" | "Ok" | "Err" | "Some" | "None" | "is_ok" | "is_err" | "is_some" | "is_none" | "unwrap" | "unwrap_or")
     }
 
     fn execute_builtin(&mut self, name: &str, arg_count: usize) -> Result<(), String> {
@@ -911,6 +911,8 @@ impl Runtime {
                         Value::Array(_) => "array",
                         Value::Map(_) => "map",
                         Value::Struct { ref type_name, .. } => type_name.as_str(),
+                        Value::Result { .. } => "Result",
+                        Value::Option { .. } => "Option",
                         Value::Null => "null",
                     };
                     self.stack.push(Value::String(type_name.to_string()));
@@ -986,6 +988,83 @@ impl Runtime {
                     }
                 } else {
                     return Err("load_var_by_name() requires 1 argument".to_string());
+                }
+            },
+            // Result type constructors
+            "Ok" => {
+                if arg_count >= 1 {
+                    let value = self.stack.pop().unwrap_or(Value::Null);
+                    self.stack.push(Value::ok(value));
+                } else {
+                    return Err("Ok() requires 1 argument".to_string());
+                }
+            },
+            "Err" => {
+                if arg_count >= 1 {
+                    let error = self.stack.pop().unwrap_or(Value::String("Error".to_string()));
+                    self.stack.push(Value::err(error));
+                } else {
+                    return Err("Err() requires 1 argument".to_string());
+                }
+            },
+            // Option type constructors
+            "Some" => {
+                if arg_count >= 1 {
+                    let value = self.stack.pop().unwrap_or(Value::Null);
+                    self.stack.push(Value::some(value));
+                } else {
+                    return Err("Some() requires 1 argument".to_string());
+                }
+            },
+            "None" => {
+                self.stack.push(Value::none());
+            },
+            // Result/Option methods
+            "is_ok" => {
+                if let Some(value) = self.stack.pop() {
+                    self.stack.push(Value::Boolean(value.is_ok()));
+                } else {
+                    return Err("is_ok() requires 1 argument".to_string());
+                }
+            },
+            "is_err" => {
+                if let Some(value) = self.stack.pop() {
+                    self.stack.push(Value::Boolean(value.is_err()));
+                } else {
+                    return Err("is_err() requires 1 argument".to_string());
+                }
+            },
+            "is_some" => {
+                if let Some(value) = self.stack.pop() {
+                    self.stack.push(Value::Boolean(value.is_some()));
+                } else {
+                    return Err("is_some() requires 1 argument".to_string());
+                }
+            },
+            "is_none" => {
+                if let Some(value) = self.stack.pop() {
+                    self.stack.push(Value::Boolean(value.is_none()));
+                } else {
+                    return Err("is_none() requires 1 argument".to_string());
+                }
+            },
+            "unwrap" => {
+                if let Some(value) = self.stack.pop() {
+                    match value.unwrap() {
+                        Ok(inner) => self.stack.push(inner),
+                        Err(e) => return Err(e),
+                    }
+                } else {
+                    return Err("unwrap() requires 1 argument".to_string());
+                }
+            },
+            "unwrap_or" => {
+                if arg_count >= 2 {
+                    let default = self.stack.pop().unwrap_or(Value::Null);
+                    let value = self.stack.pop().unwrap_or(Value::Null);
+                    self.stack.push(value.unwrap_or(default));
+                } else {
+                    return Err("unwrap_or() requires 2 arguments".to_string());
                 }
             },
             _ => {

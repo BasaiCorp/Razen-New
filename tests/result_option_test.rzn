@@ -1,0 +1,54 @@
+// Test Result and Option types
+fun main() {
+    println("=== Testing Result Type ===")
+    
+    // Create Ok result
+    var ok_result = Ok(42)
+    println(ok_result)
+    
+    // Create Err result
+    var err_result = Err("Something went wrong")
+    println(err_result)
+    
+    // Test is_ok and is_err
+    println(is_ok(ok_result))    // Should print: true
+    println(is_err(ok_result))   // Should print: false
+    println(is_ok(err_result))   // Should print: false
+    println(is_err(err_result))  // Should print: true
+    
+    // Test unwrap
+    var value = unwrap(ok_result)
+    println(value)  // Should print: 42
+    
+    // Test unwrap_or
+    var safe_value = unwrap_or(err_result, 0)
+    println(safe_value)  // Should print: 0
+    
+    println("")
+    println("=== Testing Option Type ===")
+    
+    // Create Some option
+    var some_val = Some(100)
+    println(some_val)
+    
+    // Create None option
+    var none_val = None()
+    println(none_val)
+    
+    // Test is_some and is_none
+    println(is_some(some_val))  // Should print: true
+    println(is_none(some_val))  // Should print: false
+    println(is_some(none_val))  // Should print: false
+    println(is_none(none_val))  // Should print: true
+    
+    // Test unwrap
+    var opt_value = unwrap(some_val)
+    println(opt_value)  // Should print: 100
+    
+    // Test unwrap_or with None
+    var default_value = unwrap_or(none_val, 999)
+    println(default_value)  // Should print: 999
+    
+    println("")
+    println("=== All tests passed! ===")
+}

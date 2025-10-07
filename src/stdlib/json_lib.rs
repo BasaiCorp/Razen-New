@@ -199,5 +199,19 @@ fn value_to_json(value: &Value) -> String {
                 .collect();
             format!("{{\"_type\":\"{}\",{}}}", type_name, pairs.join(","))
         }
+        Value::Result { is_ok, value } => {
+            if *is_ok {
+                format!("{{\"Ok\":{}}}", value_to_json(value))
+            } else {
+                format!("{{\"Err\":{}}}", value_to_json(value))
+            }
+        }
+        Value::Option { is_some, value } => {
+            if *is_some {
+                format!("{{\"Some\":{}}}", value_to_json(value))
+            } else {
+                "null".to_string()
+            }
+        }
     }
 }

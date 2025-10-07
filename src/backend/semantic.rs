@@ -449,6 +449,18 @@ impl SemanticAnalyzer {
             ("typeof", vec!["value"]),
             ("append", vec!["list", "value"]),
             ("remove", vec!["list", "index"]),
+            // Result type constructors and methods
+            ("Ok", vec!["value"]),
+            ("Err", vec!["error"]),
+            ("is_ok", vec!["result"]),
+            ("is_err", vec!["result"]),
+            ("unwrap", vec!["result"]),
+            ("unwrap_or", vec!["result", "default"]),
+            // Option type constructors and methods
+            ("Some", vec!["value"]),
+            ("None", vec![]),
+            ("is_some", vec!["option"]),
+            ("is_none", vec!["option"]),
         ];
 
         for (name, params) in builtins {
