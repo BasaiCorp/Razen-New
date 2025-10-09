@@ -22,12 +22,18 @@ pub enum IR {
     ClearTryCatch,
     ThrowException,
 
-    // Memory operations
+    // Memory operations (Stack-based)
     StoreVar(String),
     LoadVar(String),
     SetGlobal(String),  // Global variable operations
+    
+    // Register-based operations for RAIE optimization
+    LoadReg(u8, String),    // Load variable into register: LoadReg(reg_id, var_name)
+    StoreReg(u8, String),   // Store register to variable: StoreReg(reg_id, var_name)
+    MoveReg(u8, u8),        // Move between registers: MoveReg(dest, src)
+    LoadImmediate(u8, i64), // Load immediate value: LoadImmediate(reg_id, value)
 
-    // Arithmetic operations
+    // Arithmetic operations (Stack-based)
     Add,
     Subtract,
     Multiply,
@@ -36,6 +42,14 @@ pub enum IR {
     Power,
     FloorDiv,
     Negate,
+    
+    // Register-based arithmetic operations for RAIE
+    AddReg(u8, u8, u8),      // AddReg(dest, src1, src2)
+    SubtractReg(u8, u8, u8), // SubtractReg(dest, src1, src2)
+    MultiplyReg(u8, u8, u8), // MultiplyReg(dest, src1, src2)
+    DivideReg(u8, u8, u8),   // DivideReg(dest, src1, src2)
+    ModuloReg(u8, u8, u8),   // ModuloReg(dest, src1, src2)
+    NegateReg(u8, u8),       // NegateReg(dest, src)
 
     // Comparison operations
     Equal,
@@ -106,6 +120,12 @@ impl fmt::Display for IR {
             IR::StoreVar(name) => write!(f, "STORE {}", name),
             IR::LoadVar(name) => write!(f, "LOAD {}", name),
             IR::SetGlobal(name) => write!(f, "SET_GLOBAL {}", name),
+            
+            // Register-based operations
+            IR::LoadReg(reg, name) => write!(f, "LOAD_REG R{} {}", reg, name),
+            IR::StoreReg(reg, name) => write!(f, "STORE_REG R{} {}", reg, name),
+            IR::MoveReg(dest, src) => write!(f, "MOVE_REG R{} R{}", dest, src),
+            IR::LoadImmediate(reg, val) => write!(f, "LOAD_IMM R{} {}", reg, val),
             IR::Add => write!(f, "ADD"),
             IR::Subtract => write!(f, "SUB"),
             IR::Multiply => write!(f, "MUL"),
@@ -114,6 +134,14 @@ impl fmt::Display for IR {
             IR::Power => write!(f, "POW"),
             IR::FloorDiv => write!(f, "FLOOR_DIV"),
             IR::Negate => write!(f, "NEG"),
+            
+            // Register-based arithmetic
+            IR::AddReg(dest, src1, src2) => write!(f, "ADD_REG R{} R{} R{}", dest, src1, src2),
+            IR::SubtractReg(dest, src1, src2) => write!(f, "SUB_REG R{} R{} R{}", dest, src1, src2),
+            IR::MultiplyReg(dest, src1, src2) => write!(f, "MUL_REG R{} R{} R{}", dest, src1, src2),
+            IR::DivideReg(dest, src1, src2) => write!(f, "DIV_REG R{} R{} R{}", dest, src1, src2),
+            IR::ModuloReg(dest, src1, src2) => write!(f, "MOD_REG R{} R{} R{}", dest, src1, src2),
+            IR::NegateReg(dest, src) => write!(f, "NEG_REG R{} R{}", dest, src),
             IR::Equal => write!(f, "EQ"),
             IR::NotEqual => write!(f, "NE"),
             IR::GreaterThan => write!(f, "GT"),

@@ -1139,4 +1139,56 @@ impl Runtime {
         
         Ok(())
     }
+    
+    // Helper methods for RAIE adaptive engine
+    
+    /// Get variable value for specialized operations
+    pub fn get_variable_value(&self, name: &str) -> Result<Value, String> {
+        // Check function scope first
+        if let Some((_, func_vars)) = self.call_stack.last() {
+            if let Some(value) = func_vars.get(name) {
+                return Ok(value.clone());
+            }
+        }
+        
+        // Check global scope
+        if let Some(value) = self.variables.get(name) {
+            Ok(value.clone())
+        } else {
+            Err(format!("Variable '{}' not found", name))
+        }
+    }
+    
+    /// Set variable value for specialized operations
+    pub fn set_variable_value(&mut self, name: &str, value: Value) -> Result<(), String> {
+        // Check if we're in a function call
+        if let Some((_, func_vars)) = self.call_stack.last_mut() {
+            // If variable exists in function scope, update it
+            if func_vars.contains_key(name) {
+                func_vars.insert(name.to_string(), value);
+                return Ok(());
+            }
+        }
+        
+        // Otherwise, set in global scope
+        self.variables.insert(name.to_string(), value);
+        Ok(())
+    }
+    
+    /// Get current variable scope size (for performance monitoring)
+    pub fn get_variable_count(&self) -> usize {
+        let mut count = self.variables.len();
+        if let Some((_, func_vars)) = self.call_stack.last() {
+            count += func_vars.len();
+        }
+        count
+    }
+    
+    /// Clear all variables (for testing/benchmarking)
+    pub fn clear_variables(&mut self) {
+        self.variables.clear();
+        if let Some((_, func_vars)) = self.call_stack.last_mut() {
+            func_vars.clear();
+        }
+    }
 }
