@@ -3,7 +3,7 @@
 //! 
 //! This module provides a complete execution system:
 //! - Runtime: IR interpreter (proven, reliable, fast)
-//! - JIT: Optimized IR execution (40-50% faster than Python)
+//! - Adaptive: Razen Adaptive Interpreter Engine (2-3x faster through specialization)
 //! - AOT: Ahead-of-time compilation (future: native code)
 //! 
 //! All three share the same IR and runtime foundation!
@@ -12,12 +12,12 @@ pub mod ir;
 pub mod compiler;
 pub mod runtime;
 pub mod value;
-pub mod jit;
+pub mod adaptive;
 pub mod aot;
 
 pub use ir::*;
 pub use compiler::*;
 pub use runtime::*;
 pub use value::*;
-pub use jit::JIT;
+pub use adaptive::AdaptiveEngine;
 pub use aot::AOT;

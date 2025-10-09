@@ -33,8 +33,8 @@ pub struct Cli {
 /// Available CLI commands
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Compile and run a Razen program (RAJIT mode)
-    #[command(about = "Compile and execute a Razen source file with RAJIT JIT compiler")]
+    /// Compile and run a Razen program (RAIE mode)
+    #[command(about = "Compile and execute a Razen source file with RAIE - Razen Adaptive Interpreter Engine")]
     Run {
         /// Path to the Razen source file
         #[arg(value_name = "FILE")]
@@ -56,9 +56,9 @@ pub enum Commands {
         #[arg(short, long)]
         watch: bool,
 
-        /// Use native JIT compilation (custom x86-64 backend)
+        /// Use RAIE adaptive compilation (Razen Adaptive Interpreter Engine)
         #[arg(long)]
-        jit: bool,
+        adaptive: bool,
 
         /// Use native AOT compilation (custom x86-64 backend)
         #[arg(long)]
@@ -161,8 +161,8 @@ pub enum Commands {
         version: String,
     },
 
-    /// Run JIT performance benchmarks
-    #[command(about = "Run comprehensive JIT performance benchmarks")]
+    /// Run RAIE performance benchmarks
+    #[command(about = "Run comprehensive RAIE performance benchmarks")]
     Benchmark {
         /// Number of iterations per benchmark
         #[arg(short, long, default_value = "3")]
@@ -184,7 +184,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
 
     match cli.command {
         Commands::Run { file, optimize } => run::execute(file, optimize),
-        Commands::Dev { file, watch, jit, aot } => dev::execute(file, watch, jit, aot),
+        Commands::Dev { file, watch, adaptive, aot } => dev::execute(file, watch, adaptive, aot),
         Commands::Build {
             output,
             optimization,

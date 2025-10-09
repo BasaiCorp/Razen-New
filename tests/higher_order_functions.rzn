@@ -1,0 +1,60 @@
+// Test higher-order functions with lambdas
+
+fun main() {
+    println("[INFO] Testing Higher-Order Functions")
+    println("")
+    
+    // Test 1: Function that takes a lambda as parameter
+    println("[TEST 1] Function accepting lambda")
+    fun apply_twice(f, x) {
+        return f(f(x))
+    }
+    
+    var increment = |n| => n + 1
+    var result1 = apply_twice(increment, 5)
+    println(f"apply_twice(increment, 5) = {result1}")
+    println("")
+    
+    // Test 2: Function returning a lambda
+    println("[TEST 2] Function returning lambda")
+    fun make_multiplier(factor) {
+        return |x| => x * factor
+    }
+    
+    var times_3 = make_multiplier(3)
+    var result2 = times_3(10)
+    println(f"make_multiplier(3)(10) = {result2}")
+    println("")
+    
+    // Test 3: Lambda for filtering/mapping (manual implementation)
+    println("[TEST 3] Manual map operation")
+    fun map_array(arr, transform) {
+        var result = []
+        for item in arr {
+            result = result + [transform(item)]
+        }
+        return result
+    }
+    
+    var numbers = [1, 2, 3, 4, 5]
+    var double = |x| => x * 2
+    var doubled = map_array(numbers, double)
+    println(f"Original: {numbers}")
+    println(f"Doubled: {doubled}")
+    println("")
+    
+    // Test 4: Composition of functions
+    println("[TEST 4] Function composition")
+    fun compose(f, g) {
+        return |x| => f(g(x))
+    }
+    
+    var add_10 = |x| => x + 10
+    var times_2 = |x| => x * 2
+    var add_then_multiply = compose(times_2, add_10)
+    var result4 = add_then_multiply(5)
+    println(f"compose(times_2, add_10)(5) = {result4}")
+    println("")
+    
+    println("[SUCCESS] All higher-order function tests completed!")
+}

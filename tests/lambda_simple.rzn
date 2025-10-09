@@ -1,0 +1,37 @@
+// Simple lambda test without empty parameter list
+
+fun main() {
+    println("[INFO] Testing Lambda Expressions")
+    println("")
+    
+    // Test 1: Simple lambda
+    println("[TEST 1] Simple lambda expression")
+    var add = |a, b| => a + b
+    var result1 = add(5, 3)
+    println(f"add(5, 3) = {result1}")
+    println("")
+    
+    // Test 2: Lambda with single parameter
+    println("[TEST 2] Lambda with single parameter")
+    var square = |x| => x * x
+    var result2 = square(7)
+    println(f"square(7) = {result2}")
+    println("")
+    
+    // Test 3: Closure capturing variables
+    println("[TEST 3] Closure capturing outer variables")
+    var x = 10
+    var add_x = |y| => x + y
+    var result3 = add_x(5)
+    println(f"x = {x}, add_x(5) = {result3}")
+    println("")
+    
+    // Test 4: Lambda with type annotations
+    println("[TEST 4] Lambda with type annotations")
+    var multiply = |a: int, b: int| => a * b
+    var result4 = multiply(6, 7)
+    println(f"multiply(6, 7) = {result4}")
+    println("")
+    
+    println("[SUCCESS] All lambda tests completed!")
+}

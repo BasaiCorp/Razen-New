@@ -1,0 +1,54 @@
+// Test lambda expressions and closures
+
+fun main() {
+    println("[INFO] Testing Lambda Expressions and Closures")
+    println("")
+    
+    // Test 1: Simple lambda
+    println("[TEST 1] Simple lambda expression")
+    var add = |a, b| => a + b
+    println(add)
+    var result1 = add(5, 3)
+    println(f"add(5, 3) = {result1}")
+    println("")
+    
+    // Test 2: Lambda with single parameter
+    println("[TEST 2] Lambda with single parameter")
+    var square = |x| => x * x
+    var result2 = square(7)
+    println(f"square(7) = {result2}")
+    println("")
+    
+    /* Test 3: Lambda with no parameters
+    println("[TEST 3] Lambda with no parameters")
+    var get_pi = || => 3.14159
+    var result3 = get_pi()
+    println(f"get_pi() = {result3}")
+    println("") */
+    
+    // Test 4: Closure capturing variables
+    println("[TEST 4] Closure capturing outer variables")
+    var x = 10
+    var add_x = |y| => x + y
+    var result4 = add_x(5)
+    println(f"x = {x}, add_x(5) = {result4}")
+    println("")
+    
+    // Test 5: Lambda with type annotations
+    println("[TEST 5] Lambda with type annotations")
+    var multiply = |a: int, b: int| => a * b
+    var result5 = multiply(6, 7)
+    println(f"multiply(6, 7) = {result5}")
+    println("")
+    
+    // Test 6: Nested closures
+    println("[TEST 6] Nested closures")
+    var outer = 100
+    var make_adder = |n| => |m| => n + m + outer
+    var add_5 = make_adder(5)
+    var result6 = add_5(3)
+    println(f"make_adder(5)(3) with outer=100 = {result6}")
+    println("")
+    
+    println("[SUCCESS] All lambda tests completed!")
+}

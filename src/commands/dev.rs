@@ -1,15 +1,15 @@
-//! Dev command implementation - development mode with detailed output
+//! Dev command implementation - RAIE development mode with detailed output
 
 use std::path::PathBuf;
 use std::fs;
 use crate::frontend::parser::{parse_source_with_debug, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::{SemanticAnalyzer, NativeJIT, NativeAOT};
+use crate::backend::{SemanticAnalyzer, AdaptiveEngine, NativeAOT};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error, success_message, info_message};
 
-/// Execute the dev command - development mode with detailed compiler output
-pub fn execute(file: PathBuf, watch: bool, jit: bool, aot: bool) -> Result<(), Box<dyn std::error::Error>> {
+/// Execute the dev command - RAIE development mode with detailed compiler output
+pub fn execute(file: PathBuf, watch: bool, adaptive: bool, aot: bool) -> Result<(), Box<dyn std::error::Error>> {
     // Validate input file
     if let Err(e) = validate_file_exists(&file) {
         handle_error(&e);
@@ -85,42 +85,46 @@ pub fn execute(file: PathBuf, watch: bool, jit: bool, aot: bool) -> Result<(), B
         success_message("Compilation completed successfully!");
         
         // Choose execution method based on flags
-        if jit {
-            // Native JIT compilation
-            println!("\nPhase 4: Native JIT Compilation & Execution...");
-            info_message("Using custom x86-64 backend (no dependencies!)");
+        if adaptive {
+            // RAIE (Razen Adaptive Interpreter Engine) compilation
+            println!("\nPhase 4: RAIE Adaptive Compilation & Execution...");
+            info_message("Using RAIE - Razen Adaptive Interpreter Engine");
             
-            match NativeJIT::new() {
-                Ok(mut native_jit) => {
-                    native_jit.set_clean_output(false); // Debug output for dev command
+            match AdaptiveEngine::new() {
+                Ok(mut raie) => {
+                    raie.set_clean_output(false); // Debug output for dev command
                     
                     // Register function parameter names
                     for (func_name, params) in &compiler.function_param_names {
-                        native_jit.register_function_params(func_name.clone(), params.clone());
+                        raie.register_function_params(func_name.clone(), params.clone());
                     }
                     
-                    println!("--- JIT Output ---");
-                    match native_jit.compile_and_run(&compiler.ir) {
+                    println!("--- RAIE Output ---");
+                    match raie.compile_and_run(&compiler.ir) {
                         Ok(result) => {
                             println!("Result: {}", result);
-                            println!("--- End JIT Output ---");
-                            success_message("Native JIT compilation and execution successful!");
+                            println!("--- End RAIE Output ---");
+                            success_message("RAIE adaptive compilation and execution successful!");
+                            
+                            // Show RAIE statistics
+                            let stats = raie.get_stats();
+                            println!("\n[INFO] RAIE Statistics: {}", stats);
                             
                             println!("\nDevelopment Summary:");
                             println!("  Parsing: OK");
                             println!("  Semantic Analysis: OK");
                             println!("  IR Generation: OK");
-                            println!("  Native JIT: OK");
+                            println!("  RAIE Adaptive: OK");
                             println!("  Execution: OK");
                         }
                         Err(e) => {
-                            println!("--- End JIT Output ---");
-                            handle_error(&format!("Native JIT execution failed: {}", e));
+                            println!("--- End RAIE Output ---");
+                            handle_error(&format!("RAIE execution failed: {}", e));
                         }
                     }
                 }
                 Err(e) => {
-                    handle_error(&format!("Failed to initialize native JIT: {}", e));
+                    handle_error(&format!("Failed to initialize RAIE: {}", e));
                 }
             }
         } else if aot {

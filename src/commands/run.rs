@@ -1,17 +1,17 @@
-//! Run command implementation - RAJIT compile and execute
+//! Run command implementation - RAIE (Razen Adaptive Interpreter Engine)
 
 use std::path::PathBuf;
 use std::fs;
 use std::time::Instant;
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::{SemanticAnalyzer, NativeJIT};
+use crate::backend::{SemanticAnalyzer, AdaptiveEngine};
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error};
 
-/// Execute the run command - compile and run a Razen program with RAJIT
+/// Execute the run command - compile and run a Razen program with RAIE
 pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::Error>> {
-    // Level 0 (no optimization) by default, Level 2 (standard) with -O flag
+    // Level 0 (no optimization) by default, Level 2 (full optimization) with -O flag
     let opt_level = if optimize { 2 } else { 0 };
     // Validate input file
     if let Err(e) = validate_file_exists(&file) {
@@ -68,28 +68,29 @@ pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::
             handle_error(&format!("Compilation failed: {}", compiler.errors.join("; ")));
         }
         
-        // Use RAJIT (Razen Adaptive JIT) with specified optimization level
+        // Use RAIE (Razen Adaptive Interpreter Engine) with specified optimization level
         let start_time = Instant::now();
         
-        match NativeJIT::with_optimization(opt_level) {
-            Ok(mut jit) => {
-                jit.set_clean_output(true); // Clean output for run command
+        match AdaptiveEngine::with_optimization(opt_level) {
+            Ok(mut raie) => {
+                raie.set_clean_output(true); // Clean output for run command
                 
                 // Register function parameter names
                 for (func_name, params) in &compiler.function_param_names {
-                    jit.register_function_params(func_name.clone(), params.clone());
+                    raie.register_function_params(func_name.clone(), params.clone());
                 }
                 
-                match jit.compile_and_run(&compiler.ir) {
+                match raie.compile_and_run(&compiler.ir) {
                     Ok(_) => {
                         let duration = start_time.elapsed();
                         let time_secs = duration.as_secs_f64();
                         
                         // Show execution time with optimization info
-                        let opt_name = if opt_level == 0 {
-                            "none"
-                        } else {
-                            "standard"
+                        let tier_name = match opt_level {
+                            0 => "Tier 0 (baseline)",
+                            1 => "Tier 1 (adaptive)",
+                            2 => "Tier 2 (optimized)",
+                            _ => "unknown",
                         };
                         
                         // Color based on execution time
@@ -103,16 +104,16 @@ pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::
                             ("\x1b[31m", format!("{:.3}s", time_secs)) // Red: > 20s (slow)
                         };
                         
-                        eprintln!("\nRAJIT execution completed in {}{}\x1b[0m (optimization: {})", 
-                                 color_code, time_str, opt_name);
+                        eprintln!("\n[SUCCESS] RAIE execution completed in {}{}\x1b[0m ({})", 
+                                 color_code, time_str, tier_name);
                     }
                     Err(e) => {
-                        handle_error(&format!("RAJIT execution failed: {}", e));
+                        handle_error(&format!("RAIE execution failed: {}", e));
                     }
                 }
             }
             Err(e) => {
-                handle_error(&format!("Failed to initialize RAJIT: {}", e));
+                handle_error(&format!("Failed to initialize RAIE: {}", e));
             }
         }
     } else {

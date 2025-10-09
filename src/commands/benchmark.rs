@@ -1,5 +1,5 @@
 // src/commands/benchmark.rs
-//! Benchmark command implementation for JIT performance validation
+//! Benchmark command implementation for RAIE performance validation
 
 use std::path::PathBuf;
 use crate::benchmark::BenchmarkSuite;
@@ -11,7 +11,7 @@ pub fn execute(
     name: Option<String>,
     output: Option<PathBuf>,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    info_message("Starting RAJIT JIT Performance Benchmarks");
+    info_message("Starting RAIE Performance Benchmarks");
     
     let mut suite = BenchmarkSuite::new();
     

@@ -1,11 +1,11 @@
 // src/benchmark.rs
-//! Comprehensive benchmarking system for RAJIT JIT performance validation
+//! Comprehensive benchmarking system for RAIE performance validation
 
 use std::time::{Duration, Instant};
 use std::path::Path;
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
-use crate::backend::{SemanticAnalyzer, NativeJIT};
+use crate::backend::{SemanticAnalyzer, AdaptiveEngine};
 use crate::frontend::diagnostics::display::render_diagnostics;
 
 /// Benchmark result containing performance metrics
@@ -21,7 +21,7 @@ pub struct BenchmarkResult {
     pub optimization_level: u8,
 }
 
-/// Benchmarking suite for JIT performance validation
+/// Benchmarking suite for RAIE performance validation
 pub struct BenchmarkSuite {
     results: Vec<BenchmarkResult>,
 }
@@ -78,31 +78,29 @@ impl BenchmarkSuite {
         let compilation_time = compilation_start.elapsed();
         let ir_count = compiler.ir.len();
         
-        // JIT compilation and execution with optimization level 2 (standard)
-        let mut jit = NativeJIT::with_optimization(2)
-            .map_err(|e| format!("JIT initialization error: {}", e))?;
-        jit.set_clean_output(true); // Suppress debug output for benchmarks
+        // RAIE compilation and execution with optimization level 2 (full optimization)
+        let mut raie = AdaptiveEngine::with_optimization(2)
+            .map_err(|e| format!("RAIE initialization error: {}", e))?;
+        raie.set_clean_output(true); // Suppress debug output for benchmarks
         
         // Register function parameter names
         for (func_name, params) in &compiler.function_param_names {
-            jit.register_function_params(func_name.clone(), params.clone());
+            raie.register_function_params(func_name.clone(), params.clone());
         }
         
         let execution_start = Instant::now();
-        let _result = jit.compile_and_run(&compiler.ir)
-            .map_err(|e| format!("JIT execution error: {}", e))?;
+        let _result = raie.compile_and_run(&compiler.ir)
+            .map_err(|e| format!("RAIE execution error: {}", e))?;
         let execution_time = execution_start.elapsed();
         
         let total_time = compilation_time + execution_time;
-        let stats = jit.get_stats();
+        let stats = raie.get_stats();
         
         // Determine strategy used based on execution counts
-        let strategy_used = if stats.native_executions > 0 {
-            "Native x86-64".to_string()
-        } else if stats.bytecode_executions > 0 {
-            "Bytecode".to_string()
+        let strategy_used = if stats.specialized_executions > 0 {
+            "Adaptive Specialized".to_string()
         } else {
-            "Runtime".to_string()
+            "Baseline Runtime".to_string()
         };
         
         let result = BenchmarkResult {
@@ -159,7 +157,7 @@ impl BenchmarkSuite {
             ("Simple Runtime", "benchmarks/simple_runtime.rzn"),
         ];
         
-        println!("=== RAJIT JIT Performance Benchmarks ===\n");
+        println!("=== RAIE Performance Benchmarks ===\n");
         
         for (name, file_path) in &benchmarks {
             if Path::new(file_path).exists() {
