@@ -43,6 +43,18 @@ pub enum Commands {
         /// Enable optimizations (uses standard level 2 for best performance)
         #[arg(short = 'O', long = "optimize")]
         optimize: bool,
+        
+        /// Use RAZE JIT compiler (native machine code generation)
+        #[arg(long)]
+        raze: bool,
+        
+        /// RAZE compilation mode: jit, aot, hybrid, adaptive
+        #[arg(long, default_value = "jit")]
+        raze_mode: String,
+        
+        /// RAZE optimization level (0-3)
+        #[arg(long, default_value = "2")]
+        raze_opt: u8,
     },
 
     /// Development mode with debugging and compiler messages
@@ -183,7 +195,7 @@ pub fn execute_cli() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { file, optimize } => run::execute(file, optimize),
+        Commands::Run { file, optimize, raze, raze_mode, raze_opt } => run::execute(file, optimize, raze, raze_mode, raze_opt),
         Commands::Dev { file, watch, adaptive, aot } => dev::execute(file, watch, adaptive, aot),
         Commands::Build {
             output,

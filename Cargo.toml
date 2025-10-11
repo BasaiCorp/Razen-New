@@ -6,24 +6,28 @@ edition = "2024"
 [dependencies]
 # Professional CLI with minimal, well-maintained dependencies
 clap = { version = "4.4", features = ["derive", "color"] }
-# TOML parsing for razen.toml configuration files
 toml = "0.8"
 serde = { version = "1.0", features = ["derive"] }
+
+# RAZE (JIT/AOT) dependencies - minimal and platform-specific
 libc = "0.2.176"
 
 # Stdlib dependencies
-chrono = "0.4"           # Time and date operations
-ureq = "2.10"            # HTTP client
-url = "2.5"              # URL parsing
-urlencoding = "2.1"      # URL encoding/decoding
-regex = "1.10"           # Regular expressions
-rand = "0.8"             # Random number generation
-dirs = "5.0"             # Home/temp directory paths
-hostname = "0.4"         # System hostname
-whoami = "1.5"           # Username detection
-which = "6.0"            # Find executables in PATH
-lazy_static = "1.4"      # Static globals for route storage
-ctrlc = "3.4"            # Ctrl+C signal handling for graceful shutdown
+chrono = "0.4"
+ureq = "2.10"
+url = "2.5"
+urlencoding = "2.1"
+regex = "1.10"
+rand = "0.8"
+dirs = "5.0"
+hostname = "0.4"
+whoami = "1.5"
+which = "6.0"
+lazy_static = "1.4"
+ctrlc = "3.4"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["memoryapi", "winnt"] }
 
 [dev-dependencies]
 # No dev dependencies needed for now

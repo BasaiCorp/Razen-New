@@ -1,4 +1,4 @@
-//! Run command implementation - RAIE (Razen Adaptive Interpreter Engine)
+//! Run command implementation - RAIE (Razen Adaptive Interpreter Engine) and RAZE
 
 use std::path::PathBuf;
 use std::fs;
@@ -6,11 +6,12 @@ use std::time::Instant;
 use crate::frontend::parser::{parse_source_with_name, format_parse_errors};
 use crate::backend::execution::Compiler;
 use crate::backend::{SemanticAnalyzer, AdaptiveEngine};
+use crate::backend::execution::raze::JITCompiler;
 use crate::frontend::diagnostics::display::render_diagnostics;
 use super::{validate_file_exists, validate_razen_file, handle_error};
 
-/// Execute the run command - compile and run a Razen program with RAIE
-pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::Error>> {
+/// Execute the run command - compile and run a Razen program with RAIE or RAZE
+pub fn execute(file: PathBuf, optimize: bool, raze: bool, raze_mode: String, raze_opt: u8) -> Result<(), Box<dyn std::error::Error>> {
     // Level 0 (no optimization) by default, Level 2 (full optimization) with -O flag
     let opt_level = if optimize { 2 } else { 0 };
     // Validate input file
@@ -68,10 +69,51 @@ pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::
             handle_error(&format!("Compilation failed: {}", compiler.errors.join("; ")));
         }
         
-        // Use RAIE (Razen Adaptive Interpreter Engine) with specified optimization level
+        // Choose execution engine: RAZE or RAIE
         let start_time = Instant::now();
         
-        match AdaptiveEngine::with_optimization(opt_level) {
+        if raze {
+            // Use RAZE (Razen Advanced Zero-overhead Engine)
+            println!("[INFO] Using RAZE JIT compiler");
+            println!("[INFO] Mode: {}", raze_mode);
+            println!("[INFO] Optimization: O{}", raze_opt);
+            
+            match JITCompiler::with_optimization(raze_opt) {
+                Ok(mut jit) => {
+                    match jit.compile_and_run(&compiler.ir) {
+                        Ok(result) => {
+                            let duration = start_time.elapsed();
+                            let time_secs = duration.as_secs_f64();
+                            
+                            // Color based on execution time
+                            let (color_code, time_str) = if time_secs < 0.1 {
+                                ("\x1b[32m", format!("{:.3}ms", time_secs * 1000.0)) // Green: < 100ms (blazing fast!)
+                            } else if time_secs < 1.0 {
+                                ("\x1b[32m", format!("{:.3}ms", time_secs * 1000.0)) // Green: < 1s (fast!)
+                            } else if time_secs < 3.0 {
+                                ("\x1b[33m", format!("{:.3}s", time_secs)) // Yellow: 1-3s (good)
+                            } else {
+                                ("\x1b[31m", format!("{:.3}s", time_secs)) // Red: > 3s (slow)
+                            };
+                            
+                            eprintln!("\n[SUCCESS] RAZE execution completed in {}{}\x1b[0m", color_code, time_str);
+                            
+                            // Show statistics
+                            let stats = jit.stats();
+                            eprintln!("{}", stats);
+                        }
+                        Err(e) => {
+                            handle_error(&format!("RAZE execution failed: {}", e));
+                        }
+                    }
+                }
+                Err(e) => {
+                    handle_error(&format!("Failed to initialize RAZE: {}", e));
+                }
+            }
+        } else {
+            // Use RAIE (Razen Adaptive Interpreter Engine) with specified optimization level
+            match AdaptiveEngine::with_optimization(opt_level) {
             Ok(mut raie) => {
                 raie.set_clean_output(true); // Clean output for run command
                 
@@ -114,6 +156,7 @@ pub fn execute(file: PathBuf, optimize: bool) -> Result<(), Box<dyn std::error::
             }
             Err(e) => {
                 handle_error(&format!("Failed to initialize RAIE: {}", e));
+            }
             }
         }
     } else {
