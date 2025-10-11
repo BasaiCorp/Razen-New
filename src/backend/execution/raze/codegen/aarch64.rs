@@ -178,6 +178,25 @@ impl AArch64CodeGen {
         self.asm.emit_u32(instr);
     }
     
+    fn emit_sdiv_reg_reg(&mut self, dest: AArch64Reg, left: AArch64Reg, right: AArch64Reg) {
+        // SDIV Xd, Xn, Xm (signed division)
+        let instr = 0x9AC00C00
+            | ((right.encoding() as u32) << 16)
+            | ((left.encoding() as u32) << 5)
+            | (dest.encoding() as u32);
+        self.asm.emit_u32(instr);
+    }
+    
+    fn emit_msub_reg_reg(&mut self, dest: AArch64Reg, left: AArch64Reg, right: AArch64Reg, sub: AArch64Reg) {
+        // MSUB Xd, Xn, Xm, Xa (Xd = Xa - Xn * Xm, used for modulo)
+        let instr = 0x9B008000
+            | ((right.encoding() as u32) << 16)
+            | ((sub.encoding() as u32) << 10)
+            | ((left.encoding() as u32) << 5)
+            | (dest.encoding() as u32);
+        self.asm.emit_u32(instr);
+    }
+    
     fn generate_mir_instruction(&mut self, instr: &MIR) -> Result<(), RAZEError> {
         match instr {
             MIR::LoadImm { dest, value, .. } => {
@@ -215,6 +234,27 @@ impl AArch64CodeGen {
                 let left_reg = self.map_reg(*left);
                 let right_reg = self.map_reg(*right);
                 self.emit_mul_reg_reg(dest_reg, left_reg, right_reg);
+            }
+            
+            MIR::DivInt { dest, left, right } => {
+                let dest_reg = self.map_reg(*dest);
+                let left_reg = self.map_reg(*left);
+                let right_reg = self.map_reg(*right);
+                self.emit_sdiv_reg_reg(dest_reg, left_reg, right_reg);
+            }
+            
+            MIR::ModInt { dest, left, right } => {
+                let dest_reg = self.map_reg(*dest);
+                let left_reg = self.map_reg(*left);
+                let right_reg = self.map_reg(*right);
+                // Modulo: dest = left - (left / right) * right
+                // We need a temp register for the division result
+                // Use X9 as temp (caller-saved register)
+                let temp = AArch64Reg::X9;
+                // temp = left / right
+                self.emit_sdiv_reg_reg(temp, left_reg, right_reg);
+                // dest = left - temp * right
+                self.emit_msub_reg_reg(dest_reg, temp, right_reg, left_reg);
             }
             
             MIR::Label(label) => {

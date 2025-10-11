@@ -157,6 +157,19 @@ impl X86_64CodeGen {
         self.asm.emit_u8(modrm(3, dest.encoding(), src.encoding()));
     }
     
+    fn emit_idiv_reg(&mut self, src: X86Reg) {
+        let rex_byte = rex(true, false, false, src.needs_rex());
+        self.asm.emit_u8(rex_byte);
+        self.asm.emit_u8(0xF7);
+        self.asm.emit_u8(modrm(3, 7, src.encoding()));
+    }
+    
+    fn emit_cqo(&mut self) {
+        // Sign-extend RAX to RDX:RAX
+        self.asm.emit_u8(rex(true, false, false, false));
+        self.asm.emit_u8(0x99);
+    }
+    
     fn generate_mir_instruction(&mut self, instr: &MIR) -> Result<(), RAZEError> {
         match instr {
             MIR::LoadImm { dest, value, .. } => {
@@ -203,6 +216,40 @@ impl X86_64CodeGen {
                     self.emit_mov_reg_reg(dest_reg, left_reg);
                 }
                 self.emit_imul_reg_reg(dest_reg, right_reg);
+            }
+            
+            MIR::DivInt { dest, left, right } => {
+                let left_reg = self.map_reg(*left);
+                let right_reg = self.map_reg(*right);
+                let dest_reg = self.map_reg(*dest);
+                
+                // Move dividend to RAX
+                self.emit_mov_reg_reg(X86Reg::RAX, left_reg);
+                // Sign-extend RAX to RDX:RAX
+                self.emit_cqo();
+                // Divide by right_reg, quotient in RAX
+                self.emit_idiv_reg(right_reg);
+                // Move quotient to dest
+                if dest_reg != X86Reg::RAX {
+                    self.emit_mov_reg_reg(dest_reg, X86Reg::RAX);
+                }
+            }
+            
+            MIR::ModInt { dest, left, right } => {
+                let left_reg = self.map_reg(*left);
+                let right_reg = self.map_reg(*right);
+                let dest_reg = self.map_reg(*dest);
+                
+                // Move dividend to RAX
+                self.emit_mov_reg_reg(X86Reg::RAX, left_reg);
+                // Sign-extend RAX to RDX:RAX
+                self.emit_cqo();
+                // Divide by right_reg, remainder in RDX
+                self.emit_idiv_reg(right_reg);
+                // Move remainder to dest
+                if dest_reg != X86Reg::RDX {
+                    self.emit_mov_reg_reg(dest_reg, X86Reg::RDX);
+                }
             }
             
             MIR::Label(label) => {

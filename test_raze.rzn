@@ -1,6 +1,8 @@
 fun main() {
-    var a = 10
-    var b = 20
-    var result = a + b
-    println(result)
+    var a = 20
+    var b = 3
+    var div_result = a / b
+    var mod_result = a % b
+    println(div_result)
+    println(mod_result)
 }
