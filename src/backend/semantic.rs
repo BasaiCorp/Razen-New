@@ -563,7 +563,7 @@ impl SemanticAnalyzer {
                 let condition_type = self.analyze_expression(&if_stmt.condition);
                 if let Some(cond_type) = condition_type {
                     if cond_type != "bool" && cond_type != "any" {
-                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        let span = self.create_span_for_pattern("if", "");
                         let diagnostic = helpers::invalid_condition(
                             &cond_type,
                             span,
@@ -579,7 +579,7 @@ impl SemanticAnalyzer {
                     let elif_condition_type = self.analyze_expression(&elif_branch.condition);
                     if let Some(cond_type) = elif_condition_type {
                         if cond_type != "bool" && cond_type != "any" {
-                            let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                            let span = self.create_span_for_pattern("elif", "");
                             let diagnostic = helpers::invalid_condition(
                                 &cond_type,
                                 span,
@@ -600,7 +600,7 @@ impl SemanticAnalyzer {
                 let condition_type = self.analyze_expression(&while_stmt.condition);
                 if let Some(cond_type) = condition_type {
                     if cond_type != "bool" && cond_type != "any" {
-                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        let span = self.create_span_for_pattern("while", "");
                         let diagnostic = helpers::invalid_condition(
                             &cond_type,
                             span,
@@ -1120,7 +1120,8 @@ impl SemanticAnalyzer {
                     }
                     _ => {
                         // Invalid lvalue (e.g., assigning to a literal or expression result)
-                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        // Try to find the assignment line
+                        let span = self.create_span_for_pattern("=", "");
                         let diagnostic = helpers::invalid_lvalue(
                             "cannot assign to this expression",
                             span,
@@ -1471,15 +1472,35 @@ impl SemanticAnalyzer {
         }
     }
 
-    #[allow(dead_code)]
-    fn estimate_line_number(&self, identifier: &str) -> usize {
-        // Search for the identifier in the source lines
+    /// Estimate line number for a keyword or pattern
+    fn estimate_line_for_pattern(&self, pattern: &str) -> usize {
+        // Search for the pattern in the source lines
         for (line_idx, line) in self.source_lines.iter().enumerate() {
-            if line.contains(identifier) {
+            if line.contains(pattern) {
                 return line_idx + 1; // Convert to 1-based line number
             }
         }
         1 // Fallback to line 1
+    }
+    
+    /// Create a span for a specific line with pattern matching
+    fn create_span_for_pattern(&self, pattern: &str, context_hint: &str) -> Span {
+        for (line_idx, line) in self.source_lines.iter().enumerate() {
+            // Look for lines containing both the pattern and context
+            if line.contains(pattern) && (context_hint.is_empty() || line.contains(context_hint)) {
+                let line_num = line_idx + 1;
+                let col = line.find(pattern).unwrap_or(0) + 1;
+                let start_pos = Position::new(line_num, col, 0);
+                let end_pos = Position::new(line_num, col + pattern.len(), pattern.len());
+                return Span::new(start_pos, end_pos)
+                    .with_source(self.current_file.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "source".to_string()));
+            }
+        }
+        // Fallback span
+        let start_pos = Position::new(1, 1, 0);
+        let end_pos = Position::new(1, 1, 0);
+        Span::new(start_pos, end_pos)
+            .with_source(self.current_file.as_ref().map(|p| p.to_string_lossy().to_string()).unwrap_or_else(|| "source".to_string()))
     }
 
     fn find_identifier_position(&self, identifier: &str) -> (usize, usize) {
