@@ -1,0 +1,45 @@
+// Test: Enhanced diagnostic and error reporting
+// This file tests all the newly added error detection features
+
+fun main() {
+    // Test 1: Type annotation reassignment checking (CRITICAL FIX)
+    var count: int = 10
+    count = "hello"  // Should error: type mismatch
+    count = 25.5     // Should error: type mismatch
+    
+    // Test 2: Invalid lvalue assignments
+    10 = count       // Should error: cannot assign to literal
+    (5 + 3) = count  // Should error: cannot assign to expression
+    
+    // Test 3: Invalid conditions in if statements
+    if count {       // Should error: expected bool, found int
+        println("This should error")
+    }
+    
+    if "hello" {     // Should error: expected bool, found str
+        println("This should also error")
+    }
+    
+    // Test 4: Invalid conditions in while loops
+    while count {    // Should error: expected bool, found int
+        count = count - 1
+    }
+    
+    // Test 5: Type annotation case sensitivity
+    var x: Int = 5           // Should suggest 'int'
+    var name: String = "Bob" // Should suggest 'str'
+    var flag: Bool = true    // Should suggest 'bool'
+    
+    // Test 6: Const with type annotation
+    const PI: float = 3.14   // Should be OK
+    const MAX: int = "100"   // Should error: type mismatch
+    
+    // Test 7: Valid reassignments (should work)
+    var mutable_count: int = 10
+    mutable_count = 20       // OK
+    mutable_count = 30       // OK
+    
+    // Test 8: Immutable assignment
+    const FIXED: int = 100
+    FIXED = 200              // Should error: cannot assign to immutable
+}

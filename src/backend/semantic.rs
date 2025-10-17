@@ -137,14 +137,30 @@ impl SemanticAnalyzer {
                     || self.symbol_table.structs.contains_key(&ident.name);
                 
                 if !is_valid {
-                    let diagnostic = Diagnostic::new(
-                        DiagnosticKind::undefined_variable(&ident.name)
-                    )
-                    .with_code("E0004")
-                    .with_note(format!("cannot find type `{}` in this scope", ident.name))
-                    .with_help(format!("define type alias with `type {} = <type>` or check if it's a valid type", ident.name));
+                    // Check for common case sensitivity mistakes first
+                    let lowercase_name = ident.name.to_lowercase();
+                    let has_case_mismatch = matches!(lowercase_name.as_str(), 
+                        "int" | "float" | "str" | "string" | "bool" | "char");
                     
-                    self.diagnostics.add(diagnostic);
+                    if has_case_mismatch {
+                        let correct_name = if lowercase_name == "string" { "str" } else { lowercase_name.as_str() };
+                        let diagnostic = helpers::type_not_found(
+                            &ident.name,
+                            self.create_span_from_identifier(ident),
+                        )
+                        .with_help(format!("Did you mean `{}`? Type names in Razen are lowercase", correct_name))
+                        .with_note("Razen uses lowercase for primitive type names: int, float, str, bool, char");
+                        self.diagnostics.add(diagnostic);
+                    } else {
+                        let diagnostic = Diagnostic::new(
+                            DiagnosticKind::TypeNotFound { type_name: ident.name.clone() }
+                        )
+                        .with_code("E0017")
+                        .with_note(format!("cannot find type `{}` in this scope", ident.name))
+                        .with_help(format!("Define type alias with `type {} = <type>` or check if it's a valid type", ident.name));
+                        
+                        self.diagnostics.add(diagnostic);
+                    }
                 }
             },
             TypeAnnotation::Array(inner) => {
@@ -543,12 +559,34 @@ impl SemanticAnalyzer {
                 self.symbol_table.pop_scope();
             }
             Statement::IfStatement(if_stmt) => {
-                self.analyze_expression(&if_stmt.condition);
+                // Validate condition is boolean
+                let condition_type = self.analyze_expression(&if_stmt.condition);
+                if let Some(cond_type) = condition_type {
+                    if cond_type != "bool" && cond_type != "any" {
+                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        let diagnostic = helpers::invalid_condition(
+                            &cond_type,
+                            span,
+                        );
+                        self.diagnostics.add(diagnostic);
+                    }
+                }
+                
                 self.analyze_statement(&if_stmt.then_branch);
 
                 // Analyze elif branches
                 for elif_branch in &if_stmt.elif_branches {
-                    self.analyze_expression(&elif_branch.condition);
+                    let elif_condition_type = self.analyze_expression(&elif_branch.condition);
+                    if let Some(cond_type) = elif_condition_type {
+                        if cond_type != "bool" && cond_type != "any" {
+                            let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                            let diagnostic = helpers::invalid_condition(
+                                &cond_type,
+                                span,
+                            );
+                            self.diagnostics.add(diagnostic);
+                        }
+                    }
                     self.analyze_statement(&elif_branch.body);
                 }
 
@@ -558,7 +596,19 @@ impl SemanticAnalyzer {
                 }
             }
             Statement::WhileStatement(while_stmt) => {
-                self.analyze_expression(&while_stmt.condition);
+                // Validate condition is boolean
+                let condition_type = self.analyze_expression(&while_stmt.condition);
+                if let Some(cond_type) = condition_type {
+                    if cond_type != "bool" && cond_type != "any" {
+                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        let diagnostic = helpers::invalid_condition(
+                            &cond_type,
+                            span,
+                        );
+                        self.diagnostics.add(diagnostic);
+                    }
+                }
+                
                 let was_in_loop = self.in_loop;
                 self.in_loop = true;
                 self.analyze_statement(&while_stmt.body);
@@ -604,6 +654,23 @@ impl SemanticAnalyzer {
                 let inferred_type = self
                     .analyze_expression(&const_decl.initializer)
                     .unwrap_or_else(|| "any".to_string());
+
+                // If there's a type annotation, validate it and check compatibility
+                if let Some(ref type_ann) = const_decl.type_annotation {
+                    self.validate_type_annotation(type_ann);
+                    let resolved_type_ann = self.resolve_type_annotation(type_ann);
+                    let declared_type = Self::get_type_name_from_type_annotation(&resolved_type_ann);
+                    
+                    // Check type compatibility
+                    if !self.types_compatible(&inferred_type, &declared_type) {
+                        let diagnostic = helpers::type_mismatch(
+                            &declared_type,
+                            &inferred_type,
+                            self.create_span_from_identifier(&const_decl.name),
+                        );
+                        self.diagnostics.add(diagnostic);
+                    }
+                }
 
                 // Declare the constant with the inferred type (immutable)
                 self.declare_variable(const_name, &inferred_type, Position::new(1, 1, 0), false);
@@ -809,13 +876,23 @@ impl SemanticAnalyzer {
                 TypeAnnotation::Bool => "bool".to_string(),
                 TypeAnnotation::Char => "char".to_string(),
                 TypeAnnotation::Any => "any".to_string(),
-                TypeAnnotation::Custom(id) => id.name.clone(),
+                TypeAnnotation::Custom(id) => {
+                    // Check if this is a valid type (not a case mismatch)
+                    let lowercase_name = id.name.to_lowercase();
+                    if matches!(lowercase_name.as_str(), "int" | "float" | "str" | "string" | "bool" | "char") {
+                        // This is a case mismatch, skip type checking (error already reported)
+                        "any".to_string()
+                    } else {
+                        id.name.clone()
+                    }
+                },
                 _ => "any".to_string(),
             };
 
             // Check type compatibility if both declared type and initializer exist
+            // Skip if the type annotation was invalid (already reported)
             if let Some(ref _expr) = var_decl.initializer {
-                if !self.types_compatible(&inferred_type, &var_type_string) {
+                if var_type_string != "any" && !self.types_compatible(&inferred_type, &var_type_string) {
                     let diagnostic = helpers::type_mismatch(
                         &var_type_string,
                         &inferred_type,
@@ -989,34 +1066,69 @@ impl SemanticAnalyzer {
             Expression::CallExpression(call_expr) => self.analyze_call_expression(call_expr),
             Expression::AssignmentExpression(assign_expr) => {
                 // Check if the target is a valid lvalue
-                if let Expression::Identifier(ident) = assign_expr.left.as_ref() {
-                    let is_mutable = if let Some(symbol) = self.symbol_table.lookup(&ident.name) {
-                        if !symbol.mutable {
-                            let diagnostic = Diagnostic::new(
-                                crate::frontend::diagnostics::DiagnosticKind::ImmutableAssignment {
-                                    name: ident.name.clone(),
-                                },
-                            )
-                            .with_code("E0011");
+                match assign_expr.left.as_ref() {
+                    Expression::Identifier(ident) => {
+                        let var_type = if let Some(symbol) = self.symbol_table.lookup(&ident.name) {
+                            if !symbol.mutable {
+                                let diagnostic = helpers::immutable_assignment(
+                                    &ident.name,
+                                    self.create_span_from_identifier(&ident),
+                                );
+                                self.diagnostics.add(diagnostic);
+                            }
+                            
+                            // Get the variable's declared type for type checking
+                            if let SymbolType::Variable(type_name) = &symbol.symbol_type {
+                                Some(type_name.clone())
+                            } else {
+                                None
+                            }
+                        } else {
+                            let diagnostic = helpers::undefined_variable(
+                                &ident.name,
+                                self.create_span_from_identifier(&ident),
+                            );
                             self.diagnostics.add(diagnostic);
+                            None
+                        };
+
+                        // Analyze the right side to get its type
+                        let right_type = self.analyze_expression(&assign_expr.right);
+                        
+                        // Type check the assignment if we have both types
+                        if let (Some(var_type_name), Some(right_type_name)) = (var_type, right_type.as_ref()) {
+                            // Skip type checking for 'any' type variables
+                            if var_type_name != "any" && !self.types_compatible(right_type_name, &var_type_name) {
+                                let diagnostic = helpers::type_mismatch(
+                                    &var_type_name,
+                                    right_type_name,
+                                    self.create_span_from_identifier(&ident),
+                                );
+                                self.diagnostics.add(diagnostic);
+                            }
                         }
-                        true
-                    } else {
-                        let diagnostic = helpers::undefined_variable(
-                            &ident.name,
-                            self.create_span_from_identifier(&ident),
+
+                        // Mark as used
+                        self.symbol_table.mark_used(&ident.name);
+                        
+                        right_type
+                    }
+                    Expression::MemberExpression(_) | Expression::IndexExpression(_) => {
+                        // These are valid lvalues, analyze them
+                        self.analyze_expression(&assign_expr.left);
+                        self.analyze_expression(&assign_expr.right)
+                    }
+                    _ => {
+                        // Invalid lvalue (e.g., assigning to a literal or expression result)
+                        let span = Span::new(Position::new(1, 1, 0), Position::new(1, 1, 0));
+                        let diagnostic = helpers::invalid_lvalue(
+                            "cannot assign to this expression",
+                            span,
                         );
                         self.diagnostics.add(diagnostic);
-                        false
-                    };
-
-                    // Mark as used after borrowing is done
-                    if is_mutable {
-                        self.symbol_table.mark_used(&ident.name);
+                        self.analyze_expression(&assign_expr.right)
                     }
                 }
-
-                self.analyze_expression(&assign_expr.right)
             }
             // Handle other expression types
             Expression::FloatLiteral(_) => Some("float".to_string()),

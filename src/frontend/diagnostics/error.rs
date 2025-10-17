@@ -171,6 +171,14 @@ pub enum DiagnosticKind {
     MissingField { field: String, type_name: String },
     ExtraField { field: String, type_name: String },
     
+    // Type system errors
+    InvalidTypeAnnotation { type_name: String, reason: String },
+    TypeNotFound { type_name: String },
+    
+    // Expression errors
+    InvalidLValue { reason: String },
+    InvalidOperand { operator: String, operand_type: String },
+    
     // Custom error with message
     Custom { message: String },
 }
@@ -323,6 +331,22 @@ impl DiagnosticKind {
                 format!("struct `{}` does not have a field named `{}`", type_name, field)
             },
             
+            // Type system errors
+            DiagnosticKind::InvalidTypeAnnotation { type_name, reason } => {
+                format!("invalid type annotation `{}`: {}", type_name, reason)
+            },
+            DiagnosticKind::TypeNotFound { type_name } => {
+                format!("type `{}` not found", type_name)
+            },
+            
+            // Expression errors
+            DiagnosticKind::InvalidLValue { reason } => {
+                format!("invalid assignment target: {}", reason)
+            },
+            DiagnosticKind::InvalidOperand { operator, operand_type } => {
+                format!("invalid operand type `{}` for operator `{}`", operand_type, operator)
+            },
+            
             DiagnosticKind::Custom { message } => message.clone(),
         }
     }
@@ -364,7 +388,11 @@ impl DiagnosticKind {
             | DiagnosticKind::IndexOutOfBounds { .. }
             | DiagnosticKind::InvalidArrayAccess { .. }
             | DiagnosticKind::MissingField { .. }
-            | DiagnosticKind::ExtraField { .. } => Severity::Error,
+            | DiagnosticKind::ExtraField { .. }
+            | DiagnosticKind::InvalidTypeAnnotation { .. }
+            | DiagnosticKind::TypeNotFound { .. }
+            | DiagnosticKind::InvalidLValue { .. }
+            | DiagnosticKind::InvalidOperand { .. } => Severity::Error,
             
             // Warnings for code quality and potential issues
             DiagnosticKind::UnreachableCode

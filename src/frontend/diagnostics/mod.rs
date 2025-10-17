@@ -404,6 +404,79 @@ pub mod helpers {
             .with_code("E0010")
             .with_help("Use `continue` only inside `for` or `while` statements")
     }
+    
+    /// Create an invalid condition error
+    pub fn invalid_condition<S: Into<String>>(found_type: S, span: Span) -> Diagnostic {
+        let found_str = found_type.into();
+        Diagnostic::new(DiagnosticKind::InvalidCondition { found: found_str.clone() })
+            .with_label(Label::primary(span))
+            .with_code("E0015")
+            .with_help("Use comparison operators (==, !=, <, >, <=, >=) to create boolean conditions")
+            .with_note(format!("Found type `{}` but expected `bool`", found_str))
+    }
+    
+    /// Create an invalid lvalue error
+    pub fn invalid_lvalue<S: Into<String>>(reason: S, span: Span) -> Diagnostic {
+        Diagnostic::new(DiagnosticKind::InvalidLValue { reason: reason.into() })
+            .with_label(Label::primary(span))
+            .with_code("E0014")
+            .with_help("Only variables, struct fields, and array elements can be assigned to")
+    }
+    
+    /// Create an invalid operand error
+    pub fn invalid_operand<S: Into<String>>(operator: S, operand_type: S, span: Span) -> Diagnostic {
+        let op_str = operator.into();
+        let type_str = operand_type.into();
+        
+        Diagnostic::new(DiagnosticKind::InvalidOperand { 
+            operator: op_str.clone(), 
+            operand_type: type_str.clone() 
+        })
+            .with_label(Label::primary(span))
+            .with_code("E0016")
+            .with_help(format!("Operator `{}` cannot be applied to type `{}`", op_str, type_str))
+    }
+    
+    /// Create a type not found error
+    pub fn type_not_found<S: Into<String>>(type_name: S, span: Span) -> Diagnostic {
+        let name_str = type_name.into();
+        let mut diagnostic = Diagnostic::new(DiagnosticKind::TypeNotFound { type_name: name_str.clone() })
+            .with_label(Label::primary(span))
+            .with_code("E0017");
+        
+        // Check for common case sensitivity mistakes
+        let lowercase_name = name_str.to_lowercase();
+        match lowercase_name.as_str() {
+            "int" | "float" | "str" | "string" | "bool" | "char" => {
+                let correct_name = if lowercase_name == "string" { "str" } else { &lowercase_name };
+                diagnostic = diagnostic.with_help(format!("Did you mean `{}`? Type names in Razen are lowercase", correct_name));
+            }
+            _ => {
+                diagnostic = diagnostic.with_help(format!("Define type `{}` with `struct {}` or `type {} = <type>`", name_str, name_str, name_str));
+            }
+        }
+        
+        diagnostic
+    }
+    
+    /// Create an uninitialized variable error
+    pub fn uninitialized_variable<S: Into<String>>(name: S, span: Span) -> Diagnostic {
+        let name_str = name.into();
+        Diagnostic::new(DiagnosticKind::UninitializedVariable { name: name_str.clone() })
+            .with_label(Label::primary(span))
+            .with_code("E0018")
+            .with_help(format!("Initialize `{}` before using it: `var {} = value`", name_str, name_str))
+    }
+    
+    /// Create a missing return statement error
+    pub fn missing_return<S: Into<String>>(function_name: S, span: Span) -> Diagnostic {
+        let func_str = function_name.into();
+        Diagnostic::new(DiagnosticKind::MissingReturn { function_name: func_str.clone() })
+            .with_label(Label::primary(span))
+            .with_code("E0019")
+            .with_help(format!("Add a return statement to function `{}`", func_str))
+            .with_note("Functions with a return type must return a value in all code paths")
+    }
 }
 
 /// Calculate Levenshtein distance between two strings
@@ -473,6 +546,23 @@ fn to_camel_case(s: &str) -> String {
     }
 
     result
+}
+
+/// Check if a string is a valid type name (lowercase)
+pub fn is_valid_type_name(name: &str) -> bool {
+    matches!(name, "int" | "float" | "str" | "bool" | "char" | "any")
+}
+
+/// Get the correct type name for a possibly incorrect one
+pub fn get_correct_type_name(name: &str) -> Option<&'static str> {
+    match name.to_lowercase().as_str() {
+        "int" => Some("int"),
+        "float" => Some("float"),
+        "str" | "string" => Some("str"),
+        "bool" | "boolean" => Some("bool"),
+        "char" | "character" => Some("char"),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
