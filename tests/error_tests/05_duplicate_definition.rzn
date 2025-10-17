@@ -1,0 +1,37 @@
+// Test: Duplicate definition errors
+// Expected: Should report duplicates with location of first definition
+
+fun main() {
+    // Test 1: Duplicate variable in same scope
+    var x = 10
+    var x = 20  // Error: x already defined
+    
+    // Test 2: Duplicate in different statements
+    var count = 0
+    println(count)
+    var count = 1  // Error: count already defined
+    
+    // Test 3: Shadowing in nested scope (should be OK)
+    var y = 10
+    if true {
+        var y = 20  // OK: different scope
+        println(y)
+    }
+    println(y)
+}
+
+// Test 4: Duplicate function names
+fun calculate() {
+    return 42
+}
+
+fun calculate() {  // Error: function already defined
+    return 100
+}
+
+// Test 5: Variable and function with same name
+var process = 10
+
+fun process() {  // Should this be an error?
+    return 20
+}

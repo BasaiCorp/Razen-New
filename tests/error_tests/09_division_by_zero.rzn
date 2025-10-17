@@ -1,0 +1,25 @@
+// Test: Division by zero detection
+// Expected: Should warn about potential division by zero
+
+fun main() {
+    // Test 1: Literal division by zero
+    var x = 10 / 0  // Error: division by zero
+    
+    // Test 2: Variable division by zero
+    var divisor = 0
+    var y = 100 / divisor  // Should warn?
+    
+    // Test 3: Modulo by zero
+    var z = 10 % 0  // Error: modulo by zero
+    
+    // Test 4: Safe division
+    var a = 10
+    var b = 2
+    var c = a / b  // OK
+    
+    // Test 5: Conditional division (harder to detect)
+    var value = 5
+    if value > 0 {
+        var result = 100 / value  // OK
+    }
+}

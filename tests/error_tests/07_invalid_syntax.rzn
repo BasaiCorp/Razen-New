@@ -1,0 +1,25 @@
+// Test: Various syntax errors
+// Expected: Should report clear syntax errors with helpful messages
+
+fun main() {
+    // Test 1: Missing closing brace
+    if true {
+        println("test")
+    // Missing }
+    
+    // Test 2: Missing parenthesis
+    var x = (10 + 5
+    
+    // Test 3: Invalid variable declaration
+    var = 10  // Error: missing variable name
+    
+    // Test 4: Invalid assignment
+    10 = x  // Error: cannot assign to literal
+    
+    // Test 5: Missing semicolon (if required)
+    var a = 10
+    var b = 20
+    
+    // Test 6: Invalid operator
+    var result = 10 ** 2  // Is ** supported?
+}

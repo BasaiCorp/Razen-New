@@ -1,0 +1,22 @@
+// Test: Undefined variable errors
+// Expected: Should report undefined variable with helpful suggestions
+
+fun main() {
+    // Test 1: Simple undefined variable
+    println(undefinedVar)
+    
+    // Test 2: Undefined in expression
+    var x = 10
+    var y = x + undefinedY
+    
+    // Test 3: Typo in variable name (should suggest correct name)
+    var userName = "John"
+    println(userNam)  // typo: should suggest userName
+    
+    // Test 4: Case sensitivity
+    var myValue = 42
+    println(myvalue)  // should suggest myValue
+    
+    // Test 5: Undefined in assignment
+    result = 100
+}

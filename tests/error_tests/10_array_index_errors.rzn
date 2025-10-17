@@ -1,0 +1,25 @@
+// Test: Array indexing errors
+// Expected: Should detect out of bounds and invalid index types
+
+fun main() {
+    var numbers = [1, 2, 3, 4, 5]
+    
+    // Test 1: Negative index (might be valid in some languages)
+    var x = numbers[-1]  // Should this work or error?
+    
+    // Test 2: String index on array
+    var y = numbers["first"]  // Error: index must be int
+    
+    // Test 3: Float index
+    var z = numbers[2.5]  // Error: index must be int
+    
+    // Test 4: Boolean index
+    var w = numbers[true]  // Error: index must be int
+    
+    // Test 5: Out of bounds (compile-time detectable)
+    var a = numbers[10]  // Error: index out of bounds
+    
+    // Test 6: Valid indexing
+    var b = numbers[0]  // OK
+    var c = numbers[4]  // OK
+}

@@ -1,0 +1,24 @@
+// Test: Type annotation errors
+// Expected: Should validate type annotations and report invalid types
+
+fun main() {
+    // Test 1: Invalid type name
+    var x: invalidType = 10  // Error: unknown type
+    
+    // Test 2: Typo in type name
+    var count: Int = 10  // Error: should be 'int' not 'Int'
+    var name: String = "John"  // Error: should be 'str' not 'String'
+    var flag: Bool = true  // Error: should be 'bool' not 'Bool'
+    
+    // Test 3: Wrong initial value for type
+    var age: int = "twenty"  // Error: type mismatch
+    var price: float = true  // Error: type mismatch
+    var name2: str = 123  // Error: type mismatch
+    
+    // Test 4: Array type annotations
+    var numbers: array<int> = [1, 2, 3]  // Should be OK
+    var mixed: array<int> = [1, "two", 3]  // Should warn about mixed types?
+    
+    // Test 5: Undefined custom type
+    var obj: MyCustomType = null  // Error: MyCustomType not defined
+}

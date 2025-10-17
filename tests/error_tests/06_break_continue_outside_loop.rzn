@@ -1,0 +1,36 @@
+// Test: Break and continue outside loop
+// Expected: Should report that break/continue can only be used in loops
+
+fun main() {
+    // Test 1: Break outside loop
+    var x = 10
+    if x > 5 {
+        break  // Error: break outside loop
+    }
+    
+    // Test 2: Continue outside loop
+    if x < 20 {
+        continue  // Error: continue outside loop
+    }
+    
+    // Test 3: Break in function but outside loop
+    fun helper() {
+        break  // Error: break outside loop
+    }
+    
+    // Test 4: Valid usage (should be OK)
+    while true {
+        if x > 15 {
+            break  // OK
+        }
+        x = x + 1
+    }
+    
+    // Test 5: Continue in nested if inside loop (should be OK)
+    for i in 1..10 {
+        if i % 2 == 0 {
+            continue  // OK
+        }
+        println(i)
+    }
+}

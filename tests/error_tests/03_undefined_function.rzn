@@ -1,0 +1,23 @@
+// Test: Undefined function errors
+// Expected: Should report undefined functions with suggestions
+
+fun main() {
+    // Test 1: Simple undefined function
+    undefinedFunc()
+    
+    // Test 2: Typo in function name
+    printl("Hello")  // should suggest println
+    
+    // Test 3: Common mistakes
+    print_line("test")  // should suggest println
+    console.log("test")  // should suggest println
+    printf("test")  // should suggest print or println
+    
+    // Test 4: Type conversion typos
+    str(123)  // should suggest tostr
+    int("456")  // should suggest toint
+    float("3.14")  // should suggest tofloat
+    
+    // Test 5: Undefined with arguments
+    var result = calculateSum(1, 2, 3)
+}

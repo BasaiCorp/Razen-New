@@ -1,0 +1,30 @@
+// Test: Wrong argument count errors
+// Expected: Should report argument count mismatches clearly
+
+fun add(a, b) {
+    return a + b
+}
+
+fun greet(name, age, city) {
+    println(f"Hello {name}, {age} from {city}")
+}
+
+fun main() {
+    // Test 1: Too few arguments
+    var sum = add(5)  // Error: expects 2, got 1
+    
+    // Test 2: Too many arguments
+    var sum2 = add(5, 10, 15)  // Error: expects 2, got 3
+    
+    // Test 3: No arguments when some expected
+    var sum3 = add()  // Error: expects 2, got 0
+    
+    // Test 4: Complex case
+    greet("John")  // Error: expects 3, got 1
+    greet("John", 25)  // Error: expects 3, got 2
+    greet("John", 25, "NYC", "extra")  // Error: expects 3, got 4
+    
+    // Test 5: Built-in function wrong args
+    println()  // Should this be an error or print empty line?
+    println("a", "b")  // Error: println takes 1 argument
+}

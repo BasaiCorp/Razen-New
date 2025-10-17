@@ -1,0 +1,29 @@
+// Test: Type mismatch errors with type annotations
+// Expected: Should report type mismatches with conversion suggestions
+
+fun main() {
+    // Test 1: Assigning wrong type to annotated variable
+    var count: int = 10
+    count = "hello"  // Error: cannot assign str to int
+    
+    // Test 2: Assigning float to int
+    var age: int = 25
+    age = 25.5  // Error: cannot assign float to int
+    
+    // Test 3: Assigning int to string
+    var name: str = "John"
+    name = 123  // Error: cannot assign int to str
+    
+    // Test 4: Assigning bool to int
+    var value: int = 0
+    value = true  // Error: cannot assign bool to int
+    
+    // Test 5: Multiple type changes
+    var x: int = 10
+    x = 20  // OK
+    x = 30.5  // Error
+    x = "text"  // Error
+    
+    // Test 6: Type annotation with wrong initial value
+    var price: float = "not a number"  // Error
+}
